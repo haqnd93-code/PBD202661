@@ -1127,6 +1127,7 @@ function getCurrentExamNames() {
         function bukaModalEdit(idx, examName){
     let x=getActiveStudents()[idx]; if(!x)return;
     let subjek=document.getElementById("selectSubject").value;
+    let examNames = getCurrentExamNames();
     
     if(examName){
         currentBMEditStudent=idx; currentBMEditExam=examName;
@@ -1148,9 +1149,10 @@ function getCurrentExamNames() {
             </div>`;
         });
         html+=`</div>`;
+        let examIdx = examNames.indexOf(examName);
         html+=`<div style="background:linear-gradient(135deg,#ede9fe,#dbeafe);padding:14px;border-radius:12px;text-align:center;margin-bottom:12px;">
           <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">Markah Keseluruhan (%)</div>
-          <input type="number" id="editBMOverall" value="${x.marks[examNames.indexOf(examName)]}" min="0" max="100" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
+          <input type="number" id="editBMOverall" value="${examIdx>=0?(x.marks[examIdx]||0):0}" min="0" max="100" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
           <div style="font-size:0.65rem;color:#94a3b8;margin-top:4px;">Taip peratusan (0-100)</div>
         </div>`;
         html+=`<div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -1178,14 +1180,18 @@ function getCurrentExamNames() {
                 let pctEl=document.getElementById("bmPct_"+ki);
                 if(pctEl)pctEl.innerText=pct+'%';
             });
-            document.getElementById("overallPct").innerText=allFull>0?Math.round(allMarkah/allFull*100)+'%':'0%';
+            let overallInput=document.getElementById("editBMOverall");
+            if(overallInput) overallInput.value=allFull>0?Math.round(allMarkah/allFull*100):0;
         }
 
                 function simpanMarkahBM(){
             let x=getActiveStudents()[currentBMEditStudent];
+            let examNames = getCurrentExamNames();
             if(!x)return;
+            let examIdx = examNames.indexOf(currentBMEditExam);
+            if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
             let val = parseInt(document.getElementById("editBMOverall")?.value);
-            if(!isNaN(val)) x.marks[examNames.indexOf(currentBMEditExam)] = val;
+            if(!isNaN(val)) x.marks[examIdx] = val;
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
             tutupModal("modalEditMarkah");
@@ -1195,8 +1201,11 @@ function getCurrentExamNames() {
 
                function bukaAnalisisItemDariBM(){
             let x=getActiveStudents()[currentBMEditStudent];
+            let examNames = getCurrentExamNames();
             if(!x)return;
             let exam=currentBMEditExam;
+            let examIdx = examNames.indexOf(exam);
+            if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
             let cfg=getItemConfig(), itemData=getStudentItemData(x,exam);
             
             // Simpan dulu markah keseluruhan yang diisi
@@ -1206,7 +1215,7 @@ function getCurrentExamNames() {
                 let val=parseInt(document.getElementById("bmComp_"+ki)?.value)||0;
                 allMarkah+=val; allFull+=kFull;
             });
-            x.marks[examNames.indexOf(exam)]=allFull>0?Math.round(allMarkah/allFull*100):0;
+            x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
             
@@ -1258,7 +1267,7 @@ function getCurrentExamNames() {
             document.getElementById("modalEditMarkahContent").innerHTML=html;
             document.getElementById("modalEditMarkah").style.display="flex";
         }
-        function simpanAnalisisItem(){let x=getActiveStudents()[currentBMEditStudent];if(!x)return;let cfg=getItemConfig();let allMarkah=0,allFull=0;cfg.kertas.forEach((kertas,ki)=>{let items=getStudentItemData(x,currentBMEditExam)[kertas.nama]||[];items.forEach((item,si)=>{let val=parseInt(document.getElementById("im_"+ki+"_"+si)?.value)||0;item.mark=Math.min(val,item.fullMark);});allMarkah+=items.reduce((a,b)=>a+(b.mark||0),0);allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);});x.marks[examNames.indexOf(currentBMEditExam)]=allFull>0?Math.round(allMarkah/allFull*100):0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentBMEditStudent=null;currentBMEditExam=null;renderCurrentPage();}
+        function simpanAnalisisItem(){let x=getActiveStudents()[currentBMEditStudent];if(!x)return;let examNames = getCurrentExamNames();let examIdx = examNames.indexOf(currentBMEditExam);if(examIdx<0){alert("Ralat: peperiksaan tidak ditemui.");return;}let cfg=getItemConfig();let allMarkah=0,allFull=0;cfg.kertas.forEach((kertas,ki)=>{let items=getStudentItemData(x,currentBMEditExam)[kertas.nama]||[];items.forEach((item,si)=>{let val=parseInt(document.getElementById("im_"+ki+"_"+si)?.value)||0;item.mark=Math.min(val,item.fullMark);});allMarkah+=items.reduce((a,b)=>a+(b.mark||0),0);allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);});x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentBMEditStudent=null;currentBMEditExam=null;renderCurrentPage();}
         function simpanEditPelajar(){if(currentEditIndex===null)return;let x=getActiveStudents()[currentEditIndex];for(let i=0;i<4;i++)x.marks[i]=parseInt(document.getElementById("editMarks_"+i)?.value)||0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentEditIndex=null;renderCurrentPage();}
 
                 function renderBuku(){
@@ -3006,3 +3015,6 @@ function salinSenaraiPelajar() {
     </script>
 </body>
 </html>
+
+
+
