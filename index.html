@@ -13,6 +13,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore-compat.js"></script>
     <style>
         :root { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --bg: #f1f5f9; --text: #1e293b; --border: #e2e8f0; }
@@ -515,8 +516,8 @@
             <p>Sistem Pengurusan Akademik</p>
             
             <div class="login-options">
-                <div class="login-option active" onclick="setLoginRole('guru')">👨‍🏫 Guru</div>
-                <div class="login-option" onclick="setLoginRole('pelajar')">👩‍🎓 Pelajar</div>
+                <div class="login-option active" data-role="guru" onclick="setLoginRole('guru')">👨‍🏫 Guru</div>
+                <div class="login-option" data-role="pelajar" onclick="setLoginRole('pelajar')">👩‍🎓 Pelajar</div>
             </div>
             
             <div id="loginFormGuru">
@@ -551,6 +552,7 @@
             <li class="nav-item" data-page="profil"><a><i class="fas fa-id-card"></i> <span>Profil Pelajar</span></a></li>
             <li class="nav-item" data-page="pbd"><a><i class="fas fa-clipboard-check"></i> <span>PBD (DSKP)</span></a></li>
             <li class="nav-item" data-page="settings"><a><i class="fas fa-cog"></i> <span>Tetapan</span></a></li>
+            <li class="nav-item" data-page="admin"><a><i class="fas fa-user-shield"></i> <span>Admin</span></a></li>
         </ul>
         <div class="intervensi-panel"><h4><i class="fas fa-exclamation-triangle"></i> Cadangan Intervensi</h4><div id="intervensiList" style="font-size:0.78rem;"></div></div>
     </div>
@@ -571,6 +573,7 @@
         <div id="profilPage" class="page"><div id="profilContent"></div></div>
         <div id="pbdPage" class="page"><div id="pbdContent"></div></div>
         <div id="settingsPage" class="page"><div id="settingsContent"></div></div>
+        <div id="adminPage" class="page"><div id="adminContent"></div></div>
 
         <div id="modalEditMarkah" class="modal"><div class="modal-content" id="modalEditMarkahContent"></div></div>
         <div id="modalKonfigurasiItem" class="modal"><div class="modal-content" id="modalKonfigurasiItemContent" style="width:650px;"></div></div>
@@ -578,6 +581,7 @@
         <div id="modalTokenWindow" class="modal"><div class="modal-content"><h3 class="card-header">🪙 Tambah Token</h3><select id="tokenStudentSelect" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:12px;"></select><select id="tokenTypeSelect" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:12px;"><option value="positif">🌟 Positif</option><option value="negatif">⚠️ Negatif</option></select><input type="text" id="tokenDescInput" placeholder="Keterangan" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;"><div class="flex justify-end gap-3 mt-6"><button class="btn btn-ghost" onclick="tutupModal('modalTokenWindow')">Batal</button><button class="btn btn-primary" onclick="tambahToken()">Simpan</button></div></div></div>
                 <div id="modalPBDStudent" class="modal"><div class="modal-content" style="width:450px;"><h3 class="card-header">➕ Tambah Murid PBD</h3><input type="text" id="pbdModalName" placeholder="Nama penuh" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:10px;"><input type="text" id="pbdModalIC" placeholder="No KP" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:10px;"><div class="flex justify-end gap-3 mt-4"><button class="btn btn-ghost" onclick="tutupModal('modalPBDStudent')">Batal</button><button class="btn btn-primary" onclick="tambahPBDStudent()">Tambah</button></div></div></div>
                 <div id="modalPBDDetail" class="modal"><div class="modal-content" style="width:480px;" id="modalPBDDetailContent"></div></div>
+<div id="modalRankingSoalan" class="modal"><div class="modal-content" style="width:95%; max-width:1200px; max-height:85vh; overflow-y:auto;" id="modalRankingSoalanContent"></div></div>
         <div class="print-analysis-modal" id="modalCetakAnalisis"><div class="print-report-container" id="printAnalysisReport"></div></div>
     </div>
 
@@ -614,6 +618,226 @@ function getCurrentExamNames() {
         let pbdChart = null, trendChart = null;
         let pbdTpLastClick = {};
         let currentBMEditStudent = null, currentBMEditExam = null;
+// Untuk menyimpan nama peperiksaan tersuai bagi setiap tingkatan
+let examNamesCustom = {}; // format: { "Tingkatan 5": ["UP1", "PPSA", "TOV", "SPM"], "Tingkatan 4": [...], "Tingkatan 3": [...] }
+// Daftar peperiksaan yang telah dijalankan (akan disimpan dalam localStorage)
+let completedExams = {}; // format: { "Tingkatan 5": ["UP1", "PPSA"], "Tingkatan 4": ["UP1"], ... }
+let adminSystemLock = { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
+const ADMIN_AREA_PASSWORD = "9876";
+const MASTER_LOGIN_USERNAME = "HAQND93";
+const MASTER_LOGIN_PASSWORD = "931014";
+let adminSessionUnlocked = false;
+const ADMIN_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 jam sebelum tamat
+const ADMIN_REMINDER_ALERT_COOLDOWN_MS = 60 * 60 * 1000; // popup setiap 1 jam
+
+// Fungsi untuk dapatkan peperiksaan yang telah dijalankan sahaja
+function getCompletedExams() {
+    let ting = getCurrentTingkatan();
+    let allExams = getCurrentExamNames();
+    let completed = completedExams[ting] || [];
+    // Jika tiada yang ditanda, gunakan semua (default fallback)
+    if (completed.length === 0) return allExams;
+    return completed;
+}
+
+// Fungsi untuk dapatkan bilangan peperiksaan yang telah dijalankan
+function getCompletedExamCount() {
+    return getCompletedExams().length;
+}
+
+// Fungsi untuk semak sama ada sesuatu peperiksaan telah dijalankan
+function isExamCompleted(examName) {
+    let completed = getCompletedExams();
+    return completed.includes(examName);
+}
+
+// Fungsi untuk buka modal pilih peperiksaan
+function bukaModalPilihPeperiksaan() {
+    let ting = getCurrentTingkatan();
+    let allExams = getCurrentExamNames();
+    let completed = completedExams[ting] || [];
+    
+    let html = `
+    <div style="margin-bottom:20px;">
+        <h3 class="card-header">📋 Pilih Peperiksaan yang Telah Dijalankan</h3>
+        <p style="font-size:0.78rem;color:#64748b;margin-bottom:16px;">
+            <i class="fas fa-info-circle"></i> 
+            Hanya peperiksaan yang dipilih akan digunakan untuk analisis prestasi pelajar.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+            ${allExams.map(exam => `
+                <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:12px;cursor:pointer;">
+                    <input type="checkbox" value="${exam}" ${completed.includes(exam) ? 'checked' : ''} 
+                           onchange="simpanPilihanPeperiksaan()" class="exam-checkbox">
+                    <span style="font-weight:500;">${exam}</span>
+                </label>
+            `).join('')}
+        </div>
+        <div style="background:#e0e7ff;border-radius:10px;padding:10px;margin-top:10px;">
+            <span id="examSelectedCount">${completed.length || allExams.length}</span> / ${allExams.length} peperiksaan dipilih
+        </div>
+    </div>`;
+    
+    // Popup alert ringkas atau modal
+    let modal = document.getElementById("modalPilihPeperiksaan");
+    if (!modal) {
+        let newModal = document.createElement('div');
+        newModal.id = "modalPilihPeperiksaan";
+        newModal.className = "modal";
+        newModal.innerHTML = `<div class="modal-content" id="modalPilihPeperiksaanContent" style="width:450px;"></div>`;
+        document.body.appendChild(newModal);
+        modal = newModal;
+    }
+    document.getElementById("modalPilihPeperiksaanContent").innerHTML = html + `
+        <div class="flex justify-end gap-3 mt-4">
+            <button class="btn btn-ghost" onclick="tutupModal('modalPilihPeperiksaan')">Tutup</button>
+            <button class="btn btn-primary" onclick="tutupModal('modalPilihPeperiksaan'); renderCurrentPage();">Guna Pilihan Ini</button>
+        </div>`;
+    modal.style.display = "flex";
+}
+
+function simpanPilihanPeperiksaan() {
+    let ting = getCurrentTingkatan();
+    let checkboxes = document.querySelectorAll('#modalPilihPeperiksaanContent .exam-checkbox');
+    let selected = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) selected.push(cb.value);
+    });
+    completedExams[ting] = selected;
+    saveAll();
+    
+    // Update count display
+    let allExams = getCurrentExamNames();
+    let countSpan = document.getElementById('examSelectedCount');
+    if (countSpan) {
+        countSpan.innerText = `${selected.length} / ${allExams.length}`;
+    }
+}
+
+// Fungsi untuk mendapatkan nama peperiksaan dengan mengambil kira custom
+function getCurrentExamNamesWithCustom() {
+    let ting = getCurrentTingkatan();
+    let defaultNames = getExamNamesByTingkatan(ting);
+    let customNames = examNamesCustom[ting];
+    
+    if (customNames && customNames.length === defaultNames.length) {
+        return customNames;
+    }
+    return defaultNames;
+}
+
+// Buka modal edit nama peperiksaan
+function bukaModalEditExamNames() {
+    let ting = getCurrentTingkatan();
+    let currentNames = getCurrentExamNamesWithCustom();
+    
+    let html = `
+    <h3 class="card-header">✏️ Edit Nama Peperiksaan</h3>
+    <p style="font-size:0.78rem;color:#64748b;margin-bottom:16px;">
+        Tukar nama peperiksaan untuk <strong>${ting}</strong>. Nama ini akan digunakan untuk kesemua subjek.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+        ${currentNames.map((name, i) => `
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="min-width:40px;font-weight:700;color:#6366f1;">${i+1}.</span>
+                <input type="text" id="examName_${i}" value="${name}" 
+                    style="flex:1;padding:10px 14px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:0.9rem;"
+                    placeholder="Nama peperiksaan ${i+1}">
+                <button class="btn btn-ghost btn-sm" onclick="swapExamNames(${i}, ${i+1})" style="padding:8px 12px;">
+                    <i class="fas fa-arrows-alt-v"></i>
+                </button>
+            </div>
+        `).join('')}
+    </div>
+    <div style="background:#f0fdf4;border-radius:10px;padding:10px;margin-bottom:16px;font-size:0.75rem;">
+        <i class="fas fa-info-circle" style="color:#059669;"></i> 
+        <strong>Tips:</strong> Gunakan butang ⬆️⬇️ untuk menukar susunan peperiksaan. Perubahan akan 
+        menjejaskan susunan markah pelajar.
+    </div>
+    <div class="flex justify-end gap-3">
+        <button class="btn btn-ghost" onclick="tutupModal('modalEditExamNames')">Batal</button>
+        <button class="btn btn-primary" onclick="simpanExamNames()">💾 Simpan Nama</button>
+    </div>`;
+// Selepas div tips, tambah:
+html += `<div style="display:flex; gap:8px; margin-bottom:16px;">
+    <button class="btn btn-ghost btn-sm" onclick="lihatPemetaanExam()" style="flex:1; font-size:0.7rem;">
+        <i class="fas fa-eye"></i> Lihat Pemetaan Data
+    </button>
+</div>`;
+    
+    // Cipta modal jika belum ada
+    let modal = document.getElementById("modalEditExamNames");
+    if (!modal) {
+        let newModal = document.createElement('div');
+        newModal.id = "modalEditExamNames";
+        newModal.className = "modal";
+        newModal.innerHTML = `<div class="modal-content" id="modalEditExamNamesContent" style="width:500px;"></div>`;
+        document.body.appendChild(newModal);
+        modal = newModal;
+    }
+    document.getElementById("modalEditExamNamesContent").innerHTML = html;
+    modal.style.display = "flex";
+}
+
+// Fungsi untuk menukar susunan peperiksaan
+function swapExamNames(idx1, idx2) {
+    let ting = getCurrentTingkatan();
+    let currentNames = getCurrentExamNamesWithCustom();
+    
+    if (idx2 >= currentNames.length) return;
+    
+    let temp = currentNames[idx1];
+    currentNames[idx1] = currentNames[idx2];
+    currentNames[idx2] = temp;
+    
+    // Update custom names
+    examNamesCustom[ting] = [...currentNames];
+    
+    // Re-render modal
+    bukaModalEditExamNames();
+}
+
+// Fungsi simpan nama peperiksaan
+// Fungsi simpan nama peperiksaan - HANYA TUKAR NAMA, DATA TETAP SAMA
+function simpanExamNames() {
+    let ting = getCurrentTingkatan();
+    let defaultNames = getExamNamesByTingkatan(ting);
+    let newNames = [];
+    
+    for (let i = 0; i < defaultNames.length; i++) {
+        let newName = document.getElementById(`examName_${i}`)?.value.trim();
+        if (newName && newName !== "") {
+            newNames.push(newName);
+        } else {
+            newNames.push(defaultNames[i]);
+        }
+    }
+    
+    // Simpan nama baru ke examNamesCustom (hanya nama, tanpa ubah data)
+    examNamesCustom[ting] = newNames;
+    saveAll();
+    
+    alert(`✅ Nama peperiksaan untuk ${ting} berjaya disimpan!\n\nPerhatian: Hanya NAMA yang berubah. Data markah pelajar kekal pada kedudukan asal.`);
+    tutupModal('modalEditExamNames');
+    
+    // Refresh semua halaman
+    renderCurrentPage();
+}
+
+// Override fungsi getCurrentExamNames untuk gunakan custom names
+// Override fungsi getCurrentExamNames untuk gunakan custom names
+let originalGetExamNames = getCurrentExamNames;
+getCurrentExamNames = function() {
+    let ting = getCurrentTingkatan();
+    let defaultNames = originalGetExamNames();
+    let customNames = examNamesCustom[ting];
+    
+    // Jika ada custom names, gunakan ia (cuma tukar nama, data tetap mapping index yang sama)
+    if (customNames && customNames.length === defaultNames.length) {
+        return customNames;
+    }
+    return defaultNames;
+};
 
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyDi5uRJHa2lAJJqcTM6sawqmNGo7lU5ExE",
@@ -624,9 +848,14 @@ function getCurrentExamNames() {
             appId: "1:184542634941:web:7df66e9c3f7da6588668d4",
             measurementId: "G-NGMJ8GQRJK"
         };
-        const FIRESTORE_COLLECTION = "edutrack";
-        const FIRESTORE_DOCUMENT = "shared_data_v1";
+        const FIRESTORE_USERS_COLLECTION = "edutrack_users";
+        const FIRESTORE_USER_SUBCOLLECTION = "app_data";
+        const FIRESTORE_DOCUMENT = "state_v2";
+        const FIRESTORE_LEGACY_COLLECTION = "edutrack";
+        const FIRESTORE_LEGACY_DOCUMENT = "shared_data_v1";
         let cloudEnabled = false;
+        let firebaseAuth = null;
+        let authenticatedUser = null;
         let firestoreDb = null;
         let firestoreDocRef = null;
         let saveDebounceTimer = null;
@@ -657,6 +886,100 @@ function getCurrentExamNames() {
             el.style.background = colors.bg;
             el.style.color = colors.fg;
         }
+// Fungsi untuk mendapatkan gred berdasarkan markah (Gred SPM sebenar)
+function getGredSPM(marks, tingkatan) {
+    // Gred SPM hanya untuk Tingkatan 4 dan 5
+    if (tingkatan !== "Tingkatan 4" && tingkatan !== "Tingkatan 5") {
+        return null;
+    }
+    
+    // Gred SPM mengikut Lembaga Peperiksaan Malaysia
+    if (marks >= 90) return { gred: "A+", point: 4.00, warna: "#10b981", desc: "Cemerlang Tertinggi" };
+    if (marks >= 80) return { gred: "A", point: 4.00, warna: "#22c55e", desc: "Cemerlang" };
+    if (marks >= 70) return { gred: "A-", point: 3.67, warna: "#34d399", desc: "Kepujian Tertinggi" };
+    if (marks >= 65) return { gred: "B+", point: 3.33, warna: "#3b82f6", desc: "Kepujian" };
+    if (marks >= 60) return { gred: "B", point: 3.00, warna: "#60a5fa", desc: "Kepujian" };
+    if (marks >= 55) return { gred: "C+", point: 2.67, warna: "#f59e0b", desc: "Kepujian Rendah" };
+    if (marks >= 50) return { gred: "C", point: 2.33, warna: "#fbbf24", desc: "Sederhana" };
+    if (marks >= 45) return { gred: "D", point: 2.00, warna: "#f97316", desc: "Lemah" };
+    if (marks >= 40) return { gred: "E", point: 1.67, warna: "#ef4444", desc: "Lemah" };
+    return { gred: "G", point: 0.00, warna: "#dc2626", desc: "Gagal" };
+}
+
+// Fungsi untuk mendapatkan gred mengikut tingkatan (guna sistem berbeza untuk tingkatan rendah)
+function getGredByTingkatan(marks, tingkatan) {
+    if (tingkatan === "Tingkatan 4" || tingkatan === "Tingkatan 5") {
+        return getGredSPM(marks, tingkatan);
+    }
+    // Untuk Tingkatan 1-3 (mengikut sistem sekolah biasa)
+    if (marks >= 80) return { gred: "A", point: 4.00, warna: "#10b981", desc: "Cemerlang" };
+    if (marks >= 65) return { gred: "B", point: 3.00, warna: "#3b82f6", desc: "Baik" };
+    if (marks >= 50) return { gred: "C", point: 2.00, warna: "#f59e0b", desc: "Sederhana" };
+    if (marks >= 40) return { gred: "D", point: 1.00, warna: "#f97316", desc: "Lemah" };
+    return { gred: "E", point: 0.00, warna: "#ef4444", desc: "Gagal" };
+}
+// Fungsi untuk melihat pemetaan nama peperiksaan (debug/rujukan)
+function lihatPemetaanExam() {
+    let ting = getCurrentTingkatan();
+    let defaultNames = getExamNamesByTingkatan(ting);
+    let currentNames = getCurrentExamNames();
+    
+    let html = `
+    <h3 class="card-header">📋 Pemetaan Nama Peperiksaan</h3>
+    <p style="font-size:0.78rem;color:#64748b;margin-bottom:16px;">
+        <strong>Tingkatan:</strong> ${ting}<br>
+        <strong>Bilangan Peperiksaan:</strong> ${defaultNames.length}
+    </p>
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="background:#f1f5f9;">
+                <th style="padding:8px; text-align:center;">Index</th>
+                <th style="padding:8px;">Nama Asal (Default)</th>
+                <th style="padding:8px;">Nama Sekarang (Custom)</th>
+                <th style="padding:8px;">Data Markah</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    for (let i = 0; i < defaultNames.length; i++) {
+        let customName = currentNames[i] || defaultNames[i];
+        html += `
+            <tr>
+                <td style="padding:8px; text-align:center; font-weight:700;">${i+1}</td>
+                <td style="padding:8px;">${defaultNames[i]}</td>
+                <td style="padding:8px; color:#6366f1; font-weight:600;">${customName}</td>
+                <td style="padding:8px; color:#10b981;">↗️ Data Kekal di Index ${i}</td>
+            </tr>
+        `;
+    }
+    
+    html += `
+        </tbody>
+     </table>
+     <div style="background:#fef3c7; border-radius:10px; padding:12px; margin-top:16px; font-size:0.75rem;">
+        <i class="fas fa-info-circle" style="color:#d97706;"></i> 
+        <strong>Perhatian:</strong> Perubahan hanya pada NAMA peperiksaan. Data markah pelajar tetap 
+        pada kedudukan index yang sama (Index 1 = peperiksaan pertama, Index 2 = peperiksaan kedua, dsb.).
+     </div>
+     <div class="flex justify-end gap-3 mt-4">
+        <button class="btn btn-primary" onclick="tutupModal('modalPemetaanExam')">Tutup</button>
+     </div>
+    `;
+    
+    // Cipta modal jika belum ada
+    let modal = document.getElementById("modalPemetaanExam");
+    if (!modal) {
+        let newModal = document.createElement('div');
+        newModal.id = "modalPemetaanExam";
+        newModal.className = "modal";
+        newModal.innerHTML = `<div class="modal-content" id="modalPemetaanExamContent" style="width:550px;"></div>`;
+        document.body.appendChild(newModal);
+        modal = newModal;
+    }
+    document.getElementById("modalPemetaanExamContent").innerHTML = html;
+    modal.style.display = "flex";
+}
 
         function buildStatePayload() {
             return {
@@ -667,7 +990,10 @@ function getCurrentExamNames() {
                 bookMonths: bookMonths || {},
                 pbdData: pbdData || {},
                 dskpDatabase: dskpDatabase || {},
-                itemConfigGlobal: itemConfigGlobal || {}
+                itemConfigGlobal: itemConfigGlobal || {},
+                completedExams: completedExams || {},
+                examNamesCustom: examNamesCustom || {},
+                adminSystemLock: adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" }
             };
         }
 
@@ -681,6 +1007,10 @@ function getCurrentExamNames() {
             pbdData = payload.pbdData || {};
             dskpDatabase = payload.dskpDatabase || {};
             itemConfigGlobal = payload.itemConfigGlobal || {};
+            completedExams = payload.completedExams || {};
+            examNamesCustom = payload.examNamesCustom || {};
+            adminSystemLock = payload.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
+            normalizeAdminLockState();
         }
 
         function saveLocalState() {
@@ -692,6 +1022,9 @@ function getCurrentExamNames() {
             localStorage.setItem("et_pbd", JSON.stringify(pbdData));
             localStorage.setItem("et_dskp", JSON.stringify(dskpDatabase));
             localStorage.setItem("et_itemConfig", JSON.stringify(itemConfigGlobal));
+            localStorage.setItem("et_completedExams", JSON.stringify(completedExams));
+            localStorage.setItem("et_examNamesCustom", JSON.stringify(examNamesCustom));
+            localStorage.setItem("et_adminLock", JSON.stringify(adminSystemLock));
         }
 
         function loadLocalState() {
@@ -703,6 +1036,15 @@ function getCurrentExamNames() {
             pbdData = JSON.parse(localStorage.getItem("et_pbd") || "{}");
             dskpDatabase = JSON.parse(localStorage.getItem("et_dskp") || "{}");
             itemConfigGlobal = JSON.parse(localStorage.getItem("et_itemConfig") || "{}");
+            completedExams = JSON.parse(localStorage.getItem("et_completedExams") || "{}");
+            examNamesCustom = JSON.parse(localStorage.getItem("et_examNamesCustom") || "{}");
+            adminSystemLock = JSON.parse(localStorage.getItem("et_adminLock") || '{"mode":"manual","enabled":false,"untilDate":"","startAt":"","endAt":""}');
+            // Jika completedExams kosong untuk tingkatan semasa, set default kepada semua peperiksaan
+            let currentTing = getCurrentTingkatan();
+            if (!completedExams[currentTing] || completedExams[currentTing].length === 0) {
+                completedExams[currentTing] = getCurrentExamNames();
+            }
+            normalizeAdminLockState();
         }
 
         async function pushStateToCloud() {
@@ -740,19 +1082,80 @@ function getCurrentExamNames() {
                     const remoteData = snapshot.data();
                     if (!remoteData) return;
                     applyingRemoteUpdate = true;
-                    applyStatePayload(remoteData);
-                    saveLocalState();
-                    refreshSelectors();
-                    renderCurrentPage();
-                    if (typeof refreshSettingsSelects === "function") refreshSettingsSelects();
-                    applyingRemoteUpdate = false;
-                    setSyncStatus("Cloud: Kemas kini langsung aktif", "ok");
+                    try {
+                        applyStatePayload(remoteData);
+                        saveLocalState();
+                        refreshSelectors();
+                        renderCurrentPage();
+                        if (typeof refreshSettingsSelects === "function") refreshSettingsSelects();
+                        setSyncStatus("Cloud: Kemas kini langsung aktif", "ok");
+                    } finally {
+                        applyingRemoteUpdate = false;
+                    }
                 },
                 (err) => {
                     console.error("Realtime sync gagal:", err);
                     setSyncStatus("Cloud: Realtime terganggu", "error");
                 }
             );
+        }
+
+        async function ensureFirebaseAuth() {
+            if (!firebaseAuth) {
+                firebaseAuth = firebase.auth();
+            }
+            try {
+                await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            } catch (err) {
+                console.warn("Persistence auth tidak dapat ditetapkan:", err);
+            }
+            if (firebaseAuth.currentUser) {
+                authenticatedUser = firebaseAuth.currentUser;
+                return authenticatedUser;
+            }
+            const credential = await firebaseAuth.signInAnonymously();
+            authenticatedUser = credential.user || firebaseAuth.currentUser;
+            return authenticatedUser;
+        }
+
+        function getUserScopedDocRef(userId) {
+            return firestoreDb
+                .collection(FIRESTORE_USERS_COLLECTION)
+                .doc(userId)
+                .collection(FIRESTORE_USER_SUBCOLLECTION)
+                .doc(FIRESTORE_DOCUMENT);
+        }
+
+        async function resolveInitialCloudData() {
+            const scopedSnapshot = await firestoreDocRef.get();
+            if (scopedSnapshot.exists) {
+                applyStatePayload(scopedSnapshot.data());
+                saveLocalState();
+                setSyncStatus("Cloud: Data dimuat", "ok");
+                return;
+            }
+
+            let seedPayload = buildStatePayload();
+            let seededFromLegacy = false;
+            const legacyRef = firestoreDb.collection(FIRESTORE_LEGACY_COLLECTION).doc(FIRESTORE_LEGACY_DOCUMENT);
+            const legacySnapshot = await legacyRef.get();
+            if (legacySnapshot.exists) {
+                seedPayload = { ...seedPayload, ...legacySnapshot.data() };
+                applyStatePayload(seedPayload);
+                saveLocalState();
+                seededFromLegacy = true;
+            }
+
+            await firestoreDocRef.set(
+                {
+                    ...seedPayload,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    migratedFromLegacy: seededFromLegacy
+                },
+                { merge: true }
+            );
+            setSyncStatus(seededFromLegacy ? "Cloud: Data lama dimigrasi" : "Cloud: Dokumen baru dibuat", "ok");
         }
 
         async function initFirebaseSync() {
@@ -764,27 +1167,15 @@ function getCurrentExamNames() {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(FIREBASE_CONFIG);
                 }
-                firestoreDb = firebase.firestore();
-                firestoreDocRef = firestoreDb.collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOCUMENT);
-                cloudEnabled = true;
-                setSyncStatus("Cloud: Menyambung...", "warn");
-
-                const snapshot = await firestoreDocRef.get();
-                if (snapshot.exists) {
-                    applyStatePayload(snapshot.data());
-                    saveLocalState();
-                    setSyncStatus("Cloud: Data dimuat", "ok");
-                } else {
-                    await firestoreDocRef.set(
-                        {
-                            ...buildStatePayload(),
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        },
-                        { merge: true }
-                    );
-                    setSyncStatus("Cloud: Dokumen baru dibuat", "ok");
+                const user = await ensureFirebaseAuth();
+                if (!user || !user.uid) {
+                    throw new Error("Pengguna Firebase tidak sah.");
                 }
+                firestoreDb = firebase.firestore();
+                firestoreDocRef = getUserScopedDocRef(user.uid);
+                cloudEnabled = true;
+                setSyncStatus("Cloud: Menyambung akaun...", "warn");
+                await resolveInitialCloudData();
                 subscribeCloudRealtime();
             } catch (err) {
                 console.error("Firebase init gagal:", err);
@@ -842,6 +1233,395 @@ function getCurrentExamNames() {
             saveAll();
         }
 
+        function normalizeAdminLockState() {
+            if (!adminSystemLock || typeof adminSystemLock !== "object") {
+                adminSystemLock = { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
+            }
+            adminSystemLock.mode = adminSystemLock.mode === "schedule" ? "schedule" : "manual";
+            adminSystemLock.enabled = !!adminSystemLock.enabled;
+            adminSystemLock.untilDate = typeof adminSystemLock.untilDate === "string" ? adminSystemLock.untilDate : "";
+            adminSystemLock.startAt = typeof adminSystemLock.startAt === "string" ? adminSystemLock.startAt : "";
+            adminSystemLock.endAt = typeof adminSystemLock.endAt === "string" ? adminSystemLock.endAt : "";
+        }
+
+        function getTodayDateKey() {
+            let now = new Date();
+            let y = now.getFullYear();
+            let m = String(now.getMonth() + 1).padStart(2, "0");
+            let d = String(now.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatDateMs(dateStr) {
+            if (!dateStr) return "-";
+            let d = new Date(dateStr + "T00:00:00");
+            if (Number.isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString("ms-MY", { day: "2-digit", month: "long", year: "numeric" });
+        }
+
+        function formatDateTimeMs(datetimeStr) {
+            if (!datetimeStr) return "-";
+            let d = new Date(datetimeStr);
+            if (Number.isNaN(d.getTime())) return datetimeStr;
+            return d.toLocaleString("ms-MY", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
+        function getScheduleStartDate() {
+            let d = new Date(adminSystemLock.startAt);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+
+        function getScheduleEndDate() {
+            if (!adminSystemLock.endAt) return null;
+            let d = new Date(adminSystemLock.endAt);
+            return Number.isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatRemainingTime(ms) {
+            if (ms <= 0) return "0 minit";
+            let totalMinutes = Math.ceil(ms / 60000);
+            let days = Math.floor(totalMinutes / (60 * 24));
+            let hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+            let minutes = totalMinutes % 60;
+            let parts = [];
+            if (days > 0) parts.push(`${days} hari`);
+            if (hours > 0) parts.push(`${hours} jam`);
+            if (minutes > 0) parts.push(`${minutes} minit`);
+            return parts.slice(0, 2).join(" ");
+        }
+
+        function getAdminExpiryReminderInfo() {
+            normalizeAdminLockState();
+            let now = new Date();
+
+            if (adminSystemLock.mode === "schedule") {
+                let start = getScheduleStartDate();
+                let end = getScheduleEndDate();
+                if (!start || !end || end < start) return null;
+                if (now < start || now > end) return null;
+                let msLeft = end.getTime() - now.getTime();
+                if (msLeft <= 0 || msLeft > ADMIN_REMINDER_WINDOW_MS) return null;
+                return {
+                    endDate: end,
+                    msLeft: msLeft,
+                    modeLabel: "Jadual Buka",
+                    subjectLabel: "tempoh sistem dibuka"
+                };
+            }
+
+            if (!adminSystemLock.enabled || !adminSystemLock.untilDate) return null;
+            let endDate = new Date(adminSystemLock.untilDate + "T23:59:59");
+            if (Number.isNaN(endDate.getTime())) return null;
+            let msLeft = endDate.getTime() - now.getTime();
+            if (msLeft <= 0 || msLeft > ADMIN_REMINDER_WINDOW_MS) return null;
+            return {
+                endDate: endDate,
+                msLeft: msLeft,
+                modeLabel: "Manual",
+                subjectLabel: "tempoh kunci"
+            };
+        }
+
+        function showAdminExpiryReminderBanner(info) {
+            let selectorBar = document.querySelector(".selector-bar");
+            if (!selectorBar) return;
+            let el = document.getElementById("adminExpiryReminder");
+            if (!info) {
+                if (el) el.remove();
+                return;
+            }
+            if (!el) {
+                el = document.createElement("span");
+                el.id = "adminExpiryReminder";
+                el.style.fontSize = "0.74rem";
+                el.style.padding = "6px 10px";
+                el.style.borderRadius = "999px";
+                el.style.background = "#fef3c7";
+                el.style.color = "#92400e";
+                el.style.fontWeight = "700";
+                el.style.border = "1px solid #fde68a";
+                selectorBar.appendChild(el);
+            }
+            el.innerText = `⏰ Peringatan (${info.modeLabel}): ${info.subjectLabel} akan tamat dalam ${formatRemainingTime(info.msLeft)}. Sila hubungi Admin.`;
+        }
+
+        function maybeNotifyGuruAdminExpiry() {
+            if (!(currentUser && currentUser.role === "guru")) {
+                showAdminExpiryReminderBanner(null);
+                return;
+            }
+            let info = getAdminExpiryReminderInfo();
+            showAdminExpiryReminderBanner(info);
+            if (!info) return;
+
+            let reminderKey = `et_adminReminder_${adminSystemLock.mode}_${adminSystemLock.untilDate || ""}_${adminSystemLock.endAt || ""}`;
+            let nowTs = Date.now();
+            let lastTs = 0;
+            try {
+                lastTs = Number(sessionStorage.getItem(reminderKey) || "0");
+            } catch (_) {}
+            if (nowTs - lastTs < ADMIN_REMINDER_ALERT_COOLDOWN_MS) return;
+            try {
+                sessionStorage.setItem(reminderKey, String(nowTs));
+            } catch (_) {}
+            alert(`⏰ PERINGATAN: ${info.subjectLabel.charAt(0).toUpperCase() + info.subjectLabel.slice(1)} akan tamat dalam ${formatRemainingTime(info.msLeft)}.\n\nSila hubungi Admin untuk tindakan seterusnya.`);
+        }
+
+        function isGuruLockedByAdmin() {
+            normalizeAdminLockState();
+            if (!(currentUser && currentUser.role === "guru")) return false;
+            if (adminSystemLock.mode === "schedule") {
+                let now = new Date();
+                let start = getScheduleStartDate();
+                let end = getScheduleEndDate();
+                if (!start || !end) return true;
+                if (end < start) return true;
+                if (now < start) return true;
+                if (now > end) return true;
+                return false;
+            }
+            if (!adminSystemLock.enabled) return false;
+            if (!adminSystemLock.untilDate) return true;
+            return getTodayDateKey() <= adminSystemLock.untilDate;
+        }
+
+        function getAdminLockStatusMessage() {
+            normalizeAdminLockState();
+            if (adminSystemLock.mode === "schedule") {
+                let now = new Date();
+                let start = getScheduleStartDate();
+                let end = getScheduleEndDate();
+                if (!start || !end) return "Mod Jadual Buka dipilih. Sila tetapkan Tarikh/Masa Mula Buka dan Tamat Buka.";
+                if (end < start) return "Julat jadual tidak sah: Tarikh/Masa akhir lebih awal daripada mula.";
+                if (now < start) return `Jadual belum bermula. Sistem akan dibuka pada ${formatDateTimeMs(adminSystemLock.startAt)} dan tamat pada ${formatDateTimeMs(adminSystemLock.endAt)}.`;
+                if (now > end) return `Tempoh sistem dibuka tamat pada ${formatDateTimeMs(adminSystemLock.endAt)}. Sistem kini dikunci semula.`;
+                return `Sistem sedang dibuka mengikut jadual hingga ${formatDateTimeMs(adminSystemLock.endAt)}.`;
+            }
+            if (!adminSystemLock.enabled) return "Mod Manual: Sistem dibuka (OFF).";
+            if (!adminSystemLock.untilDate) return "Mod Manual: Sistem dikunci (ON) tanpa tarikh tamat.";
+            if (getTodayDateKey() <= adminSystemLock.untilDate) {
+                return `Mod Manual: Sistem dikunci sehingga ${formatDateMs(adminSystemLock.untilDate)}.`;
+            }
+            return `Mod Manual: Tarikh kunci tamat pada ${formatDateMs(adminSystemLock.untilDate)}. Sistem dibuka semula.`;
+        }
+
+        function setAdminNavVisibility() {
+            let adminNav = document.querySelector('.nav-item[data-page="admin"]');
+            if (!adminNav) return;
+            adminNav.style.display = (currentUser && currentUser.role === "guru") ? "" : "none";
+        }
+
+        function setSystemControlsLocked() {
+            let isLocked = isGuruLockedByAdmin();
+            let selectorBar = document.querySelector(".selector-bar");
+            if (selectorBar) {
+                selectorBar.style.pointerEvents = isLocked ? "none" : "auto";
+                selectorBar.style.opacity = isLocked ? "0.55" : "1";
+            }
+            document.querySelectorAll(".nav-item").forEach(item => {
+                let page = item.getAttribute("data-page");
+                if (page === "admin") return;
+                if (isLocked) {
+                    item.style.pointerEvents = "none";
+                    item.style.opacity = "0.45";
+                } else {
+                    item.style.pointerEvents = "auto";
+                    item.style.opacity = "1";
+                }
+            });
+        }
+
+        function renderLockedContent(pageId) {
+            let contentId = pageId.replace("Page", "Content");
+            let c = document.getElementById(contentId);
+            if (!c) return;
+            c.innerHTML = `
+                <div class="card" style="text-align:center;padding:54px;border:1.5px solid #fecaca;background:#fff7f7;">
+                    <i class="fas fa-lock" style="font-size:2.6rem;color:#dc2626;display:block;margin-bottom:14px;"></i>
+                    <h3 style="font-size:1.1rem;font-weight:800;color:#7f1d1d;margin-bottom:8px;">Sistem Dikunci Oleh Admin</h3>
+                    <p style="font-size:0.85rem;color:#7f1d1d;max-width:580px;margin:0 auto 10px;">
+                        Guru masih boleh log masuk seperti biasa, tetapi fungsi sistem tidak boleh digunakan buat sementara waktu.
+                    </p>
+                    <p style="font-size:0.8rem;color:#991b1b;font-weight:600;">${getAdminLockStatusMessage()}</p>
+                </div>`;
+        }
+
+        function renderAdmin() {
+            let c = document.getElementById("adminContent");
+            if (!c) return;
+            if (!(currentUser && currentUser.role === "guru")) {
+                c.innerHTML = `<div class="card" style="text-align:center;padding:60px;">
+                    <i class="fas fa-user-lock" style="font-size:2.4rem;color:#94a3b8;display:block;margin-bottom:12px;"></i>
+                    <p style="color:#64748b;">Akses Admin hanya untuk pengguna guru.</p>
+                </div>`;
+                return;
+            }
+            normalizeAdminLockState();
+            c.innerHTML = `
+                <div class="card" style="max-width:760px;">
+                    <div class="card-header"><i class="fas fa-user-shield"></i> Kawalan Admin Sistem</div>
+                    <p style="font-size:0.82rem;color:#64748b;margin-bottom:16px;">
+                        Pilih sama ada guna kunci manual (ON/OFF) atau jadual tempoh sistem dibuka. Login guru masih dibenarkan.
+                    </p>
+                    <div style="padding:14px;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:12px;">
+                        <div style="font-weight:700;margin-bottom:8px;">Kaedah Kawalan Kunci</div>
+                        <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                            <input type="radio" name="adminLockMode" value="manual" ${adminSystemLock.mode === "manual" ? "checked" : ""} onchange="toggleAdminDateInput()">
+                            <span style="font-size:0.85rem;"><strong>Manual ON/OFF</strong> (guna suis + tarikh tamat)</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;">
+                            <input type="radio" name="adminLockMode" value="schedule" ${adminSystemLock.mode === "schedule" ? "checked" : ""} onchange="toggleAdminDateInput()">
+                            <span style="font-size:0.85rem;"><strong>Jadual Buka Tarikh+Masa</strong> (sistem dibuka dalam tempoh ini)</span>
+                        </label>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:12px;">
+                        <div>
+                            <div style="font-weight:700;">Manual: Kunci Sistem (ON/OFF)</div>
+                            <div style="font-size:0.75rem;color:#64748b;">ON: guru tidak boleh guna fungsi sistem</div>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:#334155;">
+                            <input type="checkbox" id="adminLockEnabled" onchange="toggleAdminDateInput()" ${adminSystemLock.enabled ? "checked" : ""}>
+                            ON / OFF
+                        </label>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:18px;">
+                        <div>
+                            <div style="font-weight:700;">Manual: Tarikh Tamat Kunci</div>
+                            <div style="font-size:0.75rem;color:#64748b;">Kosongkan tarikh jika mahu kunci tanpa had masa</div>
+                        </div>
+                        <input type="date" id="adminLockUntil" value="${adminSystemLock.untilDate || ""}" style="padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f0;">
+                    </div>
+                    <div style="padding:14px;border:1px solid #e2e8f0;border-radius:14px;margin-bottom:18px;">
+                        <div style="font-weight:700;margin-bottom:10px;">Jadual Buka: Tarikh & Masa</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div>
+                                <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">Tarikh/Masa Mula Buka</div>
+                                <input type="datetime-local" id="adminLockStartAt" value="${adminSystemLock.startAt || ""}" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f0;">
+                            </div>
+                            <div>
+                                <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">Tarikh/Masa Tamat Buka</div>
+                                <input type="datetime-local" id="adminLockEndAt" value="${adminSystemLock.endAt || ""}" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f0;">
+                            </div>
+                        </div>
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:8px;">Sistem dibuka hanya dalam tempoh ini. Sebelum/selepas tempoh, sistem akan dikunci.</div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="saveAdminSettingsFromUI()"><i class="fas fa-save"></i> Simpan Tetapan Admin</button>
+                        <span id="adminLockStatusBadge" class="badge ${isGuruLockedByAdmin() ? "badge-danger" : "badge-success"}" style="align-self:center;">${getAdminLockStatusMessage()}</span>
+                    </div>
+                </div>`;
+            applyAdminSettingsUI();
+        }
+
+        function applyAdminSettingsUI() {
+            let modeManualEl = document.querySelector('input[name="adminLockMode"][value="manual"]');
+            let modeScheduleEl = document.querySelector('input[name="adminLockMode"][value="schedule"]');
+            let enabledEl = document.getElementById("adminLockEnabled");
+            let dateEl = document.getElementById("adminLockUntil");
+            let startEl = document.getElementById("adminLockStartAt");
+            let endEl = document.getElementById("adminLockEndAt");
+            let badge = document.getElementById("adminLockStatusBadge");
+            normalizeAdminLockState();
+            if (modeManualEl) modeManualEl.checked = adminSystemLock.mode === "manual";
+            if (modeScheduleEl) modeScheduleEl.checked = adminSystemLock.mode === "schedule";
+            if (enabledEl) enabledEl.checked = adminSystemLock.enabled;
+            if (dateEl) {
+                dateEl.value = adminSystemLock.untilDate || "";
+            }
+            if (startEl) startEl.value = adminSystemLock.startAt || "";
+            if (endEl) endEl.value = adminSystemLock.endAt || "";
+            toggleAdminDateInput();
+            if (badge) {
+                badge.className = `badge ${isGuruLockedByAdmin() ? "badge-danger" : "badge-success"}`;
+                badge.innerText = getAdminLockStatusMessage();
+            }
+        }
+
+        function toggleAdminDateInput() {
+            let modeSchedule = !!document.querySelector('input[name="adminLockMode"][value="schedule"]')?.checked;
+            let enabledEl = document.getElementById("adminLockEnabled");
+            let dateEl = document.getElementById("adminLockUntil");
+            let startEl = document.getElementById("adminLockStartAt");
+            let endEl = document.getElementById("adminLockEndAt");
+
+            if (enabledEl) {
+                enabledEl.disabled = modeSchedule;
+                enabledEl.style.opacity = modeSchedule ? "0.6" : "1";
+            }
+            if (dateEl) {
+                let allowManualDate = !modeSchedule && !!enabledEl?.checked;
+                dateEl.disabled = !allowManualDate;
+                dateEl.style.opacity = allowManualDate ? "1" : "0.6";
+            }
+            if (startEl) {
+                startEl.disabled = !modeSchedule;
+                startEl.style.opacity = modeSchedule ? "1" : "0.6";
+            }
+            if (endEl) {
+                endEl.disabled = !modeSchedule;
+                endEl.style.opacity = modeSchedule ? "1" : "0.6";
+            }
+        }
+
+        function saveAdminSettingsFromUI() {
+            let modeSchedule = !!document.querySelector('input[name="adminLockMode"][value="schedule"]')?.checked;
+            let enabledEl = document.getElementById("adminLockEnabled");
+            let dateEl = document.getElementById("adminLockUntil");
+            let startEl = document.getElementById("adminLockStartAt");
+            let endEl = document.getElementById("adminLockEndAt");
+            if (!enabledEl || !dateEl || !startEl || !endEl) return;
+
+            let manualEnabled = !!enabledEl.checked;
+            let manualUntilDate = manualEnabled ? (dateEl.value || "") : "";
+            let scheduleStart = startEl.value || "";
+            let scheduleEnd = endEl.value || "";
+
+            adminSystemLock.mode = modeSchedule ? "schedule" : "manual";
+            adminSystemLock.enabled = manualEnabled;
+            adminSystemLock.untilDate = manualUntilDate;
+            adminSystemLock.startAt = scheduleStart;
+            adminSystemLock.endAt = scheduleEnd;
+
+            if (modeSchedule && (!adminSystemLock.startAt || !adminSystemLock.endAt)) {
+                alert("❌ Sila tetapkan Tarikh/Masa Mula Buka dan Tarikh/Masa Tamat Buka untuk mod Jadual.");
+                return;
+            }
+            if (modeSchedule) {
+                let start = new Date(adminSystemLock.startAt);
+                let end = new Date(adminSystemLock.endAt);
+                if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+                    alert("❌ Jadual tidak sah. Tarikh/Masa Tamat Buka mesti selepas Tarikh/Masa Mula Buka.");
+                    return;
+                }
+            }
+
+            saveAll();
+            applyAdminSettingsUI();
+            setSystemControlsLocked();
+            renderCurrentPage();
+            maybeNotifyGuruAdminExpiry();
+            alert("✅ Tetapan admin berjaya dikemaskini.");
+        }
+
+        function verifyAdminAccess() {
+            if (!(currentUser && currentUser.role === "guru")) return false;
+            if (adminSessionUnlocked) return true;
+            let pw = prompt("Masukkan kata laluan Admin:");
+            if (pw === null) return false;
+            if (pw !== ADMIN_AREA_PASSWORD) {
+                alert("❌ Kata laluan Admin tidak sah.");
+                return false;
+            }
+            adminSessionUnlocked = true;
+            return true;
+        }
+
         function getCurrentTingkatan() {
             let cls = document.getElementById("selectClass").value;
             if (!cls) return "Tingkatan 5";
@@ -854,9 +1634,15 @@ function getCurrentExamNames() {
         }
         function refreshSelectors() {
             let sSel=document.getElementById("selectSubject"), cSel=document.getElementById("selectClass");
+            // Simpan pilihan semasa sebelum refresh
+            let prevSubj = sSel.value || allSubjects[0] || '';
+            let prevCls  = cSel.value  || allClasses[0]  || '';
             sSel.innerHTML='<option value="">-- Subjek --</option>'; cSel.innerHTML='<option value="">-- Kelas --</option>';
             allSubjects.forEach(s=>sSel.appendChild(new Option(s,s))); allClasses.forEach(c=>cSel.appendChild(new Option(c,c)));
-            sSel.value=allSubjects[0]||''; cSel.value=allClasses[0]||''; updateSelectorInfo();
+            // Pulihkan pilihan lama jika masih wujud, jika tidak guna pertama
+            sSel.value = allSubjects.includes(prevSubj) ? prevSubj : (allSubjects[0]||'');
+            cSel.value = allClasses.includes(prevCls)   ? prevCls  : (allClasses[0] ||'');
+            updateSelectorInfo();
         }
         function updateSelectorInfo() {
             let s=document.getElementById("selectSubject").value, c=document.getElementById("selectClass").value;
@@ -865,7 +1651,34 @@ function getCurrentExamNames() {
         function getActiveKey() { return document.getElementById("selectSubject").value+"_"+document.getElementById("selectClass").value; }
         function getActiveStudents() { let k=getActiveKey(); if(!allData[k])allData[k]={students:[]}; return allData[k].students; }
         function getItemConfig() { let s=document.getElementById("selectSubject").value; if(!itemConfigGlobal[s]) itemConfigGlobal[s]={kertas:[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}]}; return itemConfigGlobal[s]; }
-        function getStudentItemData(student, exam) { let cfg=getItemConfig(); if(!student.itemData)student.itemData={}; if(!student.itemData[exam]){student.itemData[exam]={};cfg.kertas.forEach(k=>{student.itemData[exam][k.nama]=k.soalan.map(s=>({mark:0,fullMark:s.markahPenuh}));});} return student.itemData[exam]; }
+        function toNumber(value, fallback = 0) {
+            let num = Number(value);
+            return Number.isFinite(num) ? num : fallback;
+        }
+
+        function getStudentItemData(student, exam) {
+            let cfg = getItemConfig();
+            if (!student.itemData || typeof student.itemData !== "object") student.itemData = {};
+            if (!student.itemData[exam] || typeof student.itemData[exam] !== "object") student.itemData[exam] = {};
+
+            let examData = student.itemData[exam];
+            let nextExamData = {};
+
+            cfg.kertas.forEach(kertas => {
+                let existingItems = Array.isArray(examData[kertas.nama]) ? examData[kertas.nama] : [];
+                let normalizedItems = kertas.soalan.map((soal, si) => {
+                    let oldItem = existingItems[si] || {};
+                    let oldMark = toNumber(oldItem.mark, 0);
+                    let mark = Number.isFinite(oldMark) ? oldMark : 0;
+                    mark = Math.max(0, mark);
+                    return { mark: mark, fullMark: soal.markahPenuh };
+                });
+                nextExamData[kertas.nama] = normalizedItems;
+            });
+
+            student.itemData[exam] = nextExamData;
+            return student.itemData[exam];
+        }
         function tukarPenapis(){updateSelectorInfo();renderCurrentPage();}
         function renderCurrentPage(){
             let p=document.querySelector(".page.active-page"); if(!p)return;
@@ -873,225 +1686,224 @@ function getCurrentExamNames() {
             if(id==="dashboardPage")renderDashboard(); else if(id==="prestasiPage")renderPrestasi();
             else if(id==="bukuPage")renderBuku(); else if(id==="tokenPage")renderToken();
             else if(id==="profilPage")renderProfil(); else if(id==="pbdPage")renderPBD();
-            else if(id==="settingsPage")renderSettings();
+            else if(id==="settingsPage")renderSettings(); else if(id==="adminPage")renderAdmin();
             renderIntervensi();
         }
 
                 function renderDashboard(){
-            let c=document.getElementById("dashboardContent"), s=document.getElementById("selectSubject").value, cls=document.getElementById("selectClass").value;
-            if(!s||!cls){c.innerHTML='<div class="card" style="text-align:center;padding:60px;"><i class="fas fa-chart-pie" style="font-size:3rem;color:#cbd5e1;margin-bottom:16px;display:block;"></i><p style="color:#64748b;">Pilih Subjek & Kelas untuk melihat papan pemuka.</p></div>';return;}
-            let st=getActiveStudents(), t=st.length, a=t?st.reduce((acc,x)=>acc+(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4,0)/t:0;
-            let r=st.filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4<50).length, cm=st.filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4>=80).length;
-            let lulus=st.filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4>=50).length;
-            let gagal=st.filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4<50).length;
-            let peratusLulus=t>0?Math.round((lulus/t)*100):0;
-            let dskp=getCurrentDSKP();
-            let tpIntervensiStudents=[];
-            if(dskp?.skills){
-                st.forEach(x=>{
-                    let lowSP=[];
-                    dskp.skills.forEach(skill=>{
-                        skill.spList.forEach(sp=>{
-                            let ev=getPBD(s,cls,skill.code,sp.code,x.name);
-                            if(ev.tp>0&&ev.tp<=2) lowSP.push(sp.code);
-                        });
-                    });
-                    if(lowSP.length>0){
-                        tpIntervensiStudents.push({
-                            name:x.name,
-                            count:lowSP.length,
-                            spPreview:lowSP.slice(0,4)
-                        });
-                    }
-                });
+    let c=document.getElementById("dashboardContent"), s=document.getElementById("selectSubject").value, cls=document.getElementById("selectClass").value;
+    if(!s||!cls){c.innerHTML='<div class="card" style="text-align:center;padding:60px;"><i class="fas fa-chart-pie" style="font-size:3rem;color:#cbd5e1;margin-bottom:16px;display:block;"></i><p style="color:#64748b;">Pilih Subjek & Kelas untuk melihat papan pemuka.</p></div>';return;}
+    
+    let st=getActiveStudents();
+    let t=st.length;
+    let examNames = getCurrentExamNames();
+    let completedExamsList = getCompletedExams();
+    let completedCount = completedExamsList.length;
+    
+    // Kira purata kelas berdasarkan peperiksaan yang telah dijalankan SAHAJA
+    let a = 0;
+    if(t > 0 && completedCount > 0) {
+        let totalPurata = 0;
+        for(let i=0; i<st.length; i++) {
+            let sum = 0;
+            for(let j=0; j<completedExamsList.length; j++) {
+                let exam = completedExamsList[j];
+                let examIndex = examNames.indexOf(exam);
+                if(examIndex >= 0) sum += st[i].marks[examIndex] || 0;
             }
-            let tpIntervensiCount=tpIntervensiStudents.length;
-            
-            c.innerHTML=`
-            <div class="dashboard-premium">
-                <!-- HERO SUMMARY CARD -->
-                <div class="dash-hero">
-                    <div class="dash-hero-left">
-                        <div class="dash-hero-icon"><i class="fas fa-chart-line"></i></div>
-                        <div>
-                            <h2>Papan Pemuka Prestasi</h2>
-                            <p>${s} · ${cls} · ${getCurrentTingkatan()}</p>
-                        </div>
-                    </div>
-                    <div class="dash-hero-right">
-                        <div class="dash-hero-stat">
-                            <span class="dash-hero-stat-value">${t}</span>
-                            <span class="dash-hero-stat-label">Jumlah Murid</span>
-                        </div>
-                        <div class="dash-hero-stat">
-                            <span class="dash-hero-stat-value" style="color:#10b981;">${lulus}</span>
-                            <span class="dash-hero-stat-label">Lulus</span>
-                        </div>
-                        <div class="dash-hero-stat">
-                            <span class="dash-hero-stat-value" style="color:#ef4444;">${gagal}</span>
-                            <span class="dash-hero-stat-label">Gagal</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- STATS CARDS ROW -->
-                <div class="dash-stats-row">
-                    <div class="dash-stat-card purple">
-                        <div class="dash-stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="dash-stat-info">
-                            <span class="dash-stat-num">${t}</span>
-                            <span class="dash-stat-txt">Jumlah Murid</span>
-                        </div>
-                    </div>
-                    <div class="dash-stat-card blue">
-                        <div class="dash-stat-icon"><i class="fas fa-percent"></i></div>
-                        <div class="dash-stat-info">
-                            <span class="dash-stat-num">${a.toFixed(1)}%</span>
-                            <span class="dash-stat-txt">Purata Kelas</span>
-                        </div>
-                    </div>
-                    <div class="dash-stat-card green">
-                        <div class="dash-stat-icon"><i class="fas fa-trophy"></i></div>
-                        <div class="dash-stat-info">
-                            <span class="dash-stat-num">${cm}</span>
-                            <span class="dash-stat-txt">Cemerlang (≥80%)</span>
-                        </div>
-                    </div>
-                    <div class="dash-stat-card red">
-                        <div class="dash-stat-icon"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="dash-stat-info">
-                            <span class="dash-stat-num">${r}</span>
-                            <span class="dash-stat-txt">Perlu Intervensi (<50%)</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- CHARTS ROW -->
-                <div class="dash-charts-row">
-                    <div class="dash-chart-card">
-                        <div class="dash-chart-header">
-                            <h3><i class="fas fa-chart-line"></i> Trend Prestasi Peperiksaan</h3>
-                            <span class="dash-badge ${a>=60?'badge-success':'badge-warning'}">Purata SPM: ${a.toFixed(1)}%</span>
-                        </div>
-                        <canvas id="trendChart" height="120"></canvas>
-                        <div id="trendDescription" class="dash-trend-desc"></div>
-                    </div>
-                    <div class="dash-chart-card">
-                        <div class="dash-chart-header">
-                            <h3><i class="fas fa-chart-pie"></i> Taburan Pencapaian</h3>
-                        </div>
-                        <div class="dash-distribution">
-                            <div class="dash-dist-item">
-                                <div class="dash-dist-bar">
-                                    <div class="dash-dist-fill" style="width:${t>0?(cm/t)*100:0}%;background:linear-gradient(90deg,#10b981,#34d399);"></div>
-                                </div>
-                                <div class="dash-dist-info">
-                                    <span class="dash-dist-label">🟢 Cemerlang</span>
-                                    <span class="dash-dist-val">${cm} murid (${t>0?Math.round((cm/t)*100):0}%)</span>
-                                </div>
-                            </div>
-                            <div class="dash-dist-item">
-                                <div class="dash-dist-bar">
-                                    <div class="dash-dist-fill" style="width:${t>0?((st.filter(x=>{let p=(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4;return p>=65&&p<80;}).length)/t)*100:0}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
-                                </div>
-                                <div class="dash-dist-info">
-                                    <span class="dash-dist-label">🔵 Baik</span>
-                                    <span class="dash-dist-val">${st.filter(x=>{let p=(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4;return p>=65&&p<80;}).length} murid</span>
-                                </div>
-                            </div>
-                            <div class="dash-dist-item">
-                                <div class="dash-dist-bar">
-                                    <div class="dash-dist-fill" style="width:${t>0?((st.filter(x=>{let p=(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4;return p>=50&&p<65;}).length)/t)*100:0}%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
-                                </div>
-                                <div class="dash-dist-info">
-                                    <span class="dash-dist-label">🟡 Sederhana</span>
-                                    <span class="dash-dist-val">${st.filter(x=>{let p=(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4;return p>=50&&p<65;}).length} murid</span>
-                                </div>
-                            </div>
-                            <div class="dash-dist-item">
-                                <div class="dash-dist-bar">
-                                    <div class="dash-dist-fill" style="width:${t>0?(r/t)*100:0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
-                                </div>
-                                <div class="dash-dist-info">
-                                    <span class="dash-dist-label">🔴 Lemah</span>
-                                    <span class="dash-dist-val">${r} murid (${t>0?Math.round((r/t)*100):0}%)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- INTERVENTION TABLE -->
-                <div class="dash-intervention-card">
-                    <div class="dash-chart-header">
-                        <h3><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Pelajar Perlu Intervensi (<50%)</h3>
-                        <span class="dash-badge badge-danger">${r} Pelajar</span>
-                    </div>
-                    ${r>0?`
-                    <table class="dash-intervention-table">
-                        <thead><tr><th>#</th><th>Nama</th><th>UP1</th><th>PPSA</th><th>TOV</th><th>SPM</th><th>Purata</th><th>Ulasan</th></tr></thead>
-                        <tbody>${st.filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4<50).map((x,i)=>`
-                            <tr>
-                                <td>${i+1}</td>
-                                <td><strong>${x.name}</strong></td>
-                                ${x.marks.map(m=>`<td class="${m<50?'text-red':''}">${m}%</td>`).join('')}
-                                <td><span class="badge badge-danger">${((x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4).toFixed(1)}%</span></td>
-                                <td><small>${(x.ulasan||'-').substring(0,30)}</small></td>
-                            </tr>
-                        `).join('')}</tbody>
-                    </table>`:`
-                    <div class="dash-empty-state">
-                        <i class="fas fa-check-circle" style="font-size:2rem;color:#10b981;"></i>
-                        <p>✅ Semua pelajar melepasi tahap minimum (≥50%)</p>
-                    </div>`}
-                </div>
-                <div class="dash-intervention-card" style="margin-top:16px;">
-                    <div class="dash-chart-header">
-                        <h3><i class="fas fa-clipboard-check" style="color:#ef4444;"></i> Pelajar Perlu Intervensi Berdasarkan TP (TP1-TP2)</h3>
-                        <span class="dash-badge badge-danger">${tpIntervensiCount} Pelajar</span>
-                    </div>
-                    ${!dskp?`
-                    <div class="dash-empty-state">
-                        <i class="fas fa-info-circle" style="font-size:2rem;color:#94a3b8;"></i>
-                        <p>Muat naik DSKP untuk aktifkan analisis intervensi TP.</p>
-                    </div>`:tpIntervensiCount>0?`
-                    <table class="dash-intervention-table">
-                        <thead><tr><th>#</th><th>Nama</th><th>SP Intervensi</th><th>Contoh Kod SP</th></tr></thead>
-                        <tbody>${tpIntervensiStudents.map((x,i)=>`
-                            <tr>
-                                <td>${i+1}</td>
-                                <td><strong>${x.name}</strong></td>
-                                <td><span class="badge badge-danger">${x.count}</span></td>
-                                <td><small>${x.spPreview.join(", ")}${x.count>4?' ...':''}</small></td>
-                            </tr>
-                        `).join('')}</tbody>
-                    </table>`:`
-                    <div class="dash-empty-state">
-                        <i class="fas fa-check-circle" style="font-size:2rem;color:#10b981;"></i>
-                        <p>✅ Tiada pelajar pada tahap intervensi TP1-TP2.</p>
-                    </div>`}
-                </div>
-            </div>`;
-            renderTrend(); 
+            totalPurata += sum / completedCount;
         }
+        a = totalPurata / t;
+    }
+    
+    // Kira kategori berdasarkan peperiksaan yang dipilih
+    let r = 0, cm = 0, lulus = 0, gagal = 0;
+    for(let i=0; i<st.length; i++) {
+        let sum = 0;
+        for(let j=0; j<completedExamsList.length; j++) {
+            let exam = completedExamsList[j];
+            let examIndex = examNames.indexOf(exam);
+            if(examIndex >= 0) sum += st[i].marks[examIndex] || 0;
+        }
+        let purata = completedCount > 0 ? sum / completedCount : 0;
+        if(purata < 50) { r++; gagal++; }
+        else { lulus++; }
+        if(purata >= 80) cm++;
+    }
+    
+    c.innerHTML=`
+    <div class="dashboard-premium">
+        <div class="dash-hero">
+            <div class="dash-hero-left">
+                <div class="dash-hero-icon"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <h2>Papan Pemuka Prestasi</h2>
+                    <p>${s} · ${cls} · ${getCurrentTingkatan()}</p>
+                </div>
+            </div>
+            <div class="dash-hero-right">
+                <div class="dash-hero-stat">
+                    <span class="dash-hero-stat-value">${t}</span>
+                    <span class="dash-hero-stat-label">Jumlah Murid</span>
+                </div>
+                <div class="dash-hero-stat">
+                    <span class="dash-hero-stat-value" style="color:#10b981;">${lulus}</span>
+                    <span class="dash-hero-stat-label">Lulus</span>
+                </div>
+                <div class="dash-hero-stat">
+                    <span class="dash-hero-stat-value" style="color:#ef4444;">${gagal}</span>
+                    <span class="dash-hero-stat-label">Gagal</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- BUTANG Pilih Peperiksaan - DILETAKKAN DENGAN JELAS -->
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+            <button class="btn" onclick="bukaModalPilihPeperiksaan()" style="background:#f59e0b; color:white; font-weight:600;">
+                <i class="fas fa-calendar-check"></i> 📋 Pilih Peperiksaan Yang Telah Dijalankan
+            </button>
+        </div>
+        
+        <!-- STATS CARDS ROW -->
+        <div class="dash-stats-row">
+            <div class="dash-stat-card purple">
+                <div class="dash-stat-icon"><i class="fas fa-users"></i></div>
+                <div class="dash-stat-info">
+                    <span class="dash-stat-num">${t}</span>
+                    <span class="dash-stat-txt">Jumlah Murid</span>
+                </div>
+            </div>
+            <div class="dash-stat-card blue">
+                <div class="dash-stat-icon"><i class="fas fa-percent"></i></div>
+                <div class="dash-stat-info">
+                    <span class="dash-stat-num">${a.toFixed(1)}%</span>
+                    <span class="dash-stat-txt">Purata Kelas</span>
+                </div>
+            </div>
+            <div class="dash-stat-card green">
+                <div class="dash-stat-icon"><i class="fas fa-trophy"></i></div>
+                <div class="dash-stat-info">
+                    <span class="dash-stat-num">${cm}</span>
+                    <span class="dash-stat-txt">Cemerlang (≥80%)</span>
+                </div>
+            </div>
+            <div class="dash-stat-card red">
+                <div class="dash-stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="dash-stat-info">
+                    <span class="dash-stat-num">${r}</span>
+                    <span class="dash-stat-txt">Perlu Intervensi (<50%)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CHARTS ROW -->
+        <div class="dash-charts-row">
+            <div class="dash-chart-card">
+                <div class="dash-chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Trend Prestasi Peperiksaan</h3>
+                    <span class="dash-badge ${a>=60?'badge-success':'badge-warning'}">Purata: ${a.toFixed(1)}%</span>
+                </div>
+                <canvas id="trendChart" height="120"></canvas>
+                <div id="trendDescription" class="dash-trend-desc"></div>
+            </div>
+            <div class="dash-chart-card">
+                <div class="dash-chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Taburan Pencapaian</h3>
+                </div>
+                <div class="dash-distribution">
+                    <div class="dash-dist-item">
+                        <div class="dash-dist-bar">
+                            <div class="dash-dist-fill" style="width:${t>0?(cm/t)*100:0}%;background:linear-gradient(90deg,#10b981,#34d399);"></div>
+                        </div>
+                        <div class="dash-dist-info">
+                            <span class="dash-dist-label">🟢 Cemerlang</span>
+                            <span class="dash-dist-val">${cm} murid (${t>0?Math.round((cm/t)*100):0}%)</span>
+                        </div>
+                    </div>
+                    <div class="dash-dist-item">
+                        <div class="dash-dist-bar">
+                            <div class="dash-dist-fill" style="width:${t>0?((lulus-cm)/t)*100:0}%;background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+                        </div>
+                        <div class="dash-dist-info">
+                            <span class="dash-dist-label">🔵 Lulus</span>
+                            <span class="dash-dist-val">${lulus-cm} murid</span>
+                        </div>
+                    </div>
+                    <div class="dash-dist-item">
+                        <div class="dash-dist-bar">
+                            <div class="dash-dist-fill" style="width:${t>0?(r/t)*100:0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+                        </div>
+                        <div class="dash-dist-info">
+                            <span class="dash-dist-label">🔴 Gagal</span>
+                            <span class="dash-dist-val">${r} murid (${t>0?Math.round((r/t)*100):0}%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- INTERVENTION TABLE -->
+        <div class="dash-intervention-card">
+            <div class="dash-chart-header">
+                <h3><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Pelajar Perlu Intervensi (<50%)</h3>
+                <span class="dash-badge badge-danger">${r} Pelajar</span>
+            </div>
+            ${r>0?`
+            <table class="dash-intervention-table">
+                <thead><tr><th>#</th><th>Nama</th><th>Purata</th><th>Ulasan</th></tr></thead>
+                <tbody>${(()=>{
+                    let filtered = [];
+                    for(let i=0; i<st.length; i++) {
+                        let sum = 0;
+                        for(let j=0; j<completedExamsList.length; j++) {
+                            let exam = completedExamsList[j];
+                            let examIndex = examNames.indexOf(exam);
+                            if(examIndex >= 0) sum += st[i].marks[examIndex] || 0;
+                        }
+                        let purata = completedCount > 0 ? sum / completedCount : 0;
+                        if(purata < 50) filtered.push({...st[i], purata: purata});
+                    }
+                    return filtered.map((x,i)=>`
+                        <tr>
+                            <td>${i+1}</td>
+                            <td><strong>${x.name}</strong></td>
+                            <td><span class="badge badge-danger">${x.purata.toFixed(1)}%</span></td>
+                            <td><small>${(x.ulasan||'-').substring(0,30)}</small></td>
+                        </tr>
+                    `).join('');
+                })()}</tbody>
+            </table>`:`
+            <div class="dash-empty-state">
+                <i class="fas fa-check-circle" style="font-size:2rem;color:#10b981;"></i>
+                <p>✅ Semua pelajar melepasi tahap minimum (50%) berdasarkan peperiksaan yang dipilih</p>
+            </div>`}
+        </div>
+    </div>`;
+    renderTrend(); 
+}
         function renderTrend(){
     let s=getActiveStudents();
     if(!s.length)return;
     let examNames = getCurrentExamNames();
-    let u = new Array(examNames.length).fill(0);
+    let completedExamsList = getCompletedExams();
+    let u = new Array(completedExamsList.length).fill(0);
     s.forEach(x=>{
-        for(let i=0;i<examNames.length;i++) u[i] += x.marks[i] || 0;
+        for(let i=0; i<completedExamsList.length; i++) {
+            let exam = completedExamsList[i];
+            let examIndex = examNames.indexOf(exam);
+            u[i] += x.marks[examIndex] || 0;
+        }
     });
     u = u.map(v=> (v/s.length).toFixed(1));
     if(trendChart) trendChart.destroy();
     trendChart = new Chart(document.getElementById("trendChart").getContext('2d'),{
         type:'line',
-        data:{labels:examNames, datasets:[{data:u, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.08)', fill:true, borderWidth:3, tension:0.4}]},
+        data:{labels:completedExamsList, datasets:[{data:u, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.08)', fill:true, borderWidth:3, tension:0.4}]},
         options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{max:100}}}
     });
     let diff = u[u.length-1] - u[0];
-    let examTerakhir = examNames[examNames.length-1];
-    document.getElementById("trendDescription").innerHTML = `Purata <strong>${u[u.length-1]}%</strong> ${examTerakhir}. ${diff>=0?'📈 Meningkat':'📉 Menurun'} <strong>${Math.abs(diff).toFixed(1)}%</strong> dari ${examNames[0]}.`;
+    let examTerakhir = completedExamsList[completedExamsList.length-1];
+    document.getElementById("trendDescription").innerHTML = `Purata <strong>${u[u.length-1]}%</strong> ${examTerakhir}. ${diff>=0?'📈 Meningkat':'📉 Menurun'} <strong>${Math.abs(diff).toFixed(1)}%</strong> dari ${completedExamsList[0]}.`;
 }
         function renderRisk(){let r=getActiveStudents().filter(x=>(x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4<50);document.getElementById("riskPreview").innerHTML=r.length?r.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#fff5f5;border-radius:12px;margin-bottom:8px;"><div><strong>${x.name}</strong><br><small>${x.ulasan||'-'}</small></div><span class="badge badge-danger">${((x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4).toFixed(1)}%</span></div>`).join(''):'<div style="text-align:center;color:#10b981;padding:20px;">✅ Semua pelajar melepasi tahap minimum</div>';}
 
@@ -1101,30 +1913,57 @@ function getCurrentExamNames() {
     let st=getActiveStudents();
     let examNames = getCurrentExamNames();
     let ting = getCurrentTingkatan();
+    let isSPMLevel = (ting === "Tingkatan 4" || ting === "Tingkatan 5");
     
-    c.innerHTML=`<div class="card"><div class="card-header">📋 Rekod Prestasi · ${s} · ${cls} · ${ting}</div>
-    <table><thead><tr><th>Nama</th>${examNames.map(e=>`<th>${e}</th>`).join('')}<th>Purata</th><th>Tahap</th><th>Ulasan</th><th></th></tr></thead>
-    <tbody>${st.map((x,i)=>{
-        let sum = 0;
-        for(let j=0; j<examNames.length; j++) sum += x.marks[j] || 0;
-        let p = examNames.length > 0 ? (sum / examNames.length).toFixed(1) : 0;
-        let g = p>=80?"badge-success":p>=65?"badge-info":p>=50?"badge-warning":"badge-danger";
-        return `<tr>
-            <td style="font-weight:600;color:#6366f1;">${x.name}</td>
-            ${examNames.map((e,j)=>`<td><span class="clickable-mark" onclick="bukaModalEdit(${i},'${e}')">${x.marks[j] || 0}%</span></td>`).join('')}
-            <td><span class="badge ${g}">${p}%</span></td>
-            <td><div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${p>=80?'#10b981':p>=65?'#6366f1':p>=50?'#f59e0b':'#ef4444'};"></div></div></td>
-            <td style="font-size:0.8rem;">${(x.ulasan||'').substring(0,25)}</td>
-            <td><i class="fas fa-trash-alt" style="color:#ef4444;cursor:pointer;" onclick="deletePelajar(${i})"></i></td>
-        </tr>`;
-    }).join('')}</tbody></table>
-    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <p style="font-size:0.75rem;color:#64748b;">Klik markah → isi analisis item.</p>
-        <button class="btn btn-accent" onclick="bukaKonfigurasiItem()" style="font-size:0.75rem;padding:6px 12px;">⚙️ Konfigurasi Item</button>
-        <button class="btn btn-success" onclick="bukaCetakAnalisisItem()" style="font-size:0.75rem;padding:6px 12px;"><i class="fas fa-print"></i> Cetak Analisis Item</button>
-    </div></div>`;
+    c.innerHTML=`<div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>📋 Rekod Prestasi · ${s} · ${cls} · ${ting}</span>
+            <button class="btn btn-ghost btn-sm" onclick="bukaModalEditExamNames()" style="font-size:0.7rem;">
+                <i class="fas fa-pen"></i> Edit Nama Peperiksaan
+            </button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table style="min-width:800px;">
+            <thead>
+                <tr><th>Nama</th>${examNames.map(e=>`<th>${e}</th>`).join('')}<th>Purata</th><th>Ulasan</th><th></th></tr>
+            </thead>
+            <tbody>${st.map((x,i)=>{
+    let completedExamsList = getCompletedExams();
+let sum = 0;
+completedExamsList.forEach(exam => {
+    let examIndex = examNames.indexOf(exam);
+    if (examIndex >= 0) sum += x.marks[examIndex] || 0;
+});
+let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixed(1) : 0;
+    let gredInfo = getGredByTingkatan(p, ting);
+    let gredClass = "badge-";
+    if (gredInfo.gred === "A+" || gredInfo.gred === "A") gredClass += "success";
+    else if (gredInfo.gred === "A-" || gredInfo.gred === "B+" || gredInfo.gred === "B") gredClass += "info";
+    else if (gredInfo.gred === "C+" || gredInfo.gred === "C") gredClass += "warning";
+    else gredClass += "danger";
+    
+    return `<tr>
+        <td style="font-weight:600;color:#6366f1;">${x.name}</td>
+        ${examNames.map((e,j)=>`<td style="text-align:center;">
+            <span class="clickable-mark" onclick="bukaModalEdit(${i},'${e}')">${x.marks[j] || 0}%</span>
+            ${isSPMLevel ? `<br><span style="font-size:0.6rem;color:${getGredByTingkatan(x.marks[j] || 0, ting).warna};">${getGredByTingkatan(x.marks[j] || 0, ting).gred}</span>` : ''}
+        </td>`).join('')}
+        <td><span class="badge ${gredClass}" style="background:${gredInfo.warna}20;color:${gredInfo.warna};">${p}%</span></td>
+        <td><div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${p>=80?'#10b981':p>=65?'#6366f1':p>=50?'#f59e0b':'#ef4444'};"></div></div></td>
+        <td style="font-size:0.8rem;">${(x.ulasan||'').substring(0,25)}</span></td>
+        <td><i class="fas fa-trash-alt" style="color:#ef4444;cursor:pointer;" onclick="deletePelajar(${i})"></i></td>
+    </tr>`;
+}).join('')}</tbody>
+        </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <p style="font-size:0.55rem;color:#64748b;">Klik markah → isi analisis item.</p>
+            <button class="btn btn-accent" onclick="bukaKonfigurasiItem()" style="font-size:0.75rem;padding:6px 12px;">⚙️ Konfigurasi Item</button>
+            <button class="btn btn-success" onclick="bukaCetakAnalisisItem()" style="font-size:0.75rem;padding:6px 12px;"><i class="fas fa-print"></i> Cetak Analisis Item</button>
+            <button class="btn btn-primary" onclick="bukaRankingAnalisisSoalan()" style="font-size:0.75rem;padding:6px 12px;background:#8b5cf6;"><i class="fas fa-chart-simple"></i> 📊 Ranking Analisis Soalan</button>
+        </div>
+    </div>`;
 }
-
         function bukaKonfigurasiItem(){
             let cfg=getItemConfig();
             let html=`<h3 class="card-header">⚙️ Konfigurasi Analisis Item</h3><p style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">Tetapan untuk SEMUA pelajar subjek <strong>${document.getElementById("selectSubject").value}</strong>. Simpan sekali, guna selamanya.</p>`;
@@ -1191,7 +2030,7 @@ function getCurrentExamNames() {
             allMarkah+=kMark; allFull+=kFull;
             html+=`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;">
               <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">${kertas.nama}</div>
-              <input type="number" id="bmComp_${ki}" value="${kMark}" min="0" max="${kFull}" style="width:80px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.1rem;" onchange="hitungPurataBM()" placeholder="Markah">
+              <input type="number" id="bmComp_${ki}" value="${kMark}" min="0" max="${kFull}" step="0.01" style="width:80px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.1rem;" onchange="hitungPurataBM()" placeholder="Markah">
               <div style="font-size:0.65rem;color:#94a3b8;margin-top:4px;">/${kFull} markah</div>
               <div style="font-size:0.7rem;color:#6366f1;font-weight:600;margin-top:2px;" id="bmPct_${ki}">${kFull>0?Math.round(kMark/kFull*100):0}%</div>
             </div>`;
@@ -1200,7 +2039,7 @@ function getCurrentExamNames() {
         let examIdx = examNames.indexOf(examName);
         html+=`<div style="background:linear-gradient(135deg,#ede9fe,#dbeafe);padding:14px;border-radius:12px;text-align:center;margin-bottom:12px;">
           <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">Markah Keseluruhan (%)</div>
-          <input type="number" id="editBMOverall" value="${examIdx>=0?(x.marks[examIdx]||0):0}" min="0" max="100" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
+          <input type="number" id="editBMOverall" value="${examIdx>=0?(x.marks[examIdx]||0):0}" min="0" max="100" step="0.01" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
           <div style="font-size:0.65rem;color:#94a3b8;margin-top:4px;">Taip peratusan (0-100)</div>
         </div>`;
         html+=`<div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -1214,7 +2053,30 @@ function getCurrentExamNames() {
         document.getElementById("modalEditMarkah").style.display="flex";
     }
 }
-        function hitungCepat(){let x=getActiveStudents()[currentBMEditStudent];if(!x)return;let cfg=getItemConfig();let allMarkah=0,allFull=0;cfg.kertas.forEach((kertas,ki)=>{let items=getStudentItemData(x,currentBMEditExam)[kertas.nama]||[];items.forEach((item,si)=>{let val=parseInt(document.getElementById("im_"+ki+"_"+si)?.value)||0;item.mark=Math.min(val,item.fullMark);});allMarkah+=items.reduce((a,b)=>a+(b.mark||0),0);allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);});let el=document.getElementById("overallPct");if(el)el.innerText=allFull>0?Math.round(allMarkah/allFull*100)+"% ("+allMarkah+"/"+allFull+")":"0%";}
+        function hitungCepat(){
+            let x=getActiveStudents()[currentBMEditStudent];
+            if(!x)return;
+            let cfg=getItemConfig();
+            let examData=getStudentItemData(x,currentBMEditExam);
+            let allMarkah=0,allFull=0;
+
+            cfg.kertas.forEach((kertas,ki)=>{
+                let items=examData[kertas.nama]||[];
+                let kMark=0;
+                kertas.soalan.forEach((soal,si)=>{
+                    if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                    let val=toNumber(document.getElementById("im_"+ki+"_"+si)?.value, NaN);
+                    if(Number.isNaN(val)) val=toNumber(items[si].mark,0);
+                    items[si].fullMark=soal.markahPenuh;
+                    items[si].mark=Math.max(0,val);
+                    kMark+=items[si].mark;
+                });
+                allMarkah+=kMark;
+                allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+            });
+            let el=document.getElementById("overallPct");
+            if(el)el.innerText=allFull>0?Math.round(allMarkah/allFull*100)+"% ("+allMarkah+"/"+allFull+")":"0%";
+        }
         function hitungPurataBM(){
             let x=getActiveStudents()[currentBMEditStudent];
             if(!x)return;
@@ -1222,7 +2084,7 @@ function getCurrentExamNames() {
             let allMarkah=0,allFull=0;
             cfg.kertas.forEach((kertas,ki)=>{
                 let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
-                let val=parseInt(document.getElementById("bmComp_"+ki)?.value)||0;
+                let val=toNumber(document.getElementById("bmComp_"+ki)?.value,0);
                 allMarkah+=val; allFull+=kFull;
                 let pct=kFull>0?Math.round(val/kFull*100):0;
                 let pctEl=document.getElementById("bmPct_"+ki);
@@ -1238,8 +2100,32 @@ function getCurrentExamNames() {
             if(!x)return;
             let examIdx = examNames.indexOf(currentBMEditExam);
             if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
-            let val = parseInt(document.getElementById("editBMOverall")?.value);
-            if(!isNaN(val)) x.marks[examIdx] = val;
+            let cfg=getItemConfig();
+            let examData=getStudentItemData(x,currentBMEditExam);
+            let allMarkah=0,allFull=0;
+
+            cfg.kertas.forEach((kertas,ki)=>{
+                let items=examData[kertas.nama]||[];
+                let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+                let target=toNumber(document.getElementById("bmComp_"+ki)?.value,NaN);
+                if(Number.isNaN(target)) target=items.reduce((a,b)=>a+toNumber(b.mark,0),0);
+                target=Math.max(0,Math.min(target,kFull));
+                let baki=target;
+
+                kertas.soalan.forEach((soal,si)=>{
+                    if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                    items[si].fullMark=soal.markahPenuh;
+                    let isi=Math.min(baki,soal.markahPenuh);
+                    items[si].mark=Math.max(0,isi);
+                    baki-=isi;
+                });
+
+                examData[kertas.nama]=items.slice(0,kertas.soalan.length);
+                allMarkah+=target;
+                allFull+=kFull;
+            });
+
+            x.marks[examIdx] = allFull>0 ? Math.round(allMarkah/allFull*100) : 0;
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
             tutupModal("modalEditMarkah");
@@ -1248,31 +2134,42 @@ function getCurrentExamNames() {
         }
 
                function bukaAnalisisItemDariBM(){
-            let x=getActiveStudents()[currentBMEditStudent];
+            // Simpan student & exam index supaya tidak hilang semasa peralihan modal
+            let savedStudent = currentBMEditStudent;
+            let savedExam = currentBMEditExam;
+            let x=getActiveStudents()[savedStudent];
             let examNames = getCurrentExamNames();
             if(!x)return;
-            let exam=currentBMEditExam;
+            let exam=savedExam;
             let examIdx = examNames.indexOf(exam);
             if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
             let cfg=getItemConfig(), itemData=getStudentItemData(x,exam);
             
-            // Simpan dulu markah keseluruhan yang diisi
-            let allMarkah=0,allFull=0;
+            // Simpan ulasan sahaja — JANGAN overwrite markah per soalan yang sedia ada
+            // Hanya kemas kini fullMark mengikut konfigurasi terkini (tanpa ubah mark)
             cfg.kertas.forEach((kertas,ki)=>{
-                let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
-                let val=parseInt(document.getElementById("bmComp_"+ki)?.value)||0;
-                allMarkah+=val; allFull+=kFull;
+                let items=itemData[kertas.nama]||[];
+                kertas.soalan.forEach((soal,si)=>{
+                    if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                    items[si].fullMark=soal.markahPenuh;
+                    // Pastikan mark tidak melebihi fullMark
+                    items[si].mark=Math.max(0,Math.min(toNumber(items[si].mark,0),soal.markahPenuh));
+                });
+                itemData[kertas.nama]=items.slice(0,kertas.soalan.length);
             });
-            x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
+            
+            // Pastikan pembolehubah global masih betul selepas saveAll
+            currentBMEditStudent = savedStudent;
+            currentBMEditExam = savedExam;
             
             // Buka modal analisis item (sama seperti klik markah)
             tutupModal("modalEditMarkah");
             
             let html=`<h3 class="card-header">🔬 Analisis Item · ${exam} · ${x.name}</h3>
-            <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Isi markah diperoleh untuk setiap soalan.</p>`;
-            allMarkah=0;allFull=0;
+            <p style="font-size:0.55rem;color:#64748b;margin-bottom:12px;">Isi markah diperoleh untuk setiap soalan.</p>`;
+            let allMarkah=0,allFull=0;
             
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=itemData[kertas.nama]||[];
@@ -1290,8 +2187,8 @@ function getCurrentExamNames() {
                 kertas.soalan.forEach((soal,si)=>{
                     let item=items[si]||{mark:0};
                     html+=`<div style="text-align:center;">
-                      <div style="font-size:0.6rem;color:#94a3b8;">${soal.no}</div>
-                      <input type="number" id="im_${ki}_${si}" value="${item.mark}" min="0" max="${soal.markahPenuh}" style="width:100%;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;font-weight:600;font-size:0.8rem;" onchange="hitungCepat()">
+                      <div style="font-size:0.08rem;color:#94a3b8;">${soal.no}</div>
+                      <input type="number" id="im_${ki}_${si}" value="${item.mark}" min="0" max="${soal.markahPenuh}" step="0.01" style="width:100%;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;font-weight:600;font-size:0.8rem;" onchange="hitungCepat()">
                       <div style="font-size:0.55rem;color:#cbd5e1;">/${soal.markahPenuh}</div>
                     </div>`;
                 });
@@ -1315,7 +2212,42 @@ function getCurrentExamNames() {
             document.getElementById("modalEditMarkahContent").innerHTML=html;
             document.getElementById("modalEditMarkah").style.display="flex";
         }
-        function simpanAnalisisItem(){let x=getActiveStudents()[currentBMEditStudent];if(!x)return;let examNames = getCurrentExamNames();let examIdx = examNames.indexOf(currentBMEditExam);if(examIdx<0){alert("Ralat: peperiksaan tidak ditemui.");return;}let cfg=getItemConfig();let allMarkah=0,allFull=0;cfg.kertas.forEach((kertas,ki)=>{let items=getStudentItemData(x,currentBMEditExam)[kertas.nama]||[];items.forEach((item,si)=>{let val=parseInt(document.getElementById("im_"+ki+"_"+si)?.value)||0;item.mark=Math.min(val,item.fullMark);});allMarkah+=items.reduce((a,b)=>a+(b.mark||0),0);allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);});x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentBMEditStudent=null;currentBMEditExam=null;renderCurrentPage();}
+        function simpanAnalisisItem(){
+            // Simpan referens supaya tidak hilang semasa operasi
+            let savedStudent = currentBMEditStudent;
+            let savedExam = currentBMEditExam;
+            let x=getActiveStudents()[savedStudent];
+            if(!x)return;
+            let examNames = getCurrentExamNames();
+            let examIdx = examNames.indexOf(savedExam);
+            if(examIdx<0){alert("Ralat: peperiksaan tidak ditemui.");return;}
+            let cfg=getItemConfig();
+            let examData=getStudentItemData(x,savedExam);
+            let allMarkah=0,allFull=0;
+
+            cfg.kertas.forEach((kertas,ki)=>{
+                let items=examData[kertas.nama]||[];
+                let kMark=0;
+                kertas.soalan.forEach((soal,si)=>{
+                    if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                    let val=toNumber(document.getElementById("im_"+ki+"_"+si)?.value,NaN);
+                    if(Number.isNaN(val)) val=toNumber(items[si].mark,0);
+                    items[si].fullMark=soal.markahPenuh;
+                    items[si].mark=Math.max(0,val);
+                    kMark+=items[si].mark;
+                });
+                examData[kertas.nama]=items.slice(0,kertas.soalan.length);
+                allMarkah+=kMark;
+                allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+            });
+
+            x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;
+            x.ulasan=document.getElementById("editUlasan")?.value||'';
+            saveAll();
+            tutupModal("modalEditMarkah");
+            currentBMEditStudent=null;currentBMEditExam=null;
+            renderCurrentPage();
+        }
         function simpanEditPelajar(){if(currentEditIndex===null)return;let x=getActiveStudents()[currentEditIndex];for(let i=0;i<4;i++)x.marks[i]=parseInt(document.getElementById("editMarks_"+i)?.value)||0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentEditIndex=null;renderCurrentPage();}
 
                 function renderBuku(){
@@ -1665,7 +2597,9 @@ function bukaModalTokenUntuk(name){
 }
         function deleteTokenRecord(idx){let all=[];getActiveStudents().forEach(s=>{s.token?.forEach(t=>all.push({student:s,token:t}));});if(all[idx]){all[idx].student.token=all[idx].student.token.filter(t=>t!==all[idx].token);saveAll();renderToken();}}
 
-                        function renderProfil(){
+                        // ==================== PEMBETULAN UNTUK FUNGSI RENDER PROFIL ====================
+
+function renderProfil(){
     let c = document.getElementById("profilContent");
     let s = document.getElementById("selectSubject").value;
     let cls = document.getElementById("selectClass").value;
@@ -1735,14 +2669,14 @@ function bukaModalTokenUntuk(name){
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
                 ${st.map((x,i)=>{
+                    let examNamesLocal = getCurrentExamNames();
                     let purata = 0;
-                    let examNames = getCurrentExamNames();
-                    for(let j=0; j<examNames.length; j++) purata += x.marks[j] || 0;
-                    purata = examNames.length > 0 ? (purata / examNames.length).toFixed(1) : 0;
+                    for(let j=0; j<examNamesLocal.length; j++) purata += x.marks[j] || 0;
+                    purata = examNamesLocal.length > 0 ? (purata / examNamesLocal.length).toFixed(1) : 0;
                     let gredWarna = purata>=80?'#10b981':purata>=65?'#6366f1':purata>=50?'#f59e0b':'#ef4444';
                     let initials = x.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
                     return `
-                    <div class="student-list-card" onclick="pilihStudentProfil('${x.name}')" 
+                    <div class="student-list-card" onclick="pilihStudentProfil('${x.name.replace(/'/g, "\\'")}')" 
                          style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;min-width:180px;flex:1;">
                         <div style="width:38px;height:38px;border-radius:10px;background:${gredWarna}20;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:${gredWarna};flex-shrink:0;">
                             ${initials}
@@ -1765,9 +2699,10 @@ function bukaModalTokenUntuk(name){
     
     if(st.length > 0) pilihStudentProfil(st[0].name);
 }
-                function pilihStudentProfil(name){
+
+function pilihStudentProfil(name){
     let x=getActiveStudents().find(s=>s.name===name);
-    if(!x){document.getElementById("studentProfileDetail").innerHTML='';return;}
+    if(!x){document.getElementById("studentProfileDetail").innerHTML='<div class="card" style="text-align:center;padding:40px;">Pelajar tidak dijumpai.</div>';return;}
     
     let examNames = getCurrentExamNames();
     let ting = getCurrentTingkatan();
@@ -1775,11 +2710,13 @@ function bukaModalTokenUntuk(name){
     let kelas = document.getElementById("selectClass").value;
     
     // Kira purata berdasarkan bilangan peperiksaan mengikut tingkatan
-    let sumMarks = 0;
-    for(let i=0; i<examNames.length; i++) {
-        sumMarks += x.marks[i] || 0;
-    }
-    let purata = examNames.length > 0 ? (sumMarks / examNames.length).toFixed(1) : 0;
+    let completedExamsList = getCompletedExams();
+let sumMarks = 0;
+completedExamsList.forEach(exam => {
+    let examIndex = examNames.indexOf(exam);
+    if (examIndex >= 0) sumMarks += x.marks[examIndex] || 0;
+});
+let purata = completedExamsList.length > 0 ? (sumMarks / completedExamsList.length).toFixed(1) : 0;
     
     let dskp = getCurrentDSKP();
     let pbdSkillsSummary = [];
@@ -1820,13 +2757,15 @@ function bukaModalTokenUntuk(name){
     let trendClass = trendDiff>5 ? 'trend-up' : (trendDiff<-5 ? 'trend-down' : 'trend-stable');
     let trendText = trendDiff>5 ? `Meningkat +${trendDiff}%` : (trendDiff<-5 ? `Menurun ${trendDiff}%` : 'Stabil');
     
+    let isSPMLevel = (ting === "Tingkatan 4" || ting === "Tingkatan 5");
+    
     let detailHTML = `
     <div class="profile-container">
         <div class="profile-hero">
             <div class="hero-content">
                 <div class="hero-avatar">👤</div>
                 <div class="hero-info">
-                    <h2>${x.name}</h2>
+                    <h2>${escapeHtml(x.name)}</h2>
                     <p><i class="fas fa-id-card"></i> ${x.ic||'No KP: -'}</p>
                     <p><i class="fas fa-book"></i> ${subj} · ${kelas} · ${ting}</p>
                     <span class="hero-badge"><i class="fas fa-star"></i> ${purata>=80?'Pelajar Cemerlang':purata>=65?'Pelajar Baik':purata>=50?'Pelajar Sederhana':'Perlu Perhatian'}</span>
@@ -1845,12 +2784,16 @@ function bukaModalTokenUntuk(name){
                 ${examNames.map((e,i)=>{
                     let score = x.marks[i] || 0;
                     let barColor = score>=80?'#10b981':score>=65?'#6366f1':score>=50?'#f59e0b':'#ef4444';
+                    let gredInfo = getGredByTingkatan(score, ting);
                     return `<div class="exam-score-item">
-                        <span class="exam-name">${e}</span>
+                        <span class="exam-name">${escapeHtml(e)}</span>
                         <div class="score-bar-container">
                             <div class="score-bar-fill" style="width:${score}%;background:${barColor};"></div>
                         </div>
-                        <span class="exam-score" style="color:${barColor};">${score}%</span>
+                        <div style="text-align:right;">
+                            <span class="exam-score" style="color:${barColor};">${score}%</span>
+                            ${isSPMLevel ? `<br><span style="font-size:0.65rem;font-weight:700;color:${gredInfo.warna};">${gredInfo.gred}</span>` : ''}
+                        </div>
                     </div>`;
                 }).join('')}
                 <div style="margin-top:16px;padding-top:16px;border-top:2px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
@@ -1864,7 +2807,7 @@ function bukaModalTokenUntuk(name){
                     pbdSkillsSummary.map(skill=>{
                         let tpClass = skill.avgTP>=5?'tp-high':skill.avgTP>=3?'tp-mid':'tp-low';
                         return `<div class="pbd-skill-item">
-                            <span class="pbd-skill-name">${skill.name}</span>
+                            <span class="pbd-skill-name">${escapeHtml(skill.name)}</span>
                             <span style="font-size:0.7rem;color:#64748b;">${skill.count} SP</span>
                             <span class="tp-badge ${tpClass}">TP ${skill.avgTP}</span>
                         </div>`;
@@ -1872,7 +2815,7 @@ function bukaModalTokenUntuk(name){
                     '<p style="color:#94a3b8;text-align:center;padding:20px;">Tiada rekod PBD untuk subjek ini.</p>'
                 }
                 ${pbdSkillsSummary.length>0 ? 
-                    `<div style="margin-top:12px;font-size:0.75rem;color:#6366f1;cursor:pointer;text-align:right;" onclick="showStudentPBDDetail('${x.name}')">
+                    `<div style="margin-top:12px;font-size:0.75rem;color:#6366f1;cursor:pointer;text-align:right;" onclick="showStudentPBDDetail('${escapeHtml(x.name)}')">
                         <i class="fas fa-external-link-alt"></i> Lihat Analisis Penuh
                     </div>` : ''
                 }
@@ -1896,7 +2839,7 @@ function bukaModalTokenUntuk(name){
                         x.token.slice(-5).reverse().map(t=>`
                             <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:0.78rem;">
                                 <span>${t.type==='positif'?'🌟':'⚠️'}</span>
-                                <span style="flex:1;">${t.desc||'-'}</span>
+                                <span style="flex:1;">${escapeHtml(t.desc||'-')}</span>
                                 <span class="badge ${t.type==='positif'?'badge-success':'badge-danger'}">${t.type}</span>
                             </div>
                         `).join('') : 
@@ -1910,7 +2853,7 @@ function bukaModalTokenUntuk(name){
                     <i class="fas fa-exclamation-circle"></i>
                     <div>
                         <strong>Ulasan Guru:</strong>
-                        <p style="margin-top:4px;">${x.ulasan || 'Tiada catatan khusus untuk pelajar ini.'}</p>
+                        <p style="margin-top:4px;">${escapeHtml(x.ulasan || 'Tiada catatan khusus untuk pelajar ini.')}</p>
                     </div>
                 </div>
                 ${purata<50 ? `
@@ -1936,6 +2879,74 @@ function bukaModalTokenUntuk(name){
         setTimeout(() => renderProfilRadarChart(pbdSkillsSummary), 300);
     }
 }
+
+// Helper function untuk escape HTML
+function escapeHtml(str) {
+    if(!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderProfilRadarChart(pbdSkills){
+    let existingCanvas=document.getElementById('profilRadarChart');
+    if(existingCanvas){
+        let existingChart=Chart.getChart('profilRadarChart');
+        if(existingChart) existingChart.destroy();
+        existingCanvas.parentElement?.remove();
+    }
+    let analysisGrid=document.querySelector('.analysis-grid');
+    if(!analysisGrid) return;
+    
+    let radarCard=document.createElement('div');
+    radarCard.className='analysis-card';
+    radarCard.innerHTML=`<div class="card-title"><i class="fas fa-chart-pie"></i> Radar Penguasaan DSKP</div>
+        <canvas id="profilRadarChart" height="200"></canvas>
+        <div class="radar-legend">
+            ${pbdSkills.map((s,i)=>`<div class="radar-legend-item">
+                <div class="radar-legend-dot" style="background:${['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6]};"></div>
+                <span>${escapeHtml(s.name.substring(0,25))}</span>
+            </div>`).join('')}
+        </div>`;
+    
+    let lastCard=analysisGrid.lastElementChild;
+    analysisGrid.insertBefore(radarCard,lastCard);
+    
+    let ctx=document.getElementById('profilRadarChart');
+    if(ctx){
+        new Chart(ctx.getContext('2d'),{
+            type:'radar',
+            data:{
+                labels:pbdSkills.map(s=>s.name.substring(0,20)),
+                datasets:[{
+                    label:'TP Purata',
+                    data:pbdSkills.map(s=>parseFloat(s.avgTP)),
+                    backgroundColor:'rgba(99,102,241,0.2)',
+                    borderColor:'#6366f1',
+                    borderWidth:2,
+                    pointBackgroundColor:pbdSkills.map((_,i)=>['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'][i%6]),
+                    pointRadius:5
+                }]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:true,
+                scales:{
+                    r:{
+                        max:6,
+                        min:0,
+                        ticks:{stepSize:1,font:{size:9}},
+                        pointLabels:{font:{size:9}}
+                    }
+                },
+                plugins:{legend:{display:false}}
+            }
+        });
+    }
+}
         function paparProfil(){let sel=document.getElementById("studentSelect");if(sel&&sel.value)pilihStudentProfil(sel.value);}
 
         function getCurrentDSKP(){return dskpDatabase[document.getElementById("selectSubject").value]?.[getCurrentTingkatan()];}
@@ -1948,7 +2959,7 @@ function bukaModalTokenUntuk(name){
             let dskp=getCurrentDSKP();
             if(!dskp){c.innerHTML=`<div class="card" style="text-align:center;padding:40px;"><p>⚠️ Tiada DSKP untuk <b>${subj}</b> (${ting}).</p><p style="font-size:0.8rem;color:#64748b;margin-top:8px;">Muat naik fail JSON DSKP di halaman <b>Tetapan</b>.</p></div>`;return;}
             let st=getActiveStudents(); if(!st.length){c.innerHTML='<div class="card" style="text-align:center;padding:40px;">Tiada pelajar.</div>';return;}
-            c.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div><div id="pbdIntervensiReminder" style="margin-top:10px;"></div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th>#</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
+            c.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th>#</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
             document.getElementById("pbdSearchInput").value=prevSearch;
             populatePBDSkills(prevSkill,prevSp);
             document.getElementById("pbdSkillSelect").addEventListener("change",()=>{populatePBDSPS();renderPBDTable();});
@@ -2055,7 +3066,6 @@ function bukaModalTokenUntuk(name){
     let tpArray = st.map(s=>getPBD(subj,kelas,skill,sp,s.name).tp);
     tpArray = tpArray.filter(t=>t>0);
     updatePBDAnalysis(tpArray);
-    updatePBDIntervensiReminder();
 }
         function updateTP(evt,nameEncoded,tp){if(evt){evt.preventDefault();evt.stopPropagation();}let name=decodeURIComponent(nameEncoded);let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;let lockKey=[subj,kelas,skill,sp,name].join("|");let now=Date.now();if(now-(pbdTpLastClick[lockKey]||0)<180)return;let current=getPBD(subj,kelas,skill,sp,name);if(current.tp===tp)return;pbdTpLastClick[lockKey]=now;setPBD(subj,kelas,skill,sp,name,tp,current.remark);populatePBDSPS(sp);renderPBDTable();}
         function updateRemark(nameEncoded,remark){let name=decodeURIComponent(nameEncoded);let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;setPBD(subj,kelas,skill,sp,name,getPBD(subj,kelas,skill,sp,name).tp,remark);}
@@ -2137,26 +3147,7 @@ function bukaModalTokenUntuk(name){
             document.getElementById("modalPBDDetailContent").innerHTML = html;
             document.getElementById("modalPBDDetail").style.display = "flex";
         }
-function updatePBDAnalysis(tpArray){let c=[0,0,0,0,0,0];tpArray.forEach(t=>{if(t>=1&&t<=6)c[t-1]++;});if(pbdChart)pbdChart.destroy();if(tpArray.length>0){let ctx=document.getElementById("pbdChart");if(ctx)pbdChart=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:['TP1','TP2','TP3','TP4','TP5','TP6'],datasets:[{data:c,backgroundColor:['#ff6b6b','#ffa502','#ffd700','#2ed573','#1e90ff','#a855f7'],borderRadius:8}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1}}}}});}let total=tpArray.length,intervensi=c[0]+c[1];document.getElementById("pbdAnalisisContent").innerHTML=`<div style="display:flex;justify-content:space-between;padding:8px 0;">🔴 Intervensi <strong>${intervensi}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;">🟡 Pemulihan <strong>${c[2]+c[3]}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;">🟢 Pengayaan <strong>${c[4]+c[5]}</strong></div>${total>0&&intervensi>total*0.3?'<p style="color:#ef4444;font-size:0.8rem;">⚠️ Intervensi segera!</p>':''}`;}
-        function updatePBDIntervensiReminder(){
-            let box=document.getElementById("pbdIntervensiReminder");
-            if(!box) return;
-            let subj=document.getElementById("selectSubject").value;
-            let kelas=document.getElementById("selectClass").value;
-            let skill=document.getElementById("pbdSkillSelect").value;
-            let sp=document.getElementById("pbdSpSelect").value;
-            if(!subj||!kelas||!skill||!sp){box.innerHTML="";return;}
-            let intervensiStudents=getActiveStudents().filter(s=>{
-                let tp=getPBD(subj,kelas,skill,sp,s.name).tp||0;
-                return tp>0&&tp<=2;
-            });
-            if(!intervensiStudents.length){
-                box.innerHTML='<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:10px;font-size:0.75rem;font-weight:600;">✅ Tiada pelajar intervensi untuk SP ini.</div>';
-                return;
-            }
-            let names=intervensiStudents.map(s=>s.name).join(", ");
-            box.innerHTML=`<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:10px;font-size:0.75rem;"><strong>⚠️ Peringatan Intervensi (${intervensiStudents.length} pelajar)</strong><div style="margin-top:4px;line-height:1.45;">${names}</div></div>`;
-        }
+        function updatePBDAnalysis(tpArray){let c=[0,0,0,0,0,0];tpArray.forEach(t=>{if(t>=1&&t<=6)c[t-1]++;});if(pbdChart)pbdChart.destroy();if(tpArray.length>0){let ctx=document.getElementById("pbdChart");if(ctx)pbdChart=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:['TP1','TP2','TP3','TP4','TP5','TP6'],datasets:[{data:c,backgroundColor:['#ff6b6b','#ffa502','#ffd700','#2ed573','#1e90ff','#a855f7'],borderRadius:8}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1}}}}});}let total=tpArray.length,intervensi=c[0]+c[1];document.getElementById("pbdAnalisisContent").innerHTML=`<div style="display:flex;justify-content:space-between;padding:8px 0;">🔴 Intervensi <strong>${intervensi}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;">🟡 Pemulihan <strong>${c[2]+c[3]}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;">🟢 Pengayaan <strong>${c[4]+c[5]}</strong></div>${total>0&&intervensi>total*0.3?'<p style="color:#ef4444;font-size:0.8rem;">⚠️ Intervensi segera!</p>':''}`;}
                function renderPBDIntervention(){
             let subj=document.getElementById("selectSubject").value;
             let kelas=document.getElementById("selectClass").value;
@@ -2186,48 +3177,565 @@ function updatePBDAnalysis(tpArray){let c=[0,0,0,0,0,0];tpArray.forEach(t=>{if(t
             let subjek = document.getElementById("selectSubject").value;
             let pelajar = getActiveStudents();
             if(pelajar.length === 0){ alert("Tiada pelajar."); return; }
-            let cfg = getItemConfig();
+            let examNames = getCurrentExamNames();
             let kelas = document.getElementById("selectClass").value;
             let ting = getCurrentTingkatan();
-            
-            let html = '<div class="no-print" style="margin-bottom:15px;">';
-            html += '<button class="btn btn-primary" onclick="window.print()" style="margin-right:8px;">Cetak</button>';
-            html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">Tutup</button>';
-            html += '</div>';
-            html += '<div class="print-header"><h2>LAPORAN ANALISIS ITEM - ' + subjek + ' (' + ting + ')</h2>';
-            html += '<p>Kelas: ' + kelas + ' | Tarikh: ' + new Date().toLocaleDateString('ms-MY') + ' | Pelajar: ' + pelajar.length + '</p></div>';
-            html += '<table class="master-table"><thead><tr><th rowspan="2">Nama</th>';
-            
-            cfg.kertas.forEach(function(k){ html += '<th colspan="' + k.soalan.length + '" class="kertas-header">' + k.nama + '</th>'; });
-            html += '<th rowspan="2">%</th><th rowspan="2">SPM</th></tr><tr>';
-            cfg.kertas.forEach(function(k){ k.soalan.forEach(function(s){ html += '<th>' + s.no + '<br>/' + s.markahPenuh + '</th>'; }); });
-            html += '</tr></thead><tbody>';
-            
-            pelajar.forEach(function(p, i){
-                html += '<tr><td class="student-name">' + (i+1) + '. ' + p.name + '</td>';
-                var totalMarkah = 0, totalPenuh = 0;
-                cfg.kertas.forEach(function(k){
-                    var itemData = getStudentItemData(p, "SPM");
-                    var kertasData = itemData[k.nama] || [];
-                    k.soalan.forEach(function(s, si){
-                        var item = kertasData[si] || {mark:0};
-                        var m = item.mark || 0;
-                        totalMarkah += m;
-                        totalPenuh += s.markahPenuh;
-                        var peratus = s.markahPenuh > 0 ? (m/s.markahPenuh)*100 : 0;
-                        var cls = peratus >= 80 ? 'score-green' : peratus >= 50 ? 'score-yellow' : 'score-red';
-                        html += '<td class="' + cls + '">' + m + '</td>';
-                    });
-                });
-                var overall = totalPenuh > 0 ? Math.round((totalMarkah/totalPenuh)*100) : 0;
-                html += '<td><strong>' + overall + '%</strong></td>';
-                html += '<td><strong>' + p.marks[3] + '%</strong></td></tr>';
-            });
-            
-            html += '</tbody></table>';
-            document.getElementById("printAnalysisReport").innerHTML = html;
+
+            // Papar dialog pilih peperiksaan dahulu
+            let examOptions = examNames.map((e,i) => `<button class="btn btn-ghost" style="margin:4px;flex:1;min-width:100px;font-weight:700;border:2px solid #e2e8f0;" onclick="jalanCetakAnalisis('${e}')">${e}</button>`).join('');
+            let pilihHtml = `
+            <div class="no-print" style="margin-bottom:15px;">
+                <button class="btn btn-ghost" onclick="document.getElementById('modalCetakAnalisis').style.display='none'">✕ Tutup</button>
+            </div>
+            <div style="text-align:center;padding:20px;">
+                <div style="font-size:1.5rem;margin-bottom:8px;">🖨️ Cetak Analisis Item</div>
+                <p style="color:#64748b;font-size:0.85rem;margin-bottom:20px;">Pilih <strong>jenis peperiksaan</strong> yang ingin dicetak:</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                    ${examOptions}
+                </div>
+                <p style="font-size:0.72rem;color:#94a3b8;margin-top:16px;">${subjek} · ${kelas} · ${ting}</p>
+            </div>`;
+            document.getElementById("printAnalysisReport").innerHTML = pilihHtml;
             document.getElementById("modalCetakAnalisis").style.display = "flex";
         }
+function jalanCetakAnalisis(examPilihan){
+    let subjek = document.getElementById("selectSubject").value;
+    let pelajar = getActiveStudents();
+    let cfg = getItemConfig();
+    let kelas = document.getElementById("selectClass").value;
+    let ting = getCurrentTingkatan();
+    let examNames = getCurrentExamNames();
+    let examIdx = examNames.indexOf(examPilihan);
+    let isSPMLevel = (ting === "Tingkatan 4" || ting === "Tingkatan 5");
+    
+    // ID unik untuk jadual ini
+    let tableId = "analisisTable_" + Date.now();
+    
+    let html = '<div class="no-print" style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap; justify-content:space-between; align-items:center;">';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    html += '<button class="btn btn-primary" onclick="window.print()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>';
+    html += '<button class="btn btn-ghost" onclick="bukaCetakAnalisisItem()">← Tukar Peperiksaan</button>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    html += '<button class="btn btn-danger" onclick="highlightPelajarLemah(\'' + tableId + '\')" style="background:#dc2626;"><i class="fas fa-exclamation-triangle"></i> 🔴 Highlight Pelajar Lemah (<50%)</button>';
+    html += '<button class="btn btn-warning" onclick="resetHighlight(\'' + tableId + '\')" style="background:#f59e0b; color:white;"><i class="fas fa-undo-alt"></i> Reset Highlight</button>';
+    html += '</div>';
+    html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">✕ Tutup</button>';
+    html += '</div>';
+    
+    // Panel untuk pilih pelajar individu
+    html += '<div class="no-print" style="background:#f1f5f9; border-radius:12px; padding:12px; margin-bottom:16px;">';
+    html += '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">';
+    html += '<span style="font-weight:600; font-size:0.75rem;"><i class="fas fa-check-square"></i> Highlight Pelajar:</span>';
+    html += '<div id="studentChecklist_' + tableId + '" style="display:flex; flex-wrap:wrap; gap:8px;">';
+    for(let i = 0; i < pelajar.length; i++) {
+        let p = pelajar[i];
+        let purata = 0;
+        for(let j = 0; j < examNames.length; j++) purata += p.marks[j] || 0;
+        purata = examNames.length > 0 ? purata / examNames.length : 0;
+        let isLemah = purata < 50;
+        html += '<label style="display:flex; align-items:center; gap:4px; background:white; padding:4px 8px; border-radius:20px; font-size:0.7rem; cursor:pointer; border:1px solid #e2e8f0;">';
+        html += '<input type="checkbox" class="student-checkbox" data-student="' + i + '" data-table="' + tableId + '" onchange="toggleHighlightPelajar(this, \'' + tableId + '\')" ' + (isLemah ? 'checked' : '') + '>';
+        html += '<span style="' + (isLemah ? 'color:#dc2626; font-weight:600;' : '') + '">' + p.name + '</span>';
+        html += '</label>';
+    }
+    html += '</div>';
+    html += '<button class="btn btn-sm btn-ghost" onclick="pilihSemuaPelajar(\'' + tableId + '\', true)" style="font-size:0.65rem; padding:4px 8px;">Pilih Semua</button>';
+    html += '<button class="btn btn-sm btn-ghost" onclick="pilihSemuaPelajar(\'' + tableId + '\', false)" style="font-size:0.65rem; padding:4px 8px;">Nyah Pilih</button>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div class="print-header" style="border-bottom:2px solid #2563eb; margin-bottom:16px; padding-bottom:8px;">';
+    html += '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + '</h2>';
+    html += '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + '</p>';
+    html += '</div>';
+    
+    // JADUAL UTAMA
+    html += '<table id="' + tableId + '" style="width:100%; border-collapse:collapse; font-size:0.7rem;">';
+    html += '<thead>';
+    
+    // BARIS 1: Header Kertas
+    html += '<tr>';
+    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Bil</th>';
+    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Nama Pelajar</th>';
+    
+    for(let ki = 0; ki < cfg.kertas.length; ki++) {
+        let k = cfg.kertas[ki];
+        html += '<th colspan="' + (k.soalan.length + 1) + '" style="padding:8px 4px; background:#2563eb; border:1px solid #1d4ed8; text-align:center; font-weight:600; color:white;">' + k.nama + '</th>';
+    }
+    
+    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Purata (%)</th>';
+    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Gred</th>';
+    html += '</tr>';
+    
+    // BARIS 2: Header Soalan + Jumlah
+    html += '<tr>';
+    for(let ki = 0; ki < cfg.kertas.length; ki++) {
+        let k = cfg.kertas[ki];
+        for(let si = 0; si < k.soalan.length; si++) {
+            let s = k.soalan[si];
+            html += '<th style="padding:6px 4px; background:#dbeafe; border:1px solid #bfdbfe; font-size:0.65rem; text-align:center; font-weight:600; color:#1e40af;">' + s.no + '<br><span style="font-size:0.55rem; font-weight:400;">/' + s.markahPenuh + '</span></th>';
+        }
+        let totalPenuhKertas = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
+        html += '<th style="padding:6px 4px; background:#bfdbfe; border:1px solid #93c5fd; font-size:0.68rem; text-align:center; font-weight:700; color:#1e3a8a;">Jumlah<br><span style="font-size:0.6rem; font-weight:400;">/' + totalPenuhKertas + '</span></th>';
+    }
+    html += '</tr>';
+    html += '</thead><tbody>';
+    
+    // Kumpul data pelajar
+    let pelajarData = [];
+    let purataPelajar = [];
+    
+    for(let i = 0; i < pelajar.length; i++) {
+        let p = pelajar[i];
+        let semuaMarkah = [];
+        let totalMarkah = 0;
+        let totalPenuh = 0;
+        let kertasMarkah = [];
+        
+        for(let ki = 0; ki < cfg.kertas.length; ki++) {
+            let k = cfg.kertas[ki];
+            let itemData = getStudentItemData(p, examPilihan);
+            let kertasData = itemData[k.nama] || [];
+            let kertasTotal = 0;
+            let kertasPenuh = 0;
+            
+            for(let si = 0; si < k.soalan.length; si++) {
+                let s = k.soalan[si];
+                let item = kertasData[si] || {mark: 0};
+                let markah = item.mark || 0;
+                semuaMarkah.push(markah);
+                kertasTotal += markah;
+                kertasPenuh += s.markahPenuh;
+                totalMarkah += markah;
+            }
+            totalPenuh += kertasPenuh;
+            kertasMarkah.push(kertasTotal);
+        }
+        
+        let overallPercent = totalPenuh > 0 ? Math.round((totalMarkah/totalPenuh)*100) : 0;
+        let gredInfo = getGredByTingkatan(overallPercent, ting);
+        
+        pelajarData.push({
+            name: p.name,
+            semuaMarkah: semuaMarkah,
+            kertasMarkah: kertasMarkah,
+            overallPercent: overallPercent,
+            gredInfo: gredInfo,
+            isLemah: overallPercent < 50
+        });
+        purataPelajar.push(overallPercent);
+    }
+    
+    // Baris data pelajar
+    for(let i = 0; i < pelajarData.length; i++) {
+        let p = pelajarData[i];
+        let rowBg = (i % 2 === 0) ? '#ffffff' : '#f8fafc';
+        let highlightClass = p.isLemah ? 'row-lemah' : '';
+        let highlightStyle = p.isLemah ? 'background:#fee2e2 !important; border-left:4px solid #dc2626;' : '';
+        
+        html += '<tr id="row_' + tableId + '_' + i + '" data-student="' + i + '" data-lemah="' + p.isLemah + '" style="background:' + rowBg + ';' + highlightStyle + '">';
+        html += '<td style="padding:6px 4px; border:1px solid #e2e8f0; text-align:center; color:#64748b;">' + (i+1) + '</td>';
+        html += '<td style="padding:6px 6px; border:1px solid #e2e8f0; font-weight:600; color:#1e293b;">' + p.name + '</td>';
+        
+        let markahIdx = 0;
+        for(let ki = 0; ki < cfg.kertas.length; ki++) {
+            let k = cfg.kertas[ki];
+            for(let si = 0; si < k.soalan.length; si++) {
+                let markah = p.semuaMarkah[markahIdx] || 0;
+                let s = k.soalan[si];
+                let peratus = s.markahPenuh > 0 ? (markah/s.markahPenuh)*100 : 0;
+                let colorClass = peratus >= 80 ? '#059669' : (peratus >= 50 ? '#d97706' : '#dc2626');
+                html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:500; color:' + colorClass + ';">' + markah + '</td>';
+                markahIdx++;
+            }
+            let kertasMarkah = p.kertasMarkah[ki];
+            let kertasPenuh = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
+            let percentKertas = kertasPenuh > 0 ? Math.round((kertasMarkah / kertasPenuh) * 100) : 0;
+            let warnaJumlah = percentKertas >= 80 ? '#059669' : (percentKertas >= 50 ? '#d97706' : '#dc2626');
+            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; background:#eff6ff; font-weight:600; color:' + warnaJumlah + ';">' + kertasMarkah + '<span style="font-size:0.6rem; color:#94a3b8;">/' + kertasPenuh + '</span></td>';
+        }
+        let purataWarna = p.overallPercent >= 80 ? '#059669' : (p.overallPercent >= 50 ? '#d97706' : '#dc2626');
+        html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:700; color:' + purataWarna + ';">' + p.overallPercent + '%</td>';
+        let badgeBg = p.gredInfo.warna + '15';
+        html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0;"><span style="display:inline-block; padding:2px 8px; border-radius:12px; background:' + badgeBg + '; color:' + p.gredInfo.warna + '; font-weight:600; font-size:0.65rem;">' + (isSPMLevel ? p.gredInfo.gred : '-') + '</span></td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    
+    // Tambah CSS untuk highlight
+    html += '<style>';
+    html += '.row-highlight { background: #fef3c7 !important; border-left: 4px solid #f59e0b !important; }';
+    html += '.row-lemah { background: #fee2e2 !important; border-left: 4px solid #dc2626 !important; }';
+    html += '.row-lemah td { background: #fee2e2 !important; }';
+    html += '.row-highlight td { background: #fef3c7 !important; }';
+    html += '</style>';
+    
+    document.getElementById("printAnalysisReport").innerHTML = html;
+    
+    // Auto highlight pelajar lemah (purata <50%)
+    setTimeout(function() {
+        highlightPelajarLemah(tableId);
+        // Set checkbox untuk pelajar lemah sebagai checked
+        let checkboxes = document.querySelectorAll('.student-checkbox[data-table="' + tableId + '"]');
+        checkboxes.forEach(function(cb) {
+            let studentIdx = parseInt(cb.getAttribute('data-student'));
+            if(pelajarData[studentIdx] && pelajarData[studentIdx].isLemah) {
+                cb.checked = true;
+            }
+        });
+    }, 100);
+}
+
+// ==================== FUNGSI UNTUK HIGHLIGHT ====================
+function highlightPelajarLemah(tableId) {
+    let table = document.getElementById(tableId);
+    if(!table) return;
+    let rows = table.querySelectorAll('tbody tr');
+    rows.forEach(function(row, idx) {
+        let isLemah = row.getAttribute('data-lemah') === 'true';
+        if(isLemah) {
+            row.classList.add('row-highlight');
+            row.style.background = '#fef3c7';
+        }
+        // Update checkbox
+        let checkbox = document.querySelector('.student-checkbox[data-table="' + tableId + '"][data-student="' + idx + '"]');
+        if(checkbox && isLemah) {
+            checkbox.checked = true;
+        }
+    });
+}
+
+function resetHighlight(tableId) {
+    let table = document.getElementById(tableId);
+    if(!table) return;
+    let rows = table.querySelectorAll('tbody tr');
+    rows.forEach(function(row, idx) {
+        row.classList.remove('row-highlight');
+        let isLemah = row.getAttribute('data-lemah') === 'true';
+        if(isLemah) {
+            row.style.background = '#fee2e2';
+        } else {
+            row.style.background = (idx % 2 === 0) ? '#ffffff' : '#f8fafc';
+        }
+        // Uncheck checkbox
+        let checkbox = document.querySelector('.student-checkbox[data-table="' + tableId + '"][data-student="' + idx + '"]');
+        if(checkbox) {
+            checkbox.checked = false;
+        }
+    });
+}
+
+function toggleHighlightPelajar(checkbox, tableId) {
+    let studentIdx = parseInt(checkbox.getAttribute('data-student'));
+    let row = document.getElementById('row_' + tableId + '_' + studentIdx);
+    if(!row) return;
+    
+    if(checkbox.checked) {
+        row.classList.add('row-highlight');
+        row.style.background = '#fef3c7';
+    } else {
+        row.classList.remove('row-highlight');
+        let isLemah = row.getAttribute('data-lemah') === 'true';
+        if(isLemah) {
+            row.style.background = '#fee2e2';
+        } else {
+            row.style.background = (studentIdx % 2 === 0) ? '#ffffff' : '#f8fafc';
+        }
+    }
+}
+
+function pilihSemuaPelajar(tableId, pilih) {
+    let checkboxes = document.querySelectorAll('.student-checkbox[data-table="' + tableId + '"]');
+    checkboxes.forEach(function(cb) {
+        cb.checked = pilih;
+        let studentIdx = parseInt(cb.getAttribute('data-student'));
+        let row = document.getElementById('row_' + tableId + '_' + studentIdx);
+        if(row) {
+            if(pilih) {
+                row.classList.add('row-highlight');
+                row.style.background = '#fef3c7';
+            } else {
+                row.classList.remove('row-highlight');
+                let isLemah = row.getAttribute('data-lemah') === 'true';
+                if(isLemah) {
+                    row.style.background = '#fee2e2';
+                } else {
+                    row.style.background = (studentIdx % 2 === 0) ? '#ffffff' : '#f8fafc';
+                }
+            }
+        }
+    });
+}
+// ==================== RANKING ANALISIS SOALAN (Butang Berasingan) ====================
+function bukaRankingAnalisisSoalan() {
+    let subjek = document.getElementById("selectSubject").value;
+    let kelas = document.getElementById("selectClass").value;
+    let pelajar = getActiveStudents();
+    
+    if(!subjek || !kelas || pelajar.length === 0) {
+        alert("❌ Sila pilih Subjek dan Kelas terlebih dahulu.");
+        return;
+    }
+    
+    let examNames = getCurrentExamNames();
+    let examPilihan = prompt("📋 Pilih peperiksaan untuk dianalisis:\n\n" + examNames.join("\n"), examNames[0]);
+    if(!examPilihan) return;
+    
+    if(!examNames.includes(examPilihan)) {
+        alert("❌ Nama peperiksaan tidak sah!");
+        return;
+    }
+    
+    renderRankingAnalisisSoalan(examPilihan);
+    let modal = document.getElementById("modalRankingSoalan");
+    if(modal) {
+        modal.style.display = "flex";
+    } else {
+        alert("❌ Ralat: Modal tidak dijumpai. Sila refresh halaman.");
+    }
+}
+
+function renderRankingAnalisisSoalan(examPilihan) {
+    let subjek = document.getElementById("selectSubject").value;
+    let pelajar = getActiveStudents();
+    let cfg = getItemConfig();
+    let kelas = document.getElementById("selectClass").value;
+    let ting = getCurrentTingkatan();
+    
+    if(!cfg || !cfg.kertas || cfg.kertas.length === 0) {
+        document.getElementById("modalRankingSoalanContent").innerHTML = '<div style="padding:20px; text-align:center; color:red;">❌ Tiada konfigurasi item. Sila setup di halaman Prestasi > Konfigurasi Item.</div>';
+        return;
+    }
+    
+    // Kumpul data markah pelajar untuk setiap soalan
+    let semuaMarkahPelajar = [];
+    let soalanAnalisis = [];
+    
+    for(let i = 0; i < pelajar.length; i++) {
+        let p = pelajar[i];
+        let semuaMarkah = [];
+        
+        for(let ki = 0; ki < cfg.kertas.length; ki++) {
+            let k = cfg.kertas[ki];
+            let itemData = getStudentItemData(p, examPilihan);
+            let kertasData = itemData[k.nama] || [];
+            
+            for(let si = 0; si < k.soalan.length; si++) {
+                let item = kertasData[si] || {mark: 0};
+                let markah = item.mark || 0;
+                semuaMarkah.push(markah);
+            }
+        }
+        semuaMarkahPelajar.push(semuaMarkah);
+    }
+    
+    let soalanIdx = 0;
+    for(let ki = 0; ki < cfg.kertas.length; ki++) {
+        let k = cfg.kertas[ki];
+        for(let si = 0; si < k.soalan.length; si++) {
+            let s = k.soalan[si];
+            let dapatPenuh = 0;
+            let dapatSeparuh = 0;
+            let dapatKurang = 0;
+            let jumlahMarkah = 0;
+            let maksimumMarkah = s.markahPenuh * pelajar.length;
+            
+            for(let i = 0; i < pelajar.length; i++) {
+                let markah = semuaMarkahPelajar[i][soalanIdx] || 0;
+                let peratus = (markah / s.markahPenuh) * 100;
+                jumlahMarkah += markah;
+                
+                if(markah >= s.markahPenuh) {
+                    dapatPenuh++;
+                } else if(peratus >= 50) {
+                    dapatSeparuh++;
+                } else {
+                    dapatKurang++;
+                }
+            }
+            
+            let peratusKeseluruhan = maksimumMarkah > 0 ? Math.round((jumlahMarkah / maksimumMarkah) * 100) : 0;
+            
+            soalanAnalisis.push({
+                kertas: k.nama,
+                noSoalan: s.no,
+                markahPenuh: s.markahPenuh,
+                dapatPenuh: dapatPenuh,
+                dapatSeparuh: dapatSeparuh,
+                dapatKurang: dapatKurang,
+                peratusKeseluruhan: peratusKeseluruhan,
+                jumlahMarkah: jumlahMarkah,
+                maksimumMarkah: maksimumMarkah
+            });
+            soalanIdx++;
+        }
+    }
+    
+    // Ranking dari tertinggi ke terendah
+    soalanAnalisis.sort((a, b) => b.peratusKeseluruhan - a.peratusKeseluruhan);
+    
+    // Kumpulan mengikut tahap
+    let tahapKuat = soalanAnalisis.filter(s => s.peratusKeseluruhan >= 80);
+    let tahapSederhana = soalanAnalisis.filter(s => s.peratusKeseluruhan >= 60 && s.peratusKeseluruhan < 80);
+    let tahapLemah = soalanAnalisis.filter(s => s.peratusKeseluruhan >= 40 && s.peratusKeseluruhan < 60);
+    let tahapSangatLemah = soalanAnalisis.filter(s => s.peratusKeseluruhan < 40);
+    
+    let html = `
+    <div class="no-print" style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap; justify-content:space-between;">
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="window.print()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>
+            <button class="btn btn-ghost" onclick="bukaRankingAnalisisSoalan()">↻ Tukar Peperiksaan</button>
+        </div>
+        <button class="btn btn-ghost" onclick="tutupModal('modalRankingSoalan')">✕ Tutup</button>
+    </div>
+    <div class="print-header" style="border-bottom:2px solid #8b5cf6; margin-bottom:16px; padding-bottom:8px;">
+        <h2 style="color:#5b21b6; font-size:1rem; margin:0; font-weight:700;">📊 RANKING ANALISIS SOALAN - ${subjek}</h2>
+        <p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">${kelas} · ${ting} · ${examPilihan} · Tarikh: ${new Date().toLocaleDateString('ms-MY')}</p>
+    </div>
+    
+    <!-- SUMMARY CARDS -->
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;">
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#059669;">${tahapKuat.length}</div>
+            <div style="font-size:0.7rem; color:#166534; font-weight:600;">✅ Soalan Kuat (≥80%)</div>
+        </div>
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#d97706;">${tahapSederhana.length}</div>
+            <div style="font-size:0.7rem; color:#92400e; font-weight:600;">⚠️ Soalan Sederhana (60-79%)</div>
+        </div>
+        <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#ea580c;">${tahapLemah.length}</div>
+            <div style="font-size:0.7rem; color:#9a3412; font-weight:600;">🔴 Soalan Lemah (40-59%)</div>
+        </div>
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#dc2626;">${tahapSangatLemah.length}</div>
+            <div style="font-size:0.7rem; color:#991b1b; font-weight:600;">💔 Soalan Sangat Lemah (&lt;40%)</div>
+        </div>
+    </div>
+    
+    <!-- RANKING TABLE -->
+    <table style="width:100%; border-collapse:collapse; font-size:0.7rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+        <thead>
+            <tr style="background:#5b21b6;">
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center; width:50px;">Rank</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">Kertas</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">Soalan</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">Penguasaan</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">🎯 Dapat Penuh</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">📊 Dapat ≥50%</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">⚠️ Dapat &lt;50%</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">Jumlah Markah</th>
+                <th style="padding:10px 6px; border:1px solid #4c1d95; color:white; text-align:center;">Tahap</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    for(let i = 0; i < soalanAnalisis.length; i++) {
+        let s = soalanAnalisis[i];
+        let rowBg = (i % 2 === 0) ? '#ffffff' : '#f8fafc';
+        
+        let tahapWarna = '';
+        let tahapLabel = '';
+        let tahapBg = '';
+        if(s.peratusKeseluruhan >= 80) {
+            tahapWarna = '#059669';
+            tahapLabel = 'Kuat';
+            tahapBg = '#d1fae5';
+        } else if(s.peratusKeseluruhan >= 60) {
+            tahapWarna = '#d97706';
+            tahapLabel = 'Sederhana';
+            tahapBg = '#fef3c7';
+        } else if(s.peratusKeseluruhan >= 40) {
+            tahapWarna = '#ea580c';
+            tahapLabel = 'Lemah';
+            tahapBg = '#ffedd5';
+        } else {
+            tahapWarna = '#dc2626';
+            tahapLabel = 'Sangat Lemah';
+            tahapBg = '#fee2e2';
+        }
+        
+        let progressWidth = s.peratusKeseluruhan;
+        let medalIcon = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : (i+1)));
+        
+        html += `
+            <tr style="background:${rowBg};">
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center; font-weight:800; font-size:0.85rem;">${medalIcon}</td>
+                <td style="padding:8px 6px; border:1px solid #e2e8f0;">${s.kertas}</td>
+                <td style="padding:8px 6px; border:1px solid #e2e8f0; text-align:center; font-weight:700;">${s.noSoalan}</td>
+                <td style="padding:6px 8px; border:1px solid #e2e8f0;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="flex:1; height:8px; background:#e2e8f0; border-radius:10px; overflow:hidden;">
+                            <div style="width:${progressWidth}%; height:100%; background:${tahapWarna}; border-radius:10px;"></div>
+                        </div>
+                        <span style="font-weight:700; color:${tahapWarna}; min-width:40px;">${s.peratusKeseluruhan}%</span>
+                    </div>
+                </td>
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center; color:#059669; font-weight:600;">${s.dapatPenuh} <span style="color:#94a3b8;">/${pelajar.length}</span></td>
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center; color:#d97706; font-weight:600;">${s.dapatSeparuh} <span style="color:#94a3b8;">/${pelajar.length}</span></td>
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center; color:#dc2626; font-weight:600;">${s.dapatKurang} <span style="color:#94a3b8;">/${pelajar.length}</span></td>
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center;">${s.jumlahMarkah}<span style="color:#94a3b8;">/${s.maksimumMarkah}</span></td>
+                <td style="padding:8px 4px; border:1px solid #e2e8f0; text-align:center;"><span style="display:inline-block; padding:4px 10px; border-radius:20px; background:${tahapBg}; color:${tahapWarna}; font-weight:700; font-size:0.65rem;">${tahapLabel}</span></td>
+            </tr>
+        `;
+    }
+    
+    html += `
+        </tbody>
+     </table>
+    `;
+    
+    // Cadangan Intervensi
+    if(tahapSangatLemah.length > 0 || tahapLemah.length > 0) {
+        html += `
+        <div style="margin-top:20px; background:#fef2f2; border-left:4px solid #dc2626; border-radius:8px; padding:14px 18px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <i class="fas fa-exclamation-triangle" style="color:#dc2626;"></i>
+                <strong style="color:#991b1b; font-size:0.8rem;">📋 CADANGAN INTERVENSI</strong>
+            </div>
+            <ul style="margin:0; padding-left:20px; font-size:0.7rem; color:#7f1d1d;">
+        `;
+        if(tahapSangatLemah.length > 0) {
+            html += `<li><strong>🔴 TINDAKAN SEGERA:</strong> ${tahapSangatLemah.length} soalan tahap SANGAT LEMAH (${tahapSangatLemah.map(s => s.noSoalan).join(', ')}) - Perlukan bimbingan intensif segera.</li>`;
+        }
+        if(tahapLemah.length > 0) {
+            html += `<li><strong>🟠 TINDAKAN PEMULIHAN:</strong> ${tahapLemah.length} soalan tahap LEMAH (${tahapLemah.map(s => s.noSoalan).join(', ')}) - Kelas pemulihan dan latihan tambahan diperlukan.</li>`;
+        }
+        if(tahapSederhana.length > 0) {
+            html += `<li><strong>🟡 TINDAKAN PENGUKUHAN:</strong> ${tahapSederhana.length} soalan tahap SEDERHANA - Beri latihan pengukuhan.</li>`;
+        }
+        html += `</ul></div>`;
+    }
+    
+    if(tahapKuat.length === soalanAnalisis.length && soalanAnalisis.length > 0) {
+        html += `
+        <div style="margin-top:20px; background:#d1fae5; border-left:4px solid #059669; border-radius:8px; padding:14px 18px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-check-circle" style="color:#059669;"></i>
+                <span style="color:#065f46; font-size:0.75rem; font-weight:500;">🏆 TAHNIAH! Semua soalan dikuasai dengan baik. Teruskan usaha cemerlang!</span>
+            </div>
+        </div>`;
+    }
+    
+    // Tambah CSS untuk print
+    html += '<style media="print">';
+    html += '.no-print { display: none !important; }';
+    html += 'body * { visibility: hidden; }';
+    html += '#modalRankingSoalan, #modalRankingSoalan * { visibility: visible; }';
+    html += '#modalRankingSoalan { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 20px; background: white; }';
+    html += '@page { size: landscape; margin: 10mm; }';
+    html += '</style>';
+    
+    let contentDiv = document.getElementById("modalRankingSoalanContent");
+    if(contentDiv) {
+        contentDiv.innerHTML = html;
+    } else {
+        console.error("modalRankingSoalanContent not found");
+        alert("Ralat: Elemen modal tidak dijumpai.");
+    }
+}
         function renderProfilRadarChart(pbdSkills){
             let existingCanvas=document.getElementById('profilRadarChart');
             if(existingCanvas){let existingChart=Chart.getChart('profilRadarChart');if(existingChart)existingChart.destroy();existingCanvas.parentElement.remove();}
@@ -2242,175 +3750,153 @@ function updatePBDAnalysis(tpArray){let c=[0,0,0,0,0,0];tpArray.forEach(t=>{if(t
         function eksportPBDExcel(){let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value,ws=[["PBD",subj,kelas],[],["Nama","TP","Catatan"]];getActiveStudents().forEach(s=>{let ev=getPBD(subj,kelas,skill,sp,s.name);ws.push([s.name,ev.tp,ev.remark||""]);});let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws),"PBD");XLSX.writeFile(wb,`PBD_${subj}_${kelas}.xlsx`);}
 
         // ==================== TETAPAN DENGAN MUAT NAIK DSKP YANG DIPERBAIKI ====================
-                function renderSettings(){
-            let c=document.getElementById("settingsContent");
-            let dskpInfo = '';
-            let hasDSKP = false;
-            Object.keys(dskpDatabase).forEach(subj=>{
-                let tings=Object.keys(dskpDatabase[subj]);
-                if(tings.length>0){
-                    hasDSKP = true;
-                    tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
-                }
-            });
-            if(!hasDSKP) dskpInfo = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
-            
-            c.innerHTML=`
-            <div class="settings-container">
-                <!-- HERO -->
-                <div class="settings-hero">
-                    <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
-                    <div>
-                        <h2>Pusat Tetapan Sistem</h2>
-                        <p>Urus subjek, kelas, DSKP & pendaftaran pelajar</p>
-                    </div>
-                </div>
-                
-                <!-- ROW 1: Subjek & Kelas -->
-                <div class="settings-grid">
-                    <!-- SUBJEK -->
-                    <div class="settings-card">
-                        <div class="settings-card-header"><i class="fas fa-book"></i> Pengurusan Subjek</div>
-                        <div class="settings-tag-list" id="subjectTagList">
-                            ${allSubjects.map(s=>`<span class="settings-tag purple">${s} <i class="fas fa-times" onclick="padamSubjek('${s}')" title="Padam"></i></span>`).join('')}
-                        </div>
-                        <div class="settings-input-group">
-                            <input type="text" id="newSubjectInput" class="settings-input" placeholder="Nama subjek baru...">
-                            <button class="btn btn-primary" onclick="tambahSubjek()"><i class="fas fa-plus"></i> Tambah</button>
-                        </div>
-                    </div>
-                    
-                    <!-- KELAS -->
-                    <div class="settings-card">
-                        <div class="settings-card-header"><i class="fas fa-school"></i> Pengurusan Kelas</div>
-                        <div class="settings-tag-list" id="classTagList">
-                            ${allClasses.map(c=>`<span class="settings-tag blue">${c} <i class="fas fa-times" onclick="padamKelas('${c}')" title="Padam"></i></span>`).join('')}
-                        </div>
-                        <div class="settings-input-group">
-                            <input type="text" id="newClassInput" class="settings-input" placeholder="Nama kelas baru...">
-                            <button class="btn btn-primary" onclick="tambahKelas()"><i class="fas fa-plus"></i> Tambah</button>
-                        </div>
-                    </div>
-                </div>
-<!-- ROW BARU: SALIN SENARAI PELAJAR -->
-<div class="settings-full-card" style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #bfdbfe; margin-bottom: 20px;">
-    <div class="settings-card-header">
-        <i class="fas fa-copy" style="color:#2563eb;"></i> 
-        📋 Salin Senarai Pelajar (Kelas Sama, Subjek Berbeza)
-    </div>
-    <p style="font-size:0.78rem;color:#1e40af;margin-bottom:12px;">
-        <i class="fas fa-lightbulb"></i> <strong>Guna jika anda mengajar 2 subjek dalam kelas yang sama.</strong><br>
-        Contoh: Sudah daftar pelajar untuk <strong>Bahasa Melayu</strong> → terus salin ke <strong>Sejarah</strong> tanpa perlu tulis semula!
-    </p>
-    
-    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
-        <div style="flex:1;min-width:160px;">
-            <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">🏫 Kelas</div>
-            <select id="copyClassSelect" class="settings-input">
-                <option value="">-- Pilih Kelas --</option>
-                ${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}
-            </select>
-        </div>
-        <div style="flex:1;min-width:160px;">
-            <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📖 Subjek SUMBER (sudah ada data)</div>
-            <select id="copySourceSubject" class="settings-input">
-                <option value="">-- Pilih Subjek --</option>
-                ${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}
-            </select>
-        </div>
-        <div style="flex:1;min-width:160px;">
-            <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📚 Subjek DESTINASI (yang kosong)</div>
-            <select id="copyTargetSubject" class="settings-input">
-                <option value="">-- Pilih Subjek --</option>
-                ${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}
-            </select>
-        </div>
-        <div>
-            <button class="btn btn-primary" onclick="salinSenaraiPelajar()" style="background:#2563eb;white-space:nowrap;">
-                <i class="fas fa-arrow-right"></i> Salin Sekarang
-            </button>
-        </div>
-    </div>
-    
-    <div style="background:#eff6ff;border-radius:12px;padding:10px;margin-top:12px;font-size:0.7rem;color:#1e40af;">
-        <i class="fas fa-check-circle"></i> <strong>Cara guna:</strong><br>
-        Contoh: Kelas <strong>5 IBNU SINA</strong> → Subjek SUMBER: <strong>Bahasa Melayu</strong> → Subjek DESTINASI: <strong>Sejarah</strong> → Klik Salin Sekarang
-    </div>
-</div>
-                
-                <!-- DSKP UPLOAD -->
-                <div class="settings-full-card">
-                    <div class="settings-card-header"><i class="fas fa-cloud-upload-alt"></i> Muat Naik DSKP (Standard Kurikulum)</div>
-                    <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Muat naik fail JSON DSKP. Pilih subjek, kemudian pilih fail JSON. <b>Tingkatan dikesan automatik.</b></p>
-                    
-                    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                        <select id="dskpSubjectSelect" class="settings-input" style="flex:1;min-width:200px;">
-                            <option value="">-- Pilih Subjek --</option>
-                            ${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}
-                        </select>
-                        <label class="settings-upload-zone" for="dskpFileInput" style="flex:1;min-width:200px;padding:12px;cursor:pointer;">
-                            <i class="fas fa-file-upload" style="font-size:1.2rem;margin-bottom:4px;"></i>
-                            <p style="margin:0;">Klik untuk pilih fail JSON</p>
-                            <input type="file" id="dskpFileInput" accept=".json" onchange="this.parentElement.querySelector('p').textContent=this.files[0]?this.files[0].name:'Klik untuk pilih fail JSON'">
-                        </label>
-                        <button class="btn btn-success" onclick="uploadDSKP()"><i class="fas fa-upload"></i> Muat Naik</button>
-                    </div>
-                    
-                    <div class="settings-dskp-info" id="dskpStatusArea">${dskpInfo}</div>
-                    <p style="font-size:0.65rem;color:#94a3b8;margin-top:8px;">
-                        <i class="fas fa-info-circle"></i> Format JSON: </code>
-                    </p>
-                </div>
-                
-                <!-- DAFTAR PELAJAR -->
-                <div class="settings-full-card">
-                    <div class="settings-card-header"><i class="fas fa-user-plus"></i> Pendaftaran Pelajar Baru</div>
-                    <div class="settings-student-form">
-                        <input type="text" id="settingsName" placeholder="Nama penuh pelajar">
-                        <input type="text" id="settingsIC" placeholder="No Kad Pengenalan">
-                        <select id="settingsSubj"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                        <select id="settingsCls"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-                        <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan">
-                        <input type="number" id="settingsU1" value="0" placeholder="Markah UP1 (%)" min="0" max="100">
-                        <input type="number" id="settingsU2" value="0" placeholder="Markah PPSA (%)" min="0" max="100">
-                        <input type="number" id="settingsU3" value="0" placeholder="Markah TOV (%)" min="0" max="100">
-                        <input type="number" id="settingsU4" value="0" placeholder="Markah SPM (%)" min="0" max="100">
-                    </div>
-                    <button class="btn btn-success" onclick="tambahPelajar()" style="width:100%;margin-top:14px;padding:12px;">
-                        <i class="fas fa-user-check"></i> Daftar Pelajar
-                    </button>
-                <!-- BUTANG BACKUP & RESTORE (PALING BAWAH - HANYA UNTUK GURU) -->
-                ${(currentUser && currentUser.role === 'guru') ? `
-                <div class="settings-full-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 1px solid #fcd34d; margin-top: 20px;">
-                    <div class="settings-card-header">
-                        <i class="fas fa-database" style="color:#d97706;"></i> 
-                        💾 Backup & Restore Data
-                    </div>
-                    <p style="font-size:0.78rem;color:#92400e;margin-bottom:12px;">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>Penting!</strong> Selalu buat backup data untuk mengelakkan kehilangan.
-                    </p>
-                    
-                    <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                        <button class="btn btn-accent" onclick="backupData()" style="background:#d97706; flex:1;">
-                            <i class="fas fa-download"></i> 💾 Backup Data (Simpan ke fail)
-                        </button>
-                        <label class="btn btn-primary" style="background:#6366f1; cursor:pointer; flex:1; text-align:center;">
-                            <i class="fas fa-upload"></i> 📂 Restore Data (Pilih fail)
-                            <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreData(this.files[0])">
-                        </label>
-                    </div>
-                    
-                    <div style="background:#fffbeb; border-radius:12px; padding:10px; font-size:0.7rem; color:#92400e;">
-                        <i class="fas fa-info-circle"></i> <strong>Tips Backup:</strong><br>
-                        • Klik "Backup Data" untuk menyimpan semua data ke fail JSON.<br>
-                        • Guna "Restore Data" untuk memulihkan data dari fail backup.<br>
-                        • Backup otomatik akan ditanya apabila anda logout.
-                    </div>
-                </div>
-                ` : ''}
-                </div>
-            </div>`;
+function renderSettings(){
+    let c=document.getElementById("settingsContent");
+    let dskpInfo = '';
+    let hasDSKP = false;
+    Object.keys(dskpDatabase).forEach(subj=>{
+        let tings=Object.keys(dskpDatabase[subj]);
+        if(tings.length>0){
+            hasDSKP = true;
+            tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
         }
+    });
+    if(!hasDSKP) dskpInfo = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
+    
+    c.innerHTML=`
+    <div class="settings-container">
+        <div class="settings-hero">
+            <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
+            <div><h2>Pusat Tetapan Sistem</h2><p>Urus subjek, kelas, DSKP & pendaftaran pelajar</p></div>
+        </div>
+        
+        <div class="settings-grid">
+            <div class="settings-card">
+                <div class="settings-card-header"><i class="fas fa-book"></i> Pengurusan Subjek</div>
+                <div class="settings-tag-list" id="subjectTagList">
+                    ${allSubjects.map(s=>`<span class="settings-tag purple">${s} <i class="fas fa-times" onclick="padamSubjek('${s}')" title="Padam"></i></span>`).join('')}
+                </div>
+                <div class="settings-input-group">
+                    <input type="text" id="newSubjectInput" class="settings-input" placeholder="Nama subjek baru...">
+                    <button class="btn btn-primary" onclick="tambahSubjek()"><i class="fas fa-plus"></i> Tambah</button>
+                </div>
+            </div>
+            
+            <div class="settings-card">
+                <div class="settings-card-header"><i class="fas fa-school"></i> Pengurusan Kelas</div>
+                <div class="settings-tag-list" id="classTagList">
+                    ${allClasses.map(c=>`<span class="settings-tag blue">${c} <i class="fas fa-times" onclick="padamKelas('${c}')" title="Padam"></i></span>`).join('')}
+                </div>
+                <div class="settings-input-group">
+                    <input type="text" id="newClassInput" class="settings-input" placeholder="Nama kelas baru...">
+                    <button class="btn btn-primary" onclick="tambahKelas()"><i class="fas fa-plus"></i> Tambah</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-full-card" style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #bfdbfe; margin-bottom: 20px;">
+            <div class="settings-card-header"><i class="fas fa-copy" style="color:#2563eb;"></i> 📋 Salin Senarai Pelajar (Kelas Sama, Subjek Berbeza)</div>
+            <p style="font-size:0.78rem;color:#1e40af;margin-bottom:12px;"><i class="fas fa-lightbulb"></i> <strong>Guna jika anda mengajar 2 subjek dalam kelas yang sama.</strong><br>Contoh: Sudah daftar pelajar untuk <strong>Bahasa Melayu</strong> → terus salin ke <strong>Sejarah</strong> tanpa perlu tulis semula!</p>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div style="flex:1;min-width:160px;">
+                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">🏫 Kelas</div>
+                    <select id="copyClassSelect" class="settings-input"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📖 Subjek SUMBER</div>
+                    <select id="copySourceSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📚 Subjek DESTINASI</div>
+                    <select id="copyTargetSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                </div>
+                <div><button class="btn btn-primary" onclick="salinSenaraiPelajar()" style="background:#2563eb;"><i class="fas fa-arrow-right"></i> Salin Sekarang</button></div>
+            </div>
+        </div>
+        
+        <div class="settings-full-card">
+            <div class="settings-card-header"><i class="fas fa-cloud-upload-alt"></i> Muat Naik DSKP (Standard Kurikulum)</div>
+            <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Muat naik fail JSON DSKP. Pilih subjek, kemudian pilih fail JSON. <b>Tingkatan dikesan automatik.</b></p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                <select id="dskpSubjectSelect" class="settings-input" style="flex:1;min-width:200px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                <label class="settings-upload-zone" for="dskpFileInput" style="flex:1;min-width:200px;padding:12px;cursor:pointer;">
+                    <i class="fas fa-file-upload" style="font-size:1.2rem;margin-bottom:4px;"></i>
+                    <p style="margin:0;">Klik untuk pilih fail JSON</p>
+                    <input type="file" id="dskpFileInput" accept=".json" onchange="this.parentElement.querySelector('p').textContent=this.files[0]?this.files[0].name:'Klik untuk pilih fail JSON'">
+                </label>
+                <button class="btn btn-success" onclick="uploadDSKP()"><i class="fas fa-upload"></i> Muat Naik</button>
+            </div>
+            <div class="settings-dskp-info" id="dskpStatusArea">${dskpInfo}</div>
+        </div>
+        
+        <!-- DAFTAR PELAJAR -->
+        <div class="settings-full-card">
+            <div class="settings-card-header"><i class="fas fa-user-plus"></i> Pendaftaran Pelajar Baru</div>
+            
+            <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid #e2e8f0;">
+                <button id="registerSingleTab" class="btn btn-primary" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('single')">✏️ Daftar Seorang</button>
+                <button id="registerBulkTab" class="btn btn-ghost" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('bulk')">📋 Daftar Pukal (Copy-Paste)</button>
+            </div>
+            
+            <div id="registerSingleMode">
+                <div class="settings-student-form">
+                    <input type="text" id="settingsName" placeholder="Nama penuh pelajar">
+                    <input type="text" id="settingsIC" placeholder="No Kad Pengenalan (optional)">
+                    <select id="settingsSubj"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                    <select id="settingsCls"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                    <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan">
+                    <input type="number" id="settingsU1" value="0" placeholder="Markah UP1 (%)" min="0" max="100">
+                    <input type="number" id="settingsU2" value="0" placeholder="Markah PPSA (%)" min="0" max="100">
+                    <input type="number" id="settingsU3" value="0" placeholder="Markah TOV (%)" min="0" max="100">
+                    <input type="number" id="settingsU4" value="0" placeholder="Markah SPM (%)" min="0" max="100">
+                </div>
+                <button class="btn btn-success" onclick="tambahPelajar()" style="width:100%;margin-top:14px;padding:12px;"><i class="fas fa-user-check"></i> Daftar Pelajar</button>
+            </div>
+            
+            <div id="registerBulkMode" style="display:none;">
+                <div style="background:#fef3c7; border-radius:12px; padding:12px; margin-bottom:16px;">
+                    <p style="font-size:0.75rem; color:#92400e; margin:0;"><i class="fas fa-info-circle"></i> <strong>Cara Guna:</strong><br>1. Salin senarai nama dari Excel/Word (satu baris = satu nama)<br>2. Pilih Subjek dan Kelas yang sama untuk semua pelajar<br>3. Klik "Daftar Semua Pelajar"</p>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem; font-weight:600;">📚 Subjek (untuk semua pelajar)</label>
+                    <select id="bulkSubjectSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem; font-weight:600;">🏫 Kelas (untuk semua pelajar)</label>
+                    <select id="bulkClassSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:0.75rem; font-weight:600;">📋 Senarai Nama (satu baris satu nama)</label>
+                    <textarea id="bulkNamesTextarea" rows="6" class="settings-input" style="width:100%; font-family:monospace; font-size:0.8rem; margin-top:4px;" placeholder="Contoh:&#10;Ahmad Bin Abdullah&#10;Siti Nurhaliza Binti Mohd&#10;Muhammad Danish Bin Rizal&#10;Nur Aisyah Binti Kamal"></textarea>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:8px;">
+                    <button class="btn btn-primary" onclick="daftarPelajarPukal()" style="flex:1;"><i class="fas fa-users"></i> 📋 Daftar Semua Pelajar</button>
+                    <button class="btn btn-ghost" onclick="clearBulkTextarea()" style="flex:0;"><i class="fas fa-eraser"></i> Kosongkan</button>
+                </div>
+                <div id="bulkPreviewResult" style="margin-top:12px; font-size:0.7rem; color:#64748b;"></div>
+            </div>
+        </div>
+        
+        ${(currentUser && currentUser.role === 'guru') ? `
+        <div class="settings-full-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 1px solid #fcd34d; margin-top: 20px;">
+            <div class="settings-card-header"><i class="fas fa-database" style="color:#d97706;"></i> 💾 Backup & Restore Data</div>
+            <p style="font-size:0.78rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i> <strong>Penting!</strong> Selalu buat backup data untuk mengelakkan kehilangan.</p>
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                <button class="btn btn-accent" onclick="backupData()" style="background:#d97706; flex:1;"><i class="fas fa-download"></i> 💾 Backup Data (Simpan ke fail)</button>
+                <label class="btn btn-primary" style="background:#6366f1; cursor:pointer; flex:1; text-align:center;"><i class="fas fa-upload"></i> 📂 Restore Data (Pilih fail)<input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreData(this.files[0])"></label>
+            </div>
+        </div>
+        ` : ''}
+    </div>`;
+    
+    setTimeout(function() { 
+        setupBulkPreview(); 
+        if(document.getElementById('registerSingleMode')) {
+            document.getElementById('registerSingleMode').style.display = 'block';
+            document.getElementById('registerBulkMode').style.display = 'none';
+        }
+    }, 50);
+}
                 function refreshSettingsSelects(){
             // Update tag lists jika di halaman settings
             let subjList = document.getElementById("subjectTagList");
@@ -2453,6 +3939,77 @@ function updatePBDAnalysis(tpArray){let c=[0,0,0,0,0,0];tpArray.forEach(t=>{if(t
         function padamSubjek(s){if(confirm(`Hapus ${s}?`)){allSubjects=allSubjects.filter(x=>x!==s);Object.keys(allData).forEach(k=>{if(k.startsWith(s+"_"))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
         function padamKelas(c){if(confirm(`Hapus ${c}?`)){allClasses=allClasses.filter(x=>x!==c);Object.keys(allData).forEach(k=>{if(k.endsWith("_"+c))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
         function tambahPelajar(){let name=document.getElementById("settingsName").value.trim(),ic=document.getElementById("settingsIC").value.trim(),subj=document.getElementById("settingsSubj").value,cls=document.getElementById("settingsCls").value;if(!name||!subj||!cls)return alert("Lengkapkan.");let key=subj+"_"+cls;if(!allData[key])allData[key]={students:[]};if(allData[key].students.find(s=>s.name===name))return alert("Sudah wujud.");let marks=["settingsU1","settingsU2","settingsU3","settingsU4"].map(id=>parseInt(document.getElementById(id).value)||0);let buku={};masterWeeks.forEach(w=>buku[w]="kosong");allData[key].students.push({name,ic,marks,ulasan:document.getElementById("settingsUlasan").value||"-",buku,token:[],itemData:{}});saveAll();alert("✅ Didaftarkan!");refreshSelectors();document.getElementById("selectSubject").value=subj;document.getElementById("selectClass").value=cls;renderCurrentPage();}
+// ==================== DAFTAR PELAJAR PUKAL (COPY-PASTE) ====================
+let currentRegisterMode = 'single';
+
+function toggleRegisterMode(mode) {
+    currentRegisterMode = mode;
+    let singleTab = document.getElementById('registerSingleTab');
+    let bulkTab = document.getElementById('registerBulkTab');
+    let singleMode = document.getElementById('registerSingleMode');
+    let bulkMode = document.getElementById('registerBulkMode');
+    if(!singleTab || !bulkTab || !singleMode || !bulkMode) return;
+    if(mode === 'single') {
+        singleTab.className = 'btn btn-primary';
+        bulkTab.className = 'btn btn-ghost';
+        singleMode.style.display = 'block';
+        bulkMode.style.display = 'none';
+    } else {
+        singleTab.className = 'btn btn-ghost';
+        bulkTab.className = 'btn btn-primary';
+        singleMode.style.display = 'none';
+        bulkMode.style.display = 'block';
+    }
+}
+
+function clearBulkTextarea() {
+    document.getElementById('bulkNamesTextarea').value = '';
+    document.getElementById('bulkPreviewResult').innerHTML = '';
+}
+
+function daftarPelajarPukal() {
+    let subjek = document.getElementById('bulkSubjectSelect').value;
+    let kelas = document.getElementById('bulkClassSelect').value;
+    let namesText = document.getElementById('bulkNamesTextarea').value;
+    if(!subjek || !kelas) { alert('❌ Sila pilih Subjek dan Kelas terlebih dahulu!'); return; }
+    if(!namesText.trim()) { alert('❌ Sila masukkan senarai nama pelajar!'); return; }
+    let names = namesText.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
+    if(names.length === 0) { alert('❌ Tiada nama yang sah!'); return; }
+    let key = subjek + "_" + kelas;
+    if(!allData[key]) allData[key] = { students: [] };
+    let existingNames = allData[key].students.map(s => s.name);
+    let newStudents = [], duplicates = [];
+    let examNamesLocal = getCurrentExamNames();
+    for(let name of names) {
+        if(existingNames.includes(name)) { duplicates.push(name); continue; }
+        let newStudent = { name: name, ic: "-", marks: new Array(examNamesLocal.length).fill(0), ulasan: "-", buku: {}, token: [], itemData: {} };
+        masterWeeks.forEach(w => { newStudent.buku[w] = "kosong"; });
+        allData[key].students.push(newStudent);
+        newStudents.push(name);
+    }
+    saveAll();
+    let previewHtml = '';
+    if(newStudents.length > 0) previewHtml += '<div style="background:#d1fae5; border-radius:10px; padding:10px; margin-top:10px;"><strong>✅ Berjaya daftar: ' + newStudents.length + ' pelajar</strong><br><span style="font-size:0.65rem;">' + newStudents.join(', ') + '</span></div>';
+    if(duplicates.length > 0) previewHtml += '<div style="background:#fee2e2; border-radius:10px; padding:10px; margin-top:8px;"><strong>⚠️ Sudah wujud: ' + duplicates.length + ' pelajar</strong><br><span style="font-size:0.65rem;">' + duplicates.join(', ') + '</span></div>';
+    document.getElementById('bulkPreviewResult').innerHTML = previewHtml;
+    refreshSelectors(); refreshSettingsSelects();
+    document.getElementById("selectSubject").value = subjek;
+    document.getElementById("selectClass").value = kelas;
+    if(newStudents.length > 0) alert('✅ ' + newStudents.length + ' pelajar berjaya didaftarkan!');
+    else alert('⚠️ Tiada pelajar baru didaftar. ' + duplicates.length + ' nama sudah wujud.');
+    renderCurrentPage();
+}
+
+function setupBulkPreview() {
+    let textarea = document.getElementById('bulkNamesTextarea');
+    if(textarea) {
+        textarea.addEventListener('input', function() {
+            let lines = this.value.split(/\r?\n/).filter(l => l.trim().length > 0);
+            let previewDiv = document.getElementById('bulkPreviewResult');
+            if(previewDiv) previewDiv.innerHTML = '<div style="background:#f1f5f9; border-radius:8px; padding:6px 10px; margin-top:6px;">📋 <strong>' + lines.length + '</strong> nama dikesan</div>';
+        });
+    }
+}
 
 // ========== SALIN SENARAI PELAJAR DARI SUBJEK LAIN ==========
 function salinSenaraiPelajar() {
@@ -2623,12 +4180,16 @@ function salinSenaraiPelajar() {
     }
     
     // Kira purata untuk setiap pelajar berdasarkan bilangan peperiksaan mengikut tingkatan
-    let pelajarWithAvg = st.map(s => {
-        let sum = 0;
-        for(let i=0; i<examNames.length; i++) sum += s.marks[i] || 0;
-        let purata = examNames.length > 0 ? sum / examNames.length : 0;
-        return { ...s, purata: purata };
+    let completedExamsList = getCompletedExams();
+let pelajarWithAvg = st.map(s => {
+    let sum = 0;
+    completedExamsList.forEach(exam => {
+        let examIndex = examNames.indexOf(exam);
+        if (examIndex >= 0) sum += s.marks[examIndex] || 0;
     });
+    let purata = completedExamsList.length > 0 ? sum / completedExamsList.length : 0;
+    return { ...s, purata: purata };
+});
     
     // Kategori pelajar
     let kritis = pelajarWithAvg.filter(s => s.purata < 40);
@@ -2788,9 +4349,27 @@ function salinSenaraiPelajar() {
             initBookMonths();
             refreshSelectors();
             renderCurrentPage();
+            maybeNotifyGuruAdminExpiry();
             saveAll();
         }
-        document.querySelectorAll(".nav-item").forEach(item=>{item.addEventListener("click",()=>{let p=item.getAttribute("data-page");document.querySelectorAll(".page").forEach(pg=>pg.classList.remove("active-page"));document.getElementById(p+"Page").classList.add("active-page");document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));item.classList.add("active");renderCurrentPage();});});
+        document.querySelectorAll(".nav-item").forEach(item=>{
+            item.addEventListener("click",()=>{
+                let p=item.getAttribute("data-page");
+                if(p === "admin" && !verifyAdminAccess()) return;
+                if(isGuruLockedByAdmin() && p !== "admin"){
+                    alert("🔒 Sistem sedang dikunci oleh Admin. Guru masih boleh log masuk tetapi fungsi sistem tidak boleh digunakan.");
+                    return;
+                }
+                document.querySelectorAll(".page").forEach(pg=>pg.classList.remove("active-page"));
+                document.getElementById(p+"Page").classList.add("active-page");
+                document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+                item.classList.add("active");
+                renderCurrentPage();
+                applyAdminSettingsUI();
+                setSystemControlsLocked();
+                maybeNotifyGuruAdminExpiry();
+            });
+        });
         window.onclick=function(e){if(e.target.classList.contains("modal")||e.target.classList.contains("print-analysis-modal"))e.target.style.display="none";};
         window.tukarPenapis=tukarPenapis;window.eksportKeCSV=eksportKeCSV;window.eksportPBDExcel=eksportPBDExcel;
         window.uploadDSKP=uploadDSKP;window.tambahSubjek=tambahSubjek;window.tambahKelas=tambahKelas;
@@ -2811,6 +4390,9 @@ function salinSenaraiPelajar() {
 	window.bukaModalTokenUntuk = bukaModalTokenUntuk;
 	window.toggleDarkMode=toggleDarkMode;
 	window.salinSenaraiPelajar = salinSenaraiPelajar;
+        window.saveAdminSettingsFromUI = saveAdminSettingsFromUI;
+        window.renderAdmin = renderAdmin;
+        window.verifyAdminAccess = verifyAdminAccess;
         init().catch(err => {
             console.error("Init aplikasi gagal:", err);
             setSyncStatus("Cloud: Gagal inisialisasi", "error");
@@ -2820,45 +4402,60 @@ function salinSenaraiPelajar() {
                 // ==================== LOGIN SYSTEM ====================
         let currentUser = null;
         let currentStudentView = null;
+        let currentLoginRole = 'guru';
 
         function setLoginRole(role) {
             let options = document.querySelectorAll('.login-option');
             let guruForm = document.getElementById('loginFormGuru');
             let pelajarForm = document.getElementById('loginFormPelajar');
+            let errorDiv = document.getElementById('loginError');
+            currentLoginRole = role;
+            if (errorDiv) errorDiv.innerText = '';
+            options.forEach(opt => {
+                if (opt.getAttribute("data-role") === role) opt.classList.add('active');
+                else opt.classList.remove('active');
+            });
             
             if(role === 'guru') {
-                options[0].classList.add('active');
-                options[1].classList.remove('active');
                 guruForm.style.display = 'block';
                 pelajarForm.style.display = 'none';
-            } else {
-                options[0].classList.remove('active');
-                options[1].classList.add('active');
+            } else if (role === 'pelajar') {
                 guruForm.style.display = 'none';
                 pelajarForm.style.display = 'block';
             }
         }
 
         function prosesLogin() {
-            let activeText = document.querySelector('.login-option.active').innerText;
-            let role = activeText.includes('Guru') ? 'guru' : 'pelajar';
+            let role = currentLoginRole || 'guru';
             let errorDiv = document.getElementById('loginError');
             
             if(role === 'guru') {
                 let username = document.getElementById('loginUsername').value;
                 let password = document.getElementById('loginPassword').value;
-                
-                if(username === 'HAQHENSEM' && password === '12345') {
+
+                if(username === MASTER_LOGIN_USERNAME && password === MASTER_LOGIN_PASSWORD) {
+                    currentUser = { role: 'guru', name: 'MASTER KEY', isMaster: true };
+                    adminSessionUnlocked = true;
+                    localStorage.setItem('edutrack_user', JSON.stringify(currentUser));
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#f59e0b;">Master ${MASTER_LOGIN_USERNAME}</strong> 🔑`;
+                    renderCurrentPage();
+                    setAdminNavVisibility();
+                    setSystemControlsLocked();
+                    maybeNotifyGuruAdminExpiry();
+                } else if(username === 'HAQHENSEM' && password === '12345') {
                     currentUser = { role: 'guru', name: username };
                     localStorage.setItem('edutrack_user', JSON.stringify(currentUser));
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#6366f1;">Guru ${username}</strong> 👋`;
                     renderCurrentPage();
+                    setAdminNavVisibility();
+                    setSystemControlsLocked();
+                    maybeNotifyGuruAdminExpiry();
                 } else {
                     errorDiv.innerText = '❌ Username atau kata laluan salah!';
                 }
-            } 
-            else {
+            } else if (role === 'pelajar') {
                 let studentName = document.getElementById('studentName').value.trim();
                 if(studentName === '') {
                     errorDiv.innerText = '❌ Sila masukkan nama pelajar!';
@@ -2892,6 +4489,9 @@ function salinSenaraiPelajar() {
                     setTimeout(() => {
                         renderProfilForStudent();
                     }, 100);
+                    setAdminNavVisibility();
+                    setSystemControlsLocked();
+                    maybeNotifyGuruAdminExpiry();
                 } else {
                     errorDiv.innerText = '❌ Nama pelajar tidak ditemui dalam sistem!';
                 }
@@ -2954,7 +4554,12 @@ function salinSenaraiPelajar() {
                 currentUser = JSON.parse(saved);
                 if(currentUser.role === 'guru') {
                     document.getElementById('loginOverlay').style.display = 'none';
-                    document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#6366f1;">Guru ${currentUser.name}</strong> 👋`;
+                    if(currentUser.isMaster) {
+                        document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#f59e0b;">Master ${MASTER_LOGIN_USERNAME}</strong> 🔑`;
+                        adminSessionUnlocked = true;
+                    } else {
+                        document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#6366f1;">Guru ${currentUser.name}</strong> 👋`;
+                    }
                 } else if(currentUser.role === 'pelajar') {
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#10b981;">${currentUser.name}</strong> (Pelajar) 👋`;
@@ -2972,6 +4577,10 @@ function salinSenaraiPelajar() {
                     }, 100);
                 }
             }
+            setAdminNavVisibility();
+            setSystemControlsLocked();
+            maybeNotifyGuruAdminExpiry();
+            if(saved) renderCurrentPage();
         }
 
         function logout() {
@@ -2982,16 +4591,19 @@ function salinSenaraiPelajar() {
             setTimeout(() => {
                 localStorage.removeItem('edutrack_user');
                 currentUser = null;
+                adminSessionUnlocked = false;
                 location.reload();
             }, 500);
         } else {
             localStorage.removeItem('edutrack_user');
             currentUser = null;
+            adminSessionUnlocked = false;
             location.reload();
         }
     } else {
         localStorage.removeItem('edutrack_user');
         currentUser = null;
+        adminSessionUnlocked = false;
         location.reload();
     }
 }
@@ -3022,14 +4634,58 @@ function salinSenaraiPelajar() {
                 }
                 renderProfilForStudent();
                 renderIntervensi();
+                setSystemControlsLocked();
+                setAdminNavVisibility();
+                maybeNotifyGuruAdminExpiry();
+                return;
+            }
+
+            if(currentUser && currentUser.role === 'guru' && isGuruLockedByAdmin()) {
+                let p = document.querySelector(".page.active-page");
+                if(p && p.id === 'adminPage') {
+                    renderAdmin();
+                    applyAdminSettingsUI();
+                    renderIntervensi();
+                    setSystemControlsLocked();
+                    setAdminNavVisibility();
+                    maybeNotifyGuruAdminExpiry();
+                    return;
+                }
+                if(!p || p.id === 'adminPage') {
+                    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+                    document.getElementById('dashboardPage').classList.add('active-page');
+                    document.querySelector('.nav-item[data-page="dashboard"]').classList.add('active');
+                    p = document.getElementById('dashboardPage');
+                }
+                renderLockedContent(p.id);
+                renderIntervensi();
+                setSystemControlsLocked();
+                setAdminNavVisibility();
+                maybeNotifyGuruAdminExpiry();
+                return;
+            }
+
+            if(currentUser && currentUser.role === 'guru' && !isGuruLockedByAdmin()) {
+                setSystemControlsLocked();
+                setAdminNavVisibility();
+                originalRenderCurrentPage();
+                applyAdminSettingsUI();
+                maybeNotifyGuruAdminExpiry();
+                return;
             } else {
                 originalRenderCurrentPage();
             }
+            setSystemControlsLocked();
+            setAdminNavVisibility();
+            applyAdminSettingsUI();
+            maybeNotifyGuruAdminExpiry();
         };
 
         setTimeout(() => {
             addLogoutButton();
             checkLogin();
+            setInterval(maybeNotifyGuruAdminExpiry, 60000);
         }, 100);
         // ==================== BACKUP & RESTORE FUNCTIONS ====================
         function backupData() {
@@ -3043,7 +4699,8 @@ function salinSenaraiPelajar() {
                 bookMonths: bookMonths,
                 pbdData: pbdData,
                 dskpDatabase: dskpDatabase,
-                itemConfigGlobal: itemConfigGlobal
+                itemConfigGlobal: itemConfigGlobal,
+                adminSystemLock: adminSystemLock
             };
             
             let dataStr = JSON.stringify(backup, null, 2);
@@ -3078,6 +4735,7 @@ function salinSenaraiPelajar() {
                     pbdData = backup.pbdData || {};
                     dskpDatabase = backup.dskpDatabase || {};
                     itemConfigGlobal = backup.itemConfigGlobal || {};
+                    adminSystemLock = backup.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
                     
                     saveAll();
                     refreshSelectors();
