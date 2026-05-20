@@ -273,11 +273,69 @@
         }
         @media print {
             body * { visibility: hidden; }
+            /* Cetak Analisis Item */
             #printAnalysisReport, #printAnalysisReport * { visibility: visible; }
             #printAnalysisReport { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
-            @page { size: A4 landscape; margin: 8mm; }
+            /* Cetak Ranking Soalan */
+            #modalRankingSoalan, #modalRankingSoalan * { visibility: visible; }
+            #modalRankingSoalan { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10px; background: white; display: block !important; }
+            /* Pastikan semua muka surat dicetak */
             .no-print { display: none !important; }
+            .print-page-break { page-break-before: always; }
+            .print-table-header { display: table-header-group; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; }
+            thead { display: table-header-group; }
+            /* Modal pilihan cetak - jangan cetak */
+            #modalPilihanCetak { display: none !important; }
         }
+        /* Orientasi dikawal oleh JS melalui <style id="printOrientationStyle"> */
+
+        /* ===== MODAL PILIHAN CETAK ===== */
+        #modalPilihanCetak {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15,23,42,0.65); backdrop-filter: blur(8px);
+            justify-content: center; align-items: center; z-index: 99999;
+        }
+        #modalPilihanCetak .pc-box {
+            background: #fff; border-radius: 24px; padding: 32px 28px;
+            width: 420px; max-width: 95%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        #modalPilihanCetak .pc-title {
+            font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 6px;
+        }
+        #modalPilihanCetak .pc-sub {
+            font-size: 0.8rem; color: #64748b; margin-bottom: 24px;
+        }
+        #modalPilihanCetak .pc-options {
+            display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;
+        }
+        #modalPilihanCetak .pc-opt {
+            flex: 1; border: 2.5px solid #e2e8f0; border-radius: 18px;
+            padding: 20px 12px; cursor: pointer; transition: all 0.2s;
+            background: #f8fafc;
+        }
+        #modalPilihanCetak .pc-opt:hover { border-color: #6366f1; background: #ede9fe; transform: translateY(-3px); }
+        #modalPilihanCetak .pc-opt.selected { border-color: #6366f1; background: #ede9fe; }
+        #modalPilihanCetak .pc-opt-icon { font-size: 2.8rem; margin-bottom: 8px; }
+        #modalPilihanCetak .pc-opt-label { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
+        #modalPilihanCetak .pc-opt-desc { font-size: 0.7rem; color: #64748b; margin-top: 4px; }
+        #modalPilihanCetak .pc-actions { display: flex; gap: 10px; justify-content: center; }
+        #modalPilihanCetak .pc-btn-cetak {
+            background: #6366f1; color: #fff; border: none;
+            padding: 11px 28px; border-radius: 12px; font-weight: 700;
+            font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        #modalPilihanCetak .pc-btn-cetak:hover { background: #4f46e5; }
+        #modalPilihanCetak .pc-btn-batal {
+            background: transparent; color: #64748b;
+            border: 1.5px solid #e2e8f0; padding: 11px 20px;
+            border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        #modalPilihanCetak .pc-btn-batal:hover { background: #f1f5f9; }
         .print-analysis-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; }
         .print-report-container { background: #fff; border-radius: 16px; padding: 20px; width: 95%; max-width: 1200px; max-height: 90vh; overflow-y: auto; }
         .print-header { text-align: center; padding: 10px 0; border-bottom: 2px solid #1e293b; margin-bottom: 15px; }
@@ -717,13 +775,32 @@ function simpanPilihanPeperiksaan() {
 // Fungsi untuk mendapatkan nama peperiksaan dengan mengambil kira custom
 function getCurrentExamNamesWithCustom() {
     let ting = getCurrentTingkatan();
-    let defaultNames = getExamNamesByTingkatan(ting);
     let customNames = examNamesCustom[ting];
-    
-    if (customNames && customNames.length === defaultNames.length) {
-        return customNames;
+    if (customNames && customNames.length > 0) {
+        return [...customNames];
     }
-    return defaultNames;
+    return getExamNamesByTingkatan(ting);
+}
+
+// Dapatkan senarai peperiksaan untuk tingkatan tertentu (guna custom jika ada)
+function getExamListForTingkatan(ting) {
+    if (examNamesCustom[ting] && examNamesCustom[ting].length > 0) {
+        return [...examNamesCustom[ting]];
+    }
+    return [...getExamNamesByTingkatan(ting)];
+}
+
+// Pastikan semua pelajar ada marks array cukup panjang mengikut bilangan peperiksaan
+function ensureStudentMarksLength() {
+    let examNames = getCurrentExamNames();
+    let needed = examNames.length;
+    Object.keys(allData).forEach(key => {
+        let students = allData[key]?.students || [];
+        students.forEach(s => {
+            if (!s.marks) s.marks = [];
+            while (s.marks.length < needed) s.marks.push(0);
+        });
+    });
 }
 
 // Buka modal edit nama peperiksaan
@@ -801,44 +878,48 @@ function swapExamNames(idx1, idx2) {
 // Fungsi simpan nama peperiksaan - HANYA TUKAR NAMA, DATA TETAP SAMA
 function simpanExamNames() {
     let ting = getCurrentTingkatan();
-    let defaultNames = getExamNamesByTingkatan(ting);
+    let currentNames = getCurrentExamNamesWithCustom();
     let newNames = [];
     
-    for (let i = 0; i < defaultNames.length; i++) {
+    for (let i = 0; i < currentNames.length; i++) {
         let newName = document.getElementById(`examName_${i}`)?.value.trim();
         if (newName && newName !== "") {
             newNames.push(newName);
         } else {
-            newNames.push(defaultNames[i]);
+            newNames.push(currentNames[i]);
         }
     }
     
-    // Simpan nama baru ke examNamesCustom (hanya nama, tanpa ubah data)
     examNamesCustom[ting] = newNames;
     saveAll();
     
     alert(`✅ Nama peperiksaan untuk ${ting} berjaya disimpan!\n\nPerhatian: Hanya NAMA yang berubah. Data markah pelajar kekal pada kedudukan asal.`);
     tutupModal('modalEditExamNames');
-    
-    // Refresh semua halaman
     renderCurrentPage();
 }
 
-// Override fungsi getCurrentExamNames untuk gunakan custom names
-// Override fungsi getCurrentExamNames untuk gunakan custom names
+// Override fungsi getCurrentExamNames untuk gunakan custom names (termasuk tambah/padam)
 let originalGetExamNames = getCurrentExamNames;
 getCurrentExamNames = function() {
     let ting = getCurrentTingkatan();
-    let defaultNames = originalGetExamNames();
     let customNames = examNamesCustom[ting];
-    
-    // Jika ada custom names, gunakan ia (cuma tukar nama, data tetap mapping index yang sama)
-    if (customNames && customNames.length === defaultNames.length) {
-        return customNames;
+    // Guna custom jika wujud dan tidak kosong (boleh lain bilangan dari default)
+    if (customNames && customNames.length > 0) {
+        return [...customNames];
     }
-    return defaultNames;
+    return originalGetExamNames();
 };
 
+        // ==================== FIREBASE CONFIG (DIKONGSI SEMUA PERANTI) ====================
+        // PENTING: Tetapkan Firestore Security Rules dalam Firebase Console:
+        // rules_version = '2';
+        // service cloud.firestore {
+        //   match /databases/{database}/documents {
+        //     match /edutrack_shared/{document=**} {
+        //       allow read, write: if true;
+        //     }
+        //   }
+        // }
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyDi5uRJHa2lAJJqcTM6sawqmNGo7lU5ExE",
             authDomain: "pbd2026-1316a.firebaseapp.com",
@@ -848,14 +929,11 @@ getCurrentExamNames = function() {
             appId: "1:184542634941:web:7df66e9c3f7da6588668d4",
             measurementId: "G-NGMJ8GQRJK"
         };
-        const FIRESTORE_USERS_COLLECTION = "edutrack_users";
-        const FIRESTORE_USER_SUBCOLLECTION = "app_data";
-        const FIRESTORE_DOCUMENT = "state_v2";
-        const FIRESTORE_LEGACY_COLLECTION = "edutrack";
-        const FIRESTORE_LEGACY_DOCUMENT = "shared_data_v1";
+        // Satu dokumen dikongsi — semua peranti baca & tulis dari sini
+        const FIRESTORE_SHARED_COLLECTION = "edutrack_shared";
+        const FIRESTORE_SHARED_DOCUMENT   = "sekolah_data_v1";
+
         let cloudEnabled = false;
-        let firebaseAuth = null;
-        let authenticatedUser = null;
         let firestoreDb = null;
         let firestoreDocRef = null;
         let saveDebounceTimer = null;
@@ -1057,17 +1135,17 @@ function lihatPemetaanExam() {
                     },
                     { merge: true }
                 );
-                setSyncStatus("Cloud: Diselaraskan", "ok");
+                setSyncStatus("☁️ Diselaraskan", "ok");
             } catch (err) {
                 console.error("Gagal simpan ke cloud:", err);
-                setSyncStatus("Cloud: Ralat simpan", "error");
+                setSyncStatus("☁️ Ralat simpan", "error");
             }
         }
 
         function scheduleCloudSave() {
             if (!cloudEnabled || applyingRemoteUpdate) return;
             if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
-            setSyncStatus("Cloud: Menyimpan...", "warn");
+            setSyncStatus("☁️ Menyimpan...", "warn");
             saveDebounceTimer = setTimeout(() => {
                 pushStateToCloud();
             }, 600);
@@ -1088,99 +1166,65 @@ function lihatPemetaanExam() {
                         refreshSelectors();
                         renderCurrentPage();
                         if (typeof refreshSettingsSelects === "function") refreshSettingsSelects();
-                        setSyncStatus("Cloud: Kemas kini langsung aktif", "ok");
+                        setSyncStatus("☁️ Kemas kini langsung", "ok");
                     } finally {
                         applyingRemoteUpdate = false;
                     }
                 },
                 (err) => {
                     console.error("Realtime sync gagal:", err);
-                    setSyncStatus("Cloud: Realtime terganggu", "error");
+                    setSyncStatus("☁️ Realtime terganggu", "error");
                 }
             );
         }
 
-        async function ensureFirebaseAuth() {
-            if (!firebaseAuth) {
-                firebaseAuth = firebase.auth();
-            }
-            try {
-                await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            } catch (err) {
-                console.warn("Persistence auth tidak dapat ditetapkan:", err);
-            }
-            if (firebaseAuth.currentUser) {
-                authenticatedUser = firebaseAuth.currentUser;
-                return authenticatedUser;
-            }
-            const credential = await firebaseAuth.signInAnonymously();
-            authenticatedUser = credential.user || firebaseAuth.currentUser;
-            return authenticatedUser;
-        }
-
-        function getUserScopedDocRef(userId) {
-            return firestoreDb
-                .collection(FIRESTORE_USERS_COLLECTION)
-                .doc(userId)
-                .collection(FIRESTORE_USER_SUBCOLLECTION)
-                .doc(FIRESTORE_DOCUMENT);
-        }
-
         async function resolveInitialCloudData() {
-            const scopedSnapshot = await firestoreDocRef.get();
-            if (scopedSnapshot.exists) {
-                applyStatePayload(scopedSnapshot.data());
-                saveLocalState();
-                setSyncStatus("Cloud: Data dimuat", "ok");
+            const snapshot = await firestoreDocRef.get();
+            if (snapshot.exists) {
+                const remoteData = snapshot.data();
+                // Guna data cloud jika lebih baru dari local
+                if (remoteData && remoteData.updatedAt) {
+                    applyStatePayload(remoteData);
+                    saveLocalState();
+                    setSyncStatus("☁️ Data dimuat dari cloud", "ok");
+                } else {
+                    setSyncStatus("☁️ Data dimuat", "ok");
+                }
                 return;
             }
-
-            let seedPayload = buildStatePayload();
-            let seededFromLegacy = false;
-            const legacyRef = firestoreDb.collection(FIRESTORE_LEGACY_COLLECTION).doc(FIRESTORE_LEGACY_DOCUMENT);
-            const legacySnapshot = await legacyRef.get();
-            if (legacySnapshot.exists) {
-                seedPayload = { ...seedPayload, ...legacySnapshot.data() };
-                applyStatePayload(seedPayload);
-                saveLocalState();
-                seededFromLegacy = true;
-            }
-
+            // Dokumen belum wujud — cipta dengan data local semasa
             await firestoreDocRef.set(
                 {
-                    ...seedPayload,
+                    ...buildStatePayload(),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    migratedFromLegacy: seededFromLegacy
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 },
                 { merge: true }
             );
-            setSyncStatus(seededFromLegacy ? "Cloud: Data lama dimigrasi" : "Cloud: Dokumen baru dibuat", "ok");
+            setSyncStatus("☁️ Dokumen baru dicipta", "ok");
         }
 
         async function initFirebaseSync() {
             if (typeof firebase === "undefined") {
-                setSyncStatus("Cloud: SDK tidak dimuat", "error");
+                setSyncStatus("☁️ SDK tidak dimuat", "error");
                 return;
             }
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(FIREBASE_CONFIG);
                 }
-                const user = await ensureFirebaseAuth();
-                if (!user || !user.uid) {
-                    throw new Error("Pengguna Firebase tidak sah.");
-                }
                 firestoreDb = firebase.firestore();
-                firestoreDocRef = getUserScopedDocRef(user.uid);
+                firestoreDocRef = firestoreDb
+                    .collection(FIRESTORE_SHARED_COLLECTION)
+                    .doc(FIRESTORE_SHARED_DOCUMENT);
                 cloudEnabled = true;
-                setSyncStatus("Cloud: Menyambung akaun...", "warn");
+                setSyncStatus("☁️ Menyambung...", "warn");
                 await resolveInitialCloudData();
                 subscribeCloudRealtime();
             } catch (err) {
                 console.error("Firebase init gagal:", err);
                 cloudEnabled = false;
-                setSyncStatus("Cloud: Guna local sahaja", "error");
+                setSyncStatus("☁️ Guna local sahaja", "error");
             }
         }
 
@@ -1208,10 +1252,15 @@ function lihatPemetaanExam() {
                 ]}
             };
             dskpDatabase["Bahasa Inggeris"] = { "Tingkatan 5": { skills: [{ code:"BI1", name:"Listening Skills", spList:[{code:"1.1",desc:"Main ideas"},{code:"1.2",desc:"Details"}] }] } };
-            itemConfigGlobal["Bahasa Melayu"] = { kertas: [
-                { nama:"Kertas 1", soalan:[{no:"S1",markahPenuh:10},{no:"S2",markahPenuh:10},{no:"S3",markahPenuh:10},{no:"S4",markahPenuh:10},{no:"S5",markahPenuh:10}] },
-                { nama:"Kertas 2", soalan:[{no:"S1",markahPenuh:10},{no:"S2",markahPenuh:10},{no:"S3",markahPenuh:15},{no:"S4",markahPenuh:15}] }
-            ]};
+            // Init item config contoh untuk setiap peperiksaan
+            let contohExams = getExamNamesByTingkatan("Tingkatan 3");
+            contohExams.forEach((exam, idx) => {
+                let configKey = "Bahasa Melayu||" + exam;
+                itemConfigGlobal[configKey] = { kertas: [
+                    { nama:"Kertas 1", soalan:[{no:"S1",markahPenuh:10},{no:"S2",markahPenuh:10},{no:"S3",markahPenuh:10},{no:"S4",markahPenuh:10},{no:"S5",markahPenuh:10}] },
+                    { nama:"Kertas 2", soalan:[{no:"S1",markahPenuh:10},{no:"S2",markahPenuh:10},{no:"S3",markahPenuh:15},{no:"S4",markahPenuh:15}] }
+                ]};
+            });
             saveAll();
         }
         function initBookMonths(){
@@ -1650,18 +1699,54 @@ function lihatPemetaanExam() {
         }
         function getActiveKey() { return document.getElementById("selectSubject").value+"_"+document.getElementById("selectClass").value; }
         function getActiveStudents() { let k=getActiveKey(); if(!allData[k])allData[k]={students:[]}; return allData[k].students; }
-        function getItemConfig() { let s=document.getElementById("selectSubject").value; if(!itemConfigGlobal[s]) itemConfigGlobal[s]={kertas:[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}]}; return itemConfigGlobal[s]; }
+        function getItemConfig(examOverride) {
+            let s = document.getElementById("selectSubject").value;
+            // Gunakan exam override atau ambil dari currentBMEditExam atau peperiksaan pertama
+            let exam = examOverride || currentBMEditExam || getCurrentExamNames()[0] || "default";
+            let configKey = s + "||" + exam;
+            // Sokong config lama (per subjek sahaja) - migrate jika perlu
+            if (!itemConfigGlobal[configKey]) {
+                // Cuba migrate dari config lama (per subjek)
+                if (itemConfigGlobal[s] && !examOverride) {
+                    itemConfigGlobal[configKey] = JSON.parse(JSON.stringify(itemConfigGlobal[s]));
+                } else {
+                    itemConfigGlobal[configKey] = {kertas:[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}]};
+                }
+            }
+            return itemConfigGlobal[configKey];
+        }
+        function getItemConfigKey(examName) {
+            let s = document.getElementById("selectSubject").value;
+            let exam = examName || currentBMEditExam || getCurrentExamNames()[0] || "default";
+            return s + "||" + exam;
+        }
         function toNumber(value, fallback = 0) {
             let num = Number(value);
             return Number.isFinite(num) ? num : fallback;
         }
 
         function getStudentItemData(student, exam) {
-            let cfg = getItemConfig();
+            let cfg = getItemConfig(exam);
+            // Gunakan index peperiksaan sebagai kunci supaya data tidak terikat dengan nama
+            let examNames = getCurrentExamNames();
+            let defaultExamNames = getExamNamesByTingkatan(getCurrentTingkatan());
+            // Cari index berdasarkan nama semasa (custom atau default)
+            let examIdx = examNames.indexOf(exam);
+            if (examIdx < 0) examIdx = defaultExamNames.indexOf(exam);
+            // Kunci stabil: gunakan "exam_0", "exam_1", dsb (berdasarkan index, bukan nama)
+            let stableKey = examIdx >= 0 ? ("exam_" + examIdx) : ("exam_name_" + exam);
+            
             if (!student.itemData || typeof student.itemData !== "object") student.itemData = {};
-            if (!student.itemData[exam] || typeof student.itemData[exam] !== "object") student.itemData[exam] = {};
+            
+            // Migrate data lama (yang guna nama peperiksaan sebagai kunci) ke kunci stabil
+            if (!student.itemData[stableKey] && student.itemData[exam]) {
+                student.itemData[stableKey] = student.itemData[exam];
+            }
+            if (!student.itemData[stableKey] || typeof student.itemData[stableKey] !== "object") {
+                student.itemData[stableKey] = {};
+            }
 
-            let examData = student.itemData[exam];
+            let examData = student.itemData[stableKey];
             let nextExamData = {};
 
             cfg.kertas.forEach(kertas => {
@@ -1676,8 +1761,8 @@ function lihatPemetaanExam() {
                 nextExamData[kertas.nama] = normalizedItems;
             });
 
-            student.itemData[exam] = nextExamData;
-            return student.itemData[exam];
+            student.itemData[stableKey] = nextExamData;
+            return student.itemData[stableKey];
         }
         function tukarPenapis(){updateSelectorInfo();renderCurrentPage();}
         function renderCurrentPage(){
@@ -1916,11 +2001,16 @@ function lihatPemetaanExam() {
     let isSPMLevel = (ting === "Tingkatan 4" || ting === "Tingkatan 5");
     
     c.innerHTML=`<div class="card">
-        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <span>📋 Rekod Prestasi · ${s} · ${cls} · ${ting}</span>
-            <button class="btn btn-ghost btn-sm" onclick="bukaModalEditExamNames()" style="font-size:0.7rem;">
-                <i class="fas fa-pen"></i> Edit Nama Peperiksaan
-            </button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="bukaModalEditExamNames()" style="font-size:0.7rem;">
+                    <i class="fas fa-pen"></i> Edit Nama
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="bukaModalUrusExam()" style="font-size:0.7rem;background:#f59e0b;">
+                    <i class="fas fa-plus-circle"></i> + Tambah / Urus Peperiksaan
+                </button>
+            </div>
         </div>
         <div style="overflow-x:auto;">
         <table style="min-width:800px;">
@@ -1965,8 +2055,220 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
     </div>`;
 }
         function bukaKonfigurasiItem(){
-            let cfg=getItemConfig();
-            let html=`<h3 class="card-header">⚙️ Konfigurasi Analisis Item</h3><p style="font-size:0.8rem;color:#64748b;margin-bottom:16px;">Tetapan untuk SEMUA pelajar subjek <strong>${document.getElementById("selectSubject").value}</strong>. Simpan sekali, guna selamanya.</p>`;
+            let examNames = getCurrentExamNames();
+            let defaultExam = currentBMEditExam || examNames[0];
+            let subj = document.getElementById("selectSubject").value;
+            
+            function buildKonfigHTML(selectedExam) {
+                let cfg = getItemConfig(selectedExam);
+                let examOptions = examNames.map(e => `<option value="${e}" ${e===selectedExam?'selected':''}>${e}</option>`).join('');
+                let html = `<h3 class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <span>⚙️ Konfigurasi Analisis Item</span>
+                    <button class="btn btn-primary btn-sm" onclick="tutupModal('modalKonfigurasiItem');bukaModalUrusExam();" style="font-size:0.7rem;background:#f59e0b;padding:6px 12px;">
+                        <i class="fas fa-plus-circle"></i> Tambah / Urus Peperiksaan
+                    </button>
+                </h3>
+                <p style="font-size:0.8rem;color:#64748b;margin-bottom:12px;">Tetapan item berbeza untuk setiap peperiksaan bagi subjek <strong>${subj}</strong>.</p>
+                <div style="background:#ede9fe;border-radius:12px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <label style="font-size:0.8rem;font-weight:700;color:#5b21b6;">🗓️ Peperiksaan:</label>
+                    <select id="cfgExamSelect" style="padding:8px 14px;border-radius:10px;border:1.5px solid #c4b5fd;background:#fff;font-weight:600;font-size:0.85rem;color:#5b21b6;" onchange="bukaKonfigurasiItemUntuk(this.value)">${examOptions}</select>
+                    <span style="font-size:0.72rem;color:#7c3aed;"><i class="fas fa-info-circle"></i> Setiap peperiksaan boleh ada soalan & markah berbeza</span>
+                </div>
+                <div id="cfgKertasContainer">`;
+                cfg.kertas.forEach((kertas, ki) => {
+                    html+=`<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <input value="${kertas.nama}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;">
+                        <button class="btn btn-danger btn-sm" onclick="padamKertasCfg(${ki})">🗑️</button>
+                      </div>
+                      <div id="soalanList_${ki}" style="margin-bottom:8px;">${kertas.soalan.map((soal,si)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><span style="font-size:0.8rem;min-width:40px;">${soal.no}</span><input value="${soal.markahPenuh}" id="cfgMarkah_${ki}_${si}" type="number" min="1" max="100" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;"><span style="font-size:0.7rem;color:#94a3b8;">markah</span><button class="btn btn-danger btn-sm" onclick="padamSoalanCfg(${ki},${si})">✖</button></div>`).join('')}</div>
+                      <button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>
+                    </div>`;
+                });
+                html+=`</div>
+                <button class="btn btn-ghost" onclick="tambahKertasCfg()" style="margin-bottom:16px;">+ Tambah Kertas</button>
+                <div class="flex justify-end gap-3"><button class="btn btn-ghost" onclick="tutupModal('modalKonfigurasiItem')">Batal</button><button class="btn btn-primary" onclick="simpanKonfigurasiItem()">💾 Simpan Konfigurasi</button></div>`;
+                return html;
+            }
+            
+            window._cfgCurrentExam = defaultExam;
+            document.getElementById("modalKonfigurasiItemContent").innerHTML = buildKonfigHTML(defaultExam);
+            document.getElementById("modalKonfigurasiItem").style.display="flex";
+        }
+        // ==================== MODAL URUS PEPERIKSAAN (dari Prestasi/KonfigItem) ====================
+        function bukaModalUrusExam() {
+            let ting = getCurrentTingkatan();
+            
+            // Cipta modal jika belum ada
+            let modal = document.getElementById("modalUrusExam");
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = "modalUrusExam";
+                modal.className = "modal";
+                modal.innerHTML = `<div class="modal-content" id="modalUrusExamContent" style="width:520px;"></div>`;
+                document.body.appendChild(modal);
+            }
+            
+            renderModalUrusExam(ting);
+            modal.style.display = "flex";
+        }
+
+        function renderModalUrusExam(ting) {
+            let exams = getExamListForTingkatan(ting);
+            let isDefault = !examNamesCustom[ting] || examNamesCustom[ting].length === 0;
+            let allTing = ["Tingkatan 1","Tingkatan 2","Tingkatan 3","Tingkatan 4","Tingkatan 5"];
+            let tingTabs = allTing.map(t => `
+                <button onclick="renderModalUrusExam('${t}')" 
+                    style="padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:0.75rem;font-weight:600;
+                    background:${t===ting?'#f59e0b':'#f1f5f9'};color:${t===ting?'#fff':'#64748b'};">${t}</button>
+            `).join('');
+
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <h3 style="font-size:1rem;font-weight:700;margin:0;">🗓️ Urus Jenis Peperiksaan</h3>
+                <button onclick="tutupModal('modalUrusExam')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#94a3b8;">✕</button>
+            </div>
+
+            <div style="background:#fef9c3;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:0.75rem;color:#92400e;">
+                <i class="fas fa-info-circle"></i> Tambah, padam atau susun semula peperiksaan. 
+                Data markah pelajar <strong>tidak terjejas</strong> — data disimpan mengikut kedudukan (index).
+            </div>
+
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">${tingTabs}</div>
+
+            <div style="font-weight:700;font-size:0.85rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+                <span>📋 <span style="color:#d97706;">${ting}</span> — ${exams.length} peperiksaan</span>
+                ${isDefault ? `<span style="font-size:0.68rem;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;border:1px solid #fde68a;">Tetapan lalai</span>` 
+                            : `<span style="font-size:0.68rem;background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;border:1px solid #6ee7b7;">Tersuai</span>`}
+            </div>
+
+            <div id="urusExamList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+                ${exams.map((exam, idx) => `
+                <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 12px;">
+                    <span style="color:#94a3b8;font-size:0.7rem;min-width:20px;text-align:center;font-weight:700;">${idx+1}</span>
+                    <input type="text" id="urusExamInput_${idx}" value="${exam}"
+                        style="flex:1;padding:7px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-weight:600;"
+                        placeholder="Nama peperiksaan">
+                    <button onclick="urusNaikExam('${ting}',${idx})" title="Naik"
+                        style="padding:6px 9px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-size:0.8rem;${idx===0?'opacity:0.3;cursor:not-allowed;':''}"
+                        ${idx===0?'disabled':''}>▲</button>
+                    <button onclick="urusTurunExam('${ting}',${idx})" title="Turun"
+                        style="padding:6px 9px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-size:0.8rem;${idx===exams.length-1?'opacity:0.3;cursor:not-allowed;':''}"
+                        ${idx===exams.length-1?'disabled':''}>▼</button>
+                    <button onclick="urusPadamExam('${ting}',${idx})" title="Padam"
+                        style="padding:6px 10px;border-radius:7px;border:1.5px solid #fecaca;background:#fff;cursor:pointer;color:#ef4444;font-size:0.8rem;">✕</button>
+                </div>`).join('')}
+            </div>
+
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <input type="text" id="urusNewExamInput" class="settings-input"
+                    placeholder="Nama peperiksaan baru..." style="flex:1;"
+                    onkeydown="if(event.key==='Enter')urusTambahExam('${ting}')">
+                <button class="btn btn-primary" onclick="urusTambahExam('${ting}')" style="background:#f59e0b;white-space:nowrap;">
+                    <i class="fas fa-plus"></i> Tambah
+                </button>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;">
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-success" onclick="urusSimpanExam('${ting}')">
+                        💾 Simpan Perubahan
+                    </button>
+                    ${!isDefault ? `<button class="btn btn-ghost" onclick="urusResetDefault('${ting}')" style="font-size:0.75rem;">
+                        <i class="fas fa-undo"></i> Reset Lalai
+                    </button>` : ''}
+                </div>
+                <button class="btn btn-ghost" onclick="tutupModal('modalUrusExam')">Tutup</button>
+            </div>`;
+
+            let content = document.getElementById("modalUrusExamContent");
+            if (content) content.innerHTML = html;
+        }
+
+        // Helper: baca nilai input semasa dalam modal
+        function _bacaInputUrusExam(ting) {
+            let exams = getExamListForTingkatan(ting);
+            return exams.map((_, idx) => {
+                let el = document.getElementById("urusExamInput_" + idx);
+                return el ? el.value.trim() || _ : _;
+            });
+        }
+
+        function urusTambahExam(ting) {
+            let input = document.getElementById("urusNewExamInput");
+            if (!input) return;
+            let nama = input.value.trim();
+            if (!nama) { alert("❌ Sila masukkan nama peperiksaan."); return; }
+            // Simpan input semasa dahulu
+            let current = _bacaInputUrusExam(ting);
+            if (current.includes(nama)) { alert("⚠️ Peperiksaan '" + nama + "' sudah wujud."); return; }
+            current.push(nama);
+            examNamesCustom[ting] = current;
+            saveAll();
+            ensureStudentMarksLength();
+            renderModalUrusExam(ting);
+        }
+
+        function urusPadamExam(ting, idx) {
+            let list = _bacaInputUrusExam(ting);
+            if (list.length <= 1) { alert("❌ Sekurang-kurangnya satu peperiksaan diperlukan."); return; }
+            if (!confirm("Padam '" + list[idx] + "' dari " + ting + "?\n\n⚠️ Data markah di kedudukan ini mungkin terjejas.")) return;
+            list.splice(idx, 1);
+            examNamesCustom[ting] = list;
+            if (completedExams[ting]) completedExams[ting] = completedExams[ting].filter(e => list.includes(e));
+            saveAll();
+            renderModalUrusExam(ting);
+        }
+
+        function urusNaikExam(ting, idx) {
+            if (idx <= 0) return;
+            let list = _bacaInputUrusExam(ting);
+            [list[idx-1], list[idx]] = [list[idx], list[idx-1]];
+            examNamesCustom[ting] = list;
+            saveAll();
+            renderModalUrusExam(ting);
+        }
+
+        function urusTurunExam(ting, idx) {
+            let list = _bacaInputUrusExam(ting);
+            if (idx >= list.length - 1) return;
+            [list[idx], list[idx+1]] = [list[idx+1], list[idx]];
+            examNamesCustom[ting] = list;
+            saveAll();
+            renderModalUrusExam(ting);
+        }
+
+        function urusSimpanExam(ting) {
+            let list = _bacaInputUrusExam(ting);
+            // Validate
+            let filtered = list.filter(n => n !== "");
+            if (filtered.length === 0) { alert("❌ Sekurang-kurangnya satu peperiksaan diperlukan."); return; }
+            let unique = [...new Set(filtered)];
+            if (unique.length !== filtered.length) { alert("❌ Terdapat nama peperiksaan yang sama. Sila gunakan nama berbeza."); return; }
+            examNamesCustom[ting] = filtered;
+            if (completedExams[ting]) completedExams[ting] = completedExams[ting].filter(e => filtered.includes(e));
+            saveAll();
+            ensureStudentMarksLength();
+            renderModalUrusExam(ting);
+            renderCurrentPage();
+            alert("✅ Disimpan! Senarai peperiksaan untuk " + ting + ":\n" + filtered.map((e,i)=>(i+1)+". "+e).join("\n"));
+        }
+
+        function urusResetDefault(ting) {
+            if (!confirm("Reset peperiksaan " + ting + " ke tetapan lalai?\n" + getExamNamesByTingkatan(ting).join(", "))) return;
+            delete examNamesCustom[ting];
+            if (completedExams[ting]) delete completedExams[ting];
+            saveAll();
+            renderModalUrusExam(ting);
+            renderCurrentPage();
+        }
+
+        function bukaKonfigurasiItemUntuk(examName) {
+            window._cfgCurrentExam = examName;
+            let cfg = getItemConfig(examName);
+            let container = document.getElementById("cfgKertasContainer");
+            if (!container) return;
+            let html = '';
             cfg.kertas.forEach((kertas, ki) => {
                 html+=`<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -1977,10 +2279,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                   <button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>
                 </div>`;
             });
-            html+=`<button class="btn btn-ghost" onclick="tambahKertasCfg()" style="margin-bottom:16px;">+ Tambah Kertas</button>
-            <div class="flex justify-end gap-3"><button class="btn btn-ghost" onclick="tutupModal('modalKonfigurasiItem')">Batal</button><button class="btn btn-primary" onclick="simpanKonfigurasiItem()">💾 Simpan Konfigurasi</button></div>`;
-            document.getElementById("modalKonfigurasiItemContent").innerHTML=html;
-            document.getElementById("modalKonfigurasiItem").style.display="flex";
+            container.innerHTML = html;
         }
         function tambahSoalanCfg(ki){let list=document.getElementById("soalanList_"+ki);let si=list.children.length;let d=document.createElement("div");d.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:4px;";d.innerHTML=`<span style="font-size:0.8rem;min-width:40px;">S${si+1}</span><input id="cfgMarkah_${ki}_${si}" type="number" min="1" max="100" value="10" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;"><span style="font-size:0.7rem;color:#94a3b8;">markah</span><button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>`;list.appendChild(d);}
         function padamSoalanCfg(ki,si){document.getElementById("soalanList_"+ki).children[si]?.remove();}
@@ -1988,6 +2287,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         function padamKertasCfg(ki){let el=document.getElementById("cfgNamaKertas_"+ki);if(el)el.parentElement.parentElement.remove();}
         function simpanKonfigurasiItem(){
             let subj=document.getElementById("selectSubject").value;
+            let examName = window._cfgCurrentExam || document.getElementById("cfgExamSelect")?.value || getCurrentExamNames()[0];
+            let configKey = subj + "||" + examName;
             let modal=document.getElementById("modalKonfigurasiItemContent");
             let kertasEls=modal.querySelectorAll('[id^="cfgNamaKertas_"]');
             let kertas=[];
@@ -2004,9 +2305,9 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 kertas.push({nama,soalan});
             });
             if(kertas.length===0) kertas=[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}];
-            itemConfigGlobal[subj]={kertas};
+            itemConfigGlobal[configKey]={kertas};
             saveAll();
-            alert("✅ Konfigurasi disimpan untuk "+subj+"!");
+            alert("✅ Konfigurasi disimpan untuk "+subj+" · "+examName+"!");
             tutupModal("modalKonfigurasiItem");
             renderCurrentPage();
         }
@@ -2018,7 +2319,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
     
     if(examName){
         currentBMEditStudent=idx; currentBMEditExam=examName;
-        let cfg=getItemConfig(), itemData=getStudentItemData(x,examName);
+        let cfg=getItemConfig(examName), itemData=getStudentItemData(x,examName);
         let html=`<h3 class="card-header">✏️ ${examName} · ${x.name} (${subjek})</h3>
         <p style="font-size:0.78rem;color:#64748b;margin-bottom:16px;">Isi markah untuk setiap kertas/soalan.</p>`;
         let allMarkah=0,allFull=0;
@@ -2056,7 +2357,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         function hitungCepat(){
             let x=getActiveStudents()[currentBMEditStudent];
             if(!x)return;
-            let cfg=getItemConfig();
+            let cfg=getItemConfig(currentBMEditExam);
             let examData=getStudentItemData(x,currentBMEditExam);
             let allMarkah=0,allFull=0;
 
@@ -2080,7 +2381,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         function hitungPurataBM(){
             let x=getActiveStudents()[currentBMEditStudent];
             if(!x)return;
-            let cfg=getItemConfig();
+            let cfg=getItemConfig(currentBMEditExam);
             let allMarkah=0,allFull=0;
             cfg.kertas.forEach((kertas,ki)=>{
                 let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
@@ -2100,7 +2401,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             if(!x)return;
             let examIdx = examNames.indexOf(currentBMEditExam);
             if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
-            let cfg=getItemConfig();
+            let cfg=getItemConfig(currentBMEditExam);
             let examData=getStudentItemData(x,currentBMEditExam);
             let allMarkah=0,allFull=0;
 
@@ -2143,7 +2444,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let exam=savedExam;
             let examIdx = examNames.indexOf(exam);
             if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
-            let cfg=getItemConfig(), itemData=getStudentItemData(x,exam);
+            let cfg=getItemConfig(exam), itemData=getStudentItemData(x,exam);
             
             // Simpan ulasan sahaja — JANGAN overwrite markah per soalan yang sedia ada
             // Hanya kemas kini fullMark mengikut konfigurasi terkini (tanpa ubah mark)
@@ -2221,7 +2522,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let examNames = getCurrentExamNames();
             let examIdx = examNames.indexOf(savedExam);
             if(examIdx<0){alert("Ralat: peperiksaan tidak ditemui.");return;}
-            let cfg=getItemConfig();
+            let cfg=getItemConfig(savedExam);
             let examData=getStudentItemData(x,savedExam);
             let allMarkah=0,allFull=0;
 
@@ -2281,7 +2582,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 <strong style="font-size:0.8rem;">📝 ${currentBookBulan} - ${currentBookMinggu}</strong>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                   <span style="font-size:0.75rem;">Jenis Tugasan:</span>
-                  <input type="text" id="tugasInput" value="${mingguData.tugas||''}" style="flex:1;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:0.8rem;" onchange="simpanTugas('${currentBookBulan}','${currentBookMinggu}',this.value)">
+                  <input type="text" id="tugasInput" value="${mingguData.tugas||''}" style="flex:1;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:0.8rem;">
+                  <button class="btn btn-primary" style="padding:6px 12px;font-size:0.75rem;" onclick="simpanTugas('${currentBookBulan}','${currentBookMinggu}',document.getElementById('tugasInput').value)">💾 Simpan</button>
                 </div>
               </div>
               <div class="table-wrapper">
@@ -2959,7 +3261,7 @@ function renderProfilRadarChart(pbdSkills){
             let dskp=getCurrentDSKP();
             if(!dskp){c.innerHTML=`<div class="card" style="text-align:center;padding:40px;"><p>⚠️ Tiada DSKP untuk <b>${subj}</b> (${ting}).</p><p style="font-size:0.8rem;color:#64748b;margin-top:8px;">Muat naik fail JSON DSKP di halaman <b>Tetapan</b>.</p></div>`;return;}
             let st=getActiveStudents(); if(!st.length){c.innerHTML='<div class="card" style="text-align:center;padding:40px;">Tiada pelajar.</div>';return;}
-            c.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th>#</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
+            c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button><button class="btn btn-success" onclick="cetakBorangTransitIndividu()" style="background:#0891b2;"><i class="fas fa-print"></i> 📄 Borang Transit Individu</button><button class="btn btn-success" onclick="cetakBorangTransitKelas()"><i class="fas fa-print"></i> 📋 Borang Transit Kelas</button></div></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th>#</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
             document.getElementById("pbdSearchInput").value=prevSearch;
             populatePBDSkills(prevSkill,prevSp);
             document.getElementById("pbdSkillSelect").addEventListener("change",()=>{populatePBDSPS();renderPBDTable();});
@@ -3057,7 +3359,7 @@ function renderProfilRadarChart(pbdSkills){
             <td style="font-weight:600;color:#6366f1;cursor:pointer;text-decoration:underline dotted;" onclick="showStudentPBDDetail(decodeURIComponent('${safeName}'))" title="Klik untuk lihat ringkasan PBD">${s.name}</td>
             <td><div style="display:flex;gap:4px;justify-content:center;">${[1,2,3,4,5,6].map(t=>`<button type="button" class="tp-btn${t===tp && tp>0 ? ' active-'+t : (tp===0 && t===3 ? ' active-3' : '')}" onclick="updateTP(event,'${safeName}',${t})">${t}</button>`).join('')}</div></td>
             <td><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${tp>0 ? colors[tp-1] : '#cbd5e1'};"></div></div><small>${tp>0 ? 'TP '+tp+'/6' : 'Belum dinilai'}</small></td>
-            <td><input value="${ev.remark||''}" onchange="updateRemark('${safeName}',this.value)" style="border:1px solid #e2e8f0;border-radius:8px;padding:6px;width:110px;font-size:0.72rem;" title="Tarikh: ${ev.tarikh||'-'}"><div style="font-size:0.6rem;color:#94a3b8;margin-top:2px;">📅 ${ev.tarikh||'-'}</div></td>
+            <td><input value="${ev.remark||''}" id="remark_${encodeURIComponent(s.name)}" style="border:1px solid #e2e8f0;border-radius:8px;padding:6px;width:80px;font-size:0.72rem;" title="Tarikh: ${ev.tarikh||'-'}"><button onclick="saveRemark('${safeName}')" style="padding:4px 8px;border-radius:6px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:0.65rem;margin-left:2px;" title="Simpan catatan">💾</button><div style="font-size:0.6rem;color:#94a3b8;margin-top:2px;">📅 ${ev.tarikh||'-'}</div></td>
             <td><span class="badge${tp<=2 && tp>0?' badge-danger':tp<=4 && tp>0?' badge-warning':tp>=5?' badge-success':''}">${tp<=2 && tp>0?'Intervensi':tp<=4 && tp>0?'Pemulihan':tp>=5?'Pengayaan':tp===0?'Belum dinilai':''}</span></td>
             <td><i class="fas fa-trash-alt" style="color:#ef4444;cursor:pointer;" onclick="removePBDStudent('${safeName}')"></i></td>
         </tr>`;
@@ -3069,6 +3371,15 @@ function renderProfilRadarChart(pbdSkills){
 }
         function updateTP(evt,nameEncoded,tp){if(evt){evt.preventDefault();evt.stopPropagation();}let name=decodeURIComponent(nameEncoded);let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;let lockKey=[subj,kelas,skill,sp,name].join("|");let now=Date.now();if(now-(pbdTpLastClick[lockKey]||0)<180)return;let current=getPBD(subj,kelas,skill,sp,name);if(current.tp===tp)return;pbdTpLastClick[lockKey]=now;setPBD(subj,kelas,skill,sp,name,tp,current.remark);populatePBDSPS(sp);renderPBDTable();}
         function updateRemark(nameEncoded,remark){let name=decodeURIComponent(nameEncoded);let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;setPBD(subj,kelas,skill,sp,name,getPBD(subj,kelas,skill,sp,name).tp,remark);}
+        function saveRemark(nameEncoded){
+            let name=decodeURIComponent(nameEncoded);
+            let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;
+            let inputEl=document.getElementById("remark_"+nameEncoded);
+            let remark=inputEl?inputEl.value:'';
+            setPBD(subj,kelas,skill,sp,name,getPBD(subj,kelas,skill,sp,name).tp,remark);
+            // Visual feedback
+            if(inputEl){inputEl.style.borderColor='#10b981';setTimeout(()=>{inputEl.style.borderColor='#e2e8f0';},1200);}
+        }
         function removePBDStudent(nameEncoded){let name=decodeURIComponent(nameEncoded);if(!confirm("Padam?"))return;let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value;if(pbdData[subj]?.[kelas]?.[skill]?.[sp]?.[name]){delete pbdData[subj][kelas][skill][sp][name];saveAll();populatePBDSPS(sp);renderPBDTable();}}
                function showStudentPBDDetail(name){
             let subj=document.getElementById("selectSubject").value;
@@ -3201,7 +3512,7 @@ function renderProfilRadarChart(pbdSkills){
 function jalanCetakAnalisis(examPilihan){
     let subjek = document.getElementById("selectSubject").value;
     let pelajar = getActiveStudents();
-    let cfg = getItemConfig();
+    let cfg = getItemConfig(examPilihan);
     let kelas = document.getElementById("selectClass").value;
     let ting = getCurrentTingkatan();
     let examNames = getCurrentExamNames();
@@ -3213,7 +3524,7 @@ function jalanCetakAnalisis(examPilihan){
     
     let html = '<div class="no-print" style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap; justify-content:space-between; align-items:center;">';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    html += '<button class="btn btn-primary" onclick="window.print()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>';
+    html += '<button class="btn btn-primary" onclick="tunjukPilihanCetak()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>';
     html += '<button class="btn btn-ghost" onclick="bukaCetakAnalisisItem()">← Tukar Peperiksaan</button>';
     html += '</div>';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
@@ -3327,39 +3638,105 @@ function jalanCetakAnalisis(examPilihan){
         purataPelajar.push(overallPercent);
     }
     
-    // Baris data pelajar
-    for(let i = 0; i < pelajarData.length; i++) {
-        let p = pelajarData[i];
-        let rowBg = (i % 2 === 0) ? '#ffffff' : '#f8fafc';
-        let highlightClass = p.isLemah ? 'row-lemah' : '';
-        let highlightStyle = p.isLemah ? 'background:#fee2e2 !important; border-left:4px solid #dc2626;' : '';
-        
-        html += '<tr id="row_' + tableId + '_' + i + '" data-student="' + i + '" data-lemah="' + p.isLemah + '" style="background:' + rowBg + ';' + highlightStyle + '">';
-        html += '<td style="padding:6px 4px; border:1px solid #e2e8f0; text-align:center; color:#64748b;">' + (i+1) + '</td>';
-        html += '<td style="padding:6px 6px; border:1px solid #e2e8f0; font-weight:600; color:#1e293b;">' + p.name + '</td>';
-        
-        let markahIdx = 0;
-        for(let ki = 0; ki < cfg.kertas.length; ki++) {
-            let k = cfg.kertas[ki];
-            for(let si = 0; si < k.soalan.length; si++) {
-                let markah = p.semuaMarkah[markahIdx] || 0;
-                let s = k.soalan[si];
-                let peratus = s.markahPenuh > 0 ? (markah/s.markahPenuh)*100 : 0;
-                let colorClass = peratus >= 80 ? '#059669' : (peratus >= 50 ? '#d97706' : '#dc2626');
-                html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:500; color:' + colorClass + ';">' + markah + '</td>';
-                markahIdx++;
-            }
-            let kertasMarkah = p.kertasMarkah[ki];
-            let kertasPenuh = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
-            let percentKertas = kertasPenuh > 0 ? Math.round((kertasMarkah / kertasPenuh) * 100) : 0;
-            let warnaJumlah = percentKertas >= 80 ? '#059669' : (percentKertas >= 50 ? '#d97706' : '#dc2626');
-            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; background:#eff6ff; font-weight:600; color:' + warnaJumlah + ';">' + kertasMarkah + '<span style="font-size:0.6rem; color:#94a3b8;">/' + kertasPenuh + '</span></td>';
+    // ===== BARIS DATA PELAJAR - 15 PER MUKA SURAT =====
+    const ROWS_PER_PAGE = 15;
+    
+    // Bina HTML header untuk diulang pada setiap halaman
+    function buildTableHeaderHtml() {
+        let hHtml = '';
+        hHtml += '<tr>';
+        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Bil</th>';
+        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Nama Pelajar</th>';
+        for(let ki2 = 0; ki2 < cfg.kertas.length; ki2++) {
+            let k2 = cfg.kertas[ki2];
+            hHtml += '<th colspan="' + (k2.soalan.length + 1) + '" style="padding:8px 4px; background:#2563eb; border:1px solid #1d4ed8; text-align:center; font-weight:600; color:white;">' + k2.nama + '</th>';
         }
-        let purataWarna = p.overallPercent >= 80 ? '#059669' : (p.overallPercent >= 50 ? '#d97706' : '#dc2626');
-        html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:700; color:' + purataWarna + ';">' + p.overallPercent + '%</td>';
-        let badgeBg = p.gredInfo.warna + '15';
-        html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0;"><span style="display:inline-block; padding:2px 8px; border-radius:12px; background:' + badgeBg + '; color:' + p.gredInfo.warna + '; font-weight:600; font-size:0.65rem;">' + (isSPMLevel ? p.gredInfo.gred : '-') + '</span></td>';
-        html += '</tr>';
+        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Purata (%)</th>';
+        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Gred</th>';
+        hHtml += '</tr><tr>';
+        for(let ki2 = 0; ki2 < cfg.kertas.length; ki2++) {
+            let k2 = cfg.kertas[ki2];
+            for(let si2 = 0; si2 < k2.soalan.length; si2++) {
+                let s2 = k2.soalan[si2];
+                hHtml += '<th style="padding:6px 4px; background:#dbeafe; border:1px solid #bfdbfe; font-size:0.65rem; text-align:center; font-weight:600; color:#1e40af;">' + s2.no + '<br><span style="font-size:0.55rem; font-weight:400;">/' + s2.markahPenuh + '</span></th>';
+            }
+            let totalPenuhK = k2.soalan.reduce((sum, s2) => sum + s2.markahPenuh, 0);
+            hHtml += '<th style="padding:6px 4px; background:#bfdbfe; border:1px solid #93c5fd; font-size:0.68rem; text-align:center; font-weight:700; color:#1e3a8a;">Jumlah<br><span style="font-size:0.6rem; font-weight:400;">/' + totalPenuhK + '</span></th>';
+        }
+        hHtml += '</tr>';
+        return hHtml;
+    }
+    
+    let totalPages = Math.ceil(pelajarData.length / ROWS_PER_PAGE);
+    
+    for(let page = 0; page < totalPages; page++) {
+        let startIdx = page * ROWS_PER_PAGE;
+        let endIdx = Math.min(startIdx + ROWS_PER_PAGE, pelajarData.length);
+        let mukaSurat = page + 1;
+        
+        // Page break untuk halaman ke-2 dan seterusnya
+        if(page > 0) {
+            html += '</tbody></table>';
+            // Header ulang untuk muka surat baru
+            html += '<div style="page-break-before:always; margin-top:0;">';
+            html += '<div class="print-header" style="border-bottom:2px solid #2563eb; margin-bottom:8px; padding-bottom:6px;">';
+            html += '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + ' <span style="font-size:0.75rem; color:#2563eb;">(Muka Surat ' + mukaSurat + ' / ' + totalPages + ')</span></h2>';
+            html += '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + ' · Pelajar ' + (startIdx+1) + ' - ' + endIdx + ' daripada ' + pelajarData.length + '</p>';
+            html += '</div>';
+            html += '<table id="' + tableId + '_p' + page + '" style="width:100%; border-collapse:collapse; font-size:0.7rem;">';
+            html += '<thead>' + buildTableHeaderHtml() + '</thead><tbody>';
+        } else {
+            // Tambah info muka surat pada header pertama
+            if(totalPages > 1) {
+                html = html.replace(
+                    '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + '</h2>',
+                    '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + ' <span style="font-size:0.75rem; color:#2563eb;">(Muka Surat 1 / ' + totalPages + ')</span></h2>'
+                );
+                // Tambah info julat pelajar
+                html = html.replace(
+                    '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + '</p>',
+                    '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + ' · Pelajar 1 - ' + endIdx + ' daripada ' + pelajarData.length + '</p>'
+                );
+            }
+        }
+        
+        // Baris pelajar untuk halaman ini
+        for(let i = startIdx; i < endIdx; i++) {
+            let p = pelajarData[i];
+            let rowBg = ((i - startIdx) % 2 === 0) ? '#ffffff' : '#f8fafc';
+            let highlightStyle = p.isLemah ? 'background:#fee2e2 !important; border-left:4px solid #dc2626;' : '';
+            
+            html += '<tr id="row_' + tableId + '_' + i + '" data-student="' + i + '" data-lemah="' + p.isLemah + '" style="background:' + rowBg + ';' + highlightStyle + '">';
+            html += '<td style="padding:6px 4px; border:1px solid #e2e8f0; text-align:center; color:#64748b;">' + (i+1) + '</td>';
+            html += '<td style="padding:6px 6px; border:1px solid #e2e8f0; font-weight:600; color:#1e293b;">' + p.name + '</td>';
+            
+            let markahIdx = 0;
+            for(let ki = 0; ki < cfg.kertas.length; ki++) {
+                let k = cfg.kertas[ki];
+                for(let si = 0; si < k.soalan.length; si++) {
+                    let markah = p.semuaMarkah[markahIdx] || 0;
+                    let s = k.soalan[si];
+                    let peratus = s.markahPenuh > 0 ? (markah/s.markahPenuh)*100 : 0;
+                    let colorClass = peratus >= 80 ? '#059669' : (peratus >= 50 ? '#d97706' : '#dc2626');
+                    html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:500; color:' + colorClass + ';">' + markah + '</td>';
+                    markahIdx++;
+                }
+                let kertasMarkah = p.kertasMarkah[ki];
+                let kertasPenuh = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
+                let percentKertas = kertasPenuh > 0 ? Math.round((kertasMarkah / kertasPenuh) * 100) : 0;
+                let warnaJumlah = percentKertas >= 80 ? '#059669' : (percentKertas >= 50 ? '#d97706' : '#dc2626');
+                html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; background:#eff6ff; font-weight:600; color:' + warnaJumlah + ';">' + kertasMarkah + '<span style="font-size:0.6rem; color:#94a3b8;">/' + kertasPenuh + '</span></td>';
+            }
+            let purataWarna = p.overallPercent >= 80 ? '#059669' : (p.overallPercent >= 50 ? '#d97706' : '#dc2626');
+            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:700; color:' + purataWarna + ';">' + p.overallPercent + '%</td>';
+            let badgeBg = p.gredInfo.warna + '15';
+            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0;"><span style="display:inline-block; padding:2px 8px; border-radius:12px; background:' + badgeBg + '; color:' + p.gredInfo.warna + '; font-weight:600; font-size:0.65rem;">' + (isSPMLevel ? p.gredInfo.gred : '-') + '</span></td>';
+            html += '</tr>';
+        }
+        
+        if(page > 0) {
+            html += '</div>';
+        }
     }
     html += '</tbody></table>';
     
@@ -3499,7 +3876,7 @@ function bukaRankingAnalisisSoalan() {
 function renderRankingAnalisisSoalan(examPilihan) {
     let subjek = document.getElementById("selectSubject").value;
     let pelajar = getActiveStudents();
-    let cfg = getItemConfig();
+    let cfg = getItemConfig(examPilihan);
     let kelas = document.getElementById("selectClass").value;
     let ting = getCurrentTingkatan();
     
@@ -3584,7 +3961,7 @@ function renderRankingAnalisisSoalan(examPilihan) {
     let html = `
     <div class="no-print" style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap; justify-content:space-between;">
         <div style="display:flex;gap:8px;">
-            <button class="btn btn-primary" onclick="window.print()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>
+            <button class="btn btn-primary" onclick="tunjukPilihanCetak()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>
             <button class="btn btn-ghost" onclick="bukaRankingAnalisisSoalan()">↻ Tukar Peperiksaan</button>
         </div>
         <button class="btn btn-ghost" onclick="tutupModal('modalRankingSoalan')">✕ Tutup</button>
@@ -3749,6 +4126,658 @@ function renderRankingAnalisisSoalan(examPilihan) {
 
         function eksportPBDExcel(){let subj=document.getElementById("selectSubject").value,kelas=document.getElementById("selectClass").value,skill=document.getElementById("pbdSkillSelect").value,sp=document.getElementById("pbdSpSelect").value,ws=[["PBD",subj,kelas],[],["Nama","TP","Catatan"]];getActiveStudents().forEach(s=>{let ev=getPBD(subj,kelas,skill,sp,s.name);ws.push([s.name,ev.tp,ev.remark||""]);});let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws),"PBD");XLSX.writeFile(wb,`PBD_${subj}_${kelas}.xlsx`);}
 
+        // ==================== BORANG TRANSIT PBD ====================
+        function getTPColor(tp){
+            if(tp<=0) return {bg:'#f8fafc',text:'#94a3b8'};
+            if(tp===1) return {bg:'#fee2e2',text:'#dc2626'};
+            if(tp===2) return {bg:'#ffedd5',text:'#ea580c'};
+            if(tp===3) return {bg:'#fef9c3',text:'#ca8a04'};
+            if(tp===4) return {bg:'#dcfce7',text:'#16a34a'};
+            if(tp===5) return {bg:'#dbeafe',text:'#2563eb'};
+            if(tp===6) return {bg:'#ede9fe',text:'#7c3aed'};
+            return {bg:'#f8fafc',text:'#94a3b8'};
+        }
+
+        function getTPLabel(tp){
+            if(tp<=0) return 'Belum';
+            const labels=['TP 1','TP 2','TP 3','TP 4','TP 5','TP 6'];
+            return labels[tp-1]||'TP '+tp;
+        }
+
+        function cetakBorangTransitIndividu(){
+            let subj = document.getElementById("selectSubject").value;
+            let kelas = document.getElementById("selectClass").value;
+            let ting = getCurrentTingkatan();
+            let dskp = getCurrentDSKP();
+            let students = getActiveStudents();
+            if(!dskp || !students.length){ alert("Tiada data DSKP atau pelajar."); return; }
+
+            // ===== DIALOG PILIH PELAJAR =====
+            // Bina senarai checkbox dalam modal
+            let existingOverlay = document.getElementById('transitPilihOverlay');
+            if(existingOverlay) existingOverlay.remove();
+
+            let overlayDiv = document.createElement('div');
+            overlayDiv.id = 'transitPilihOverlay';
+            overlayDiv.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(6px);z-index:9999;display:flex;justify-content:center;align-items:center;';
+
+            let checkboxRows = students.map((s,i) => `
+                <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;border:1.5px solid #e2e8f0;cursor:pointer;transition:all 0.15s;background:#fff;" 
+                    onmouseover="this.style.borderColor='#6366f1';this.style.background='#ede9fe';" 
+                    onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#fff';">
+                    <input type="checkbox" class="tii-cb" data-idx="${i}" checked 
+                        style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
+                    <span style="font-size:0.82rem;font-weight:600;color:#1e293b;flex:1;">${s.name}</span>
+                    <span style="font-size:0.68rem;color:#94a3b8;">${s.ic||''}</span>
+                </label>`).join('');
+
+            overlayDiv.innerHTML = `
+                <div style="background:#fff;border-radius:20px;padding:28px;width:480px;max-width:95%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-size:1rem;font-weight:800;margin:0;color:#1e293b;">📄 Pilih Pelajar</h3>
+                            <p style="font-size:0.72rem;color:#64748b;margin:4px 0 0;">Pilih pelajar yang ingin dicetak Borang Transit Individu</p>
+                        </div>
+                        <button onclick="document.getElementById('transitPilihOverlay').remove()" 
+                            style="background:#f1f5f9;border:none;border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:1rem;color:#64748b;">✕</button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:12px;">
+                        <button onclick="document.querySelectorAll('.tii-cb').forEach(c=>c.checked=true)" 
+                            style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-size:0.75rem;font-weight:600;">✅ Pilih Semua</button>
+                        <button onclick="document.querySelectorAll('.tii-cb').forEach(c=>c.checked=false)" 
+                            style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-size:0.75rem;font-weight:600;">❌ Nyah Pilih</button>
+                        <span id="tiiCount" style="padding:7px 12px;background:#ede9fe;border-radius:8px;font-size:0.75rem;font-weight:700;color:#6366f1;white-space:nowrap;">${students.length} dipilih</span>
+                    </div>
+                    <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;padding-right:4px;" id="tiiList">
+                        ${checkboxRows}
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:10px;">
+                        <button onclick="document.getElementById('transitPilihOverlay').remove()" 
+                            style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-weight:600;font-size:0.85rem;">Batal</button>
+                        <button onclick="jalanCetakTransitIndividu()" 
+                            style="flex:2;padding:11px;border-radius:12px;border:none;background:#6366f1;color:#fff;cursor:pointer;font-weight:700;font-size:0.85rem;">🖨️ Cetak Borang Transit</button>
+                    </div>
+                </div>`;
+
+            document.body.appendChild(overlayDiv);
+
+            // Kemas kini kiraan apabila checkbox bertukar
+            overlayDiv.querySelectorAll('.tii-cb').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    let count = overlayDiv.querySelectorAll('.tii-cb:checked').length;
+                    document.getElementById('tiiCount').textContent = count + ' dipilih';
+                });
+            });
+
+            // Simpan data untuk digunakan semasa cetak
+            window._transitIndivData = { subj, kelas, ting, dskp, students };
+        }
+
+        function jalanCetakTransitIndividu(){
+            let overlay = document.getElementById('transitPilihOverlay');
+            if(!overlay) return;
+            let checked = Array.from(overlay.querySelectorAll('.tii-cb:checked')).map(c => parseInt(c.dataset.idx));
+            overlay.remove();
+            if(!checked.length){ alert('Tiada pelajar dipilih.'); return; }
+
+            let { subj, kelas, ting, dskp, students } = window._transitIndivData;
+            let selectedStudents = checked.map(i => students[i]);
+            let tahun = new Date().getFullYear();
+            let tarikhCetak = new Date().toLocaleDateString('ms-MY',{day:'2-digit',month:'long',year:'numeric'});
+
+            // Kira jumlah halaman: setiap pelajar × setiap kemahiran = 1 halaman
+            // (1 kemahiran per halaman per pelajar)
+            let totalSkills = dskp.skills.length;
+            let totalPages = selectedStudents.length * totalSkills;
+
+            let transitCSS = `
+                * { box-sizing: border-box; }
+                body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f1f5f9; }
+                .no-print-bar { background:#1e293b; color:#fff; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+                .no-print-bar button { border:none; padding:7px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:0.82rem; }
+                .btn-cetak { background:#6366f1; color:#fff; }
+                .btn-tutup { background:#ef4444; color:#fff; }
+                .transit-page { padding:12px 14px; max-width:210mm; margin:0 auto; }
+                .transit-card { background:#fff; padding:14px 16px; }
+                .transit-logo-row { display:flex; align-items:center; gap:14px; margin-bottom:4px; }
+                .transit-title-box { text-align:center; flex:1; }
+                .transit-title-box h3 { font-size:0.88rem; font-weight:800; margin:0; color:#1e293b; text-transform:uppercase; letter-spacing:0.04em; }
+                .transit-title-box p { font-size:0.7rem; color:#64748b; margin:2px 0 0; }
+                .transit-divider { border:none; border-top:2.5px solid #1e293b; margin:8px 0; }
+                .transit-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:10px; }
+                .transit-info-item { border:1px solid #cbd5e1; border-radius:5px; padding:5px 9px; }
+                .transit-info-label { font-size:0.55rem; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+                .transit-info-value { font-size:0.8rem; font-weight:700; color:#1e293b; }
+                .transit-skill-header { background:#4f46e5; color:#fff; padding:6px 10px; border-radius:5px 5px 0 0; font-size:0.75rem; font-weight:700; }
+                .transit-sp-table { width:100%; border-collapse:collapse; margin-top:0; font-size:0.68rem; margin-bottom:10px; }
+                .transit-sp-table th { background:#1e293b; color:#fff; padding:5px 6px; text-align:center; font-size:0.6rem; border:1px solid #334155; }
+                .transit-sp-table td { padding:5px 6px; border:1px solid #cbd5e1; vertical-align:middle; }
+                .transit-sp-table tr:nth-child(even) td { background:#f8fafc; }
+                .transit-tp-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:800; font-size:0.62rem; min-width:40px; text-align:center; }
+                .transit-ulasan-cell { font-size:0.6rem; color:#334155; font-style:italic; max-width:140px; word-break:break-word; }
+                .transit-tarikh-input { font-size:0.55rem; color:#1e293b; }
+                @media print {
+                    .transit-tarikh-input { border:none !important; background:transparent !important; box-shadow:none !important; outline:none !important; color:#1e293b !important; font-size:0.55rem !important; padding:0 !important; width:auto !important; cursor:default !important; }
+                    .no-print-border { border-color: transparent !important; }
+                }
+                .transit-summary-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:9px 12px; margin-top:10px; }
+                .transit-sign-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:18px; }
+                .transit-sign-box { text-align:center; padding-top:6px; border-top:1.5px solid #1e293b; }
+                .page-break { page-break-before: always; }
+                @media print {
+                    @page { size: A4 portrait; margin: 10mm; }
+                    body { background:#fff; }
+                    .no-print-bar { display: none !important; }
+                    .transit-page { padding:0; max-width:100%; margin:0; }
+                    .transit-card { padding:10px 12px; }
+                }`;
+
+            let transitBody = ``;
+            let pageNum = 0;
+
+            selectedStudents.forEach((student) => {
+                // Kira maklumat ringkasan keseluruhan pelajar
+                let allTPs = [];
+                dskp.skills.forEach(skill => {
+                    skill.spList.forEach(sp => {
+                        let ev = getPBD(subj, kelas, skill.code, sp.code, student.name);
+                        if(ev.tp > 0) allTPs.push(ev.tp);
+                    });
+                });
+                let avgTP = allTPs.length > 0 ? (allTPs.reduce((a,b)=>a+b,0)/allTPs.length).toFixed(1) : '-';
+                let tpCount = [0,0,0,0,0,0];
+                allTPs.forEach(t => { if(t>=1&&t<=6) tpCount[t-1]++; });
+                let dominantTP = allTPs.length > 0 ? tpCount.indexOf(Math.max(...tpCount)) + 1 : 0;
+                let tafsiran = dominantTP<=0 ? '— Belum dinilai' :
+                    dominantTP<=2 ? '🔴 Memerlukan Intervensi — Bimbingan segera diperlukan' :
+                    dominantTP<=4 ? '🟡 Sederhana — Pemulihan dan latihan tambahan diperlukan' :
+                                    '🟢 Baik — Pengayaan dan cabaran lanjutan';
+
+                // 1 halaman per kemahiran per pelajar
+                dskp.skills.forEach((skill, skillIdx) => {
+                    pageNum++;
+                    let isFirst = pageNum === 1;
+                    let skillPage = skillIdx + 1;
+                    let studentTotalPages = totalSkills;
+
+                    transitBody += `<div class="${isFirst ? '' : 'page-break'} transit-page">`;
+                    transitBody += `<div class="transit-card">`;
+
+                    // Header
+                    transitBody += `
+                    <div class="transit-logo-row">
+                        <div style="width:46px;height:46px;border:2px solid #1e293b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;text-align:center;color:#94a3b8;line-height:1.3;">LOGO<br>SEKOLAH</div>
+                        <div class="transit-title-box">
+                            <h3>BORANG TRANSIT INDIVIDU PELAJAR</h3>
+                            <p>Pentaksiran Bilik Darjah (PBD) &nbsp;|&nbsp; ${subj} &nbsp;|&nbsp; ${ting} &nbsp;|&nbsp; Tahun ${tahun} &nbsp;|&nbsp; Kertas ${skillPage} / ${studentTotalPages}</p>
+                        </div>
+                        <div style="width:46px;height:46px;border:2px solid #1e293b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;text-align:center;color:#94a3b8;line-height:1.3;">KOD<br>SEKOLAH</div>
+                    </div>
+                    <hr class="transit-divider">`;
+
+                    // Info pelajar
+                    transitBody += `
+                    <div class="transit-info-grid">
+                        <div class="transit-info-item"><div class="transit-info-label">Nama Pelajar</div><div class="transit-info-value">${student.name}</div></div>
+                        <div class="transit-info-item"><div class="transit-info-label">No. KP / No. Pendaftaran</div><div class="transit-info-value">${student.ic || '________________________________'}</div></div>
+                        <div class="transit-info-item"><div class="transit-info-label">Kelas</div><div class="transit-info-value">${kelas}</div></div>
+                        <div class="transit-info-item"><div class="transit-info-label">Subjek &amp; Tahun</div><div class="transit-info-value">${subj} / ${tahun}</div></div>
+                    </div>`;
+
+                    // Jadual SP untuk kemahiran ini sahaja
+                    transitBody += `
+                    <div style="margin-bottom:9px;">
+                        <div class="transit-skill-header">
+                            Kemahiran ${skillIdx+1}: ${skill.code} &nbsp;—&nbsp; ${skill.name}
+                        </div>
+                        <table class="transit-sp-table">
+                            <thead><tr>
+                                <th style="width:15%;text-align:left;padding-left:8px;">Kod SP</th>
+                                <th style="text-align:left;">Huraian Standard Pembelajaran</th>
+                                <th style="width:10%;">TP</th>
+                                <th style="width:28%;">Ulasan Guru</th>
+                                <th style="width:13%;">Tarikh</th>
+                            </tr></thead>
+                            <tbody>`;
+
+                    skill.spList.forEach(sp => {
+                        let ev = getPBD(subj, kelas, skill.code, sp.code, student.name);
+                        let tp = ev.tp || 0;
+                        let tpC = getTPColor(tp);
+                        let ulasanSP = ev.remark && ev.remark.trim() ? ev.remark : '';
+                        transitBody += `
+                            <tr>
+                                <td style="font-weight:700;color:#4f46e5;padding-left:8px;">${sp.code}</td>
+                                <td style="font-size:0.62rem;">${sp.desc}</td>
+                                <td style="text-align:center;"><span class="transit-tp-badge" style="background:${tpC.bg};color:${tpC.text};">${tp>0?getTPLabel(tp):'—'}</span></td>
+                                <td class="transit-ulasan-cell">${ulasanSP || '<span style="color:#cbd5e1;">________________</span>'}</td>
+                                <td style="text-align:center;padding:2px;">
+                    <input type="date" class="transit-tarikh-input no-print-border"
+                        value="${ev.tarikh && ev.tarikh!=='-' ? (()=>{ try{ let d=new Date(ev.tarikh); if(!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){} return ''; })() : ''}"
+                        title="${ev.tarikh && ev.tarikh!=='-' ? ev.tarikh : 'Tiada tarikh'}"
+                        style="font-size:0.55rem;color:#1e293b;border:1px dashed #cbd5e1;border-radius:4px;padding:2px 3px;width:100%;max-width:90px;background:transparent;cursor:pointer;text-align:center;"
+                        onfocus="this.style.borderColor='#6366f1';this.style.background='#ede9fe';"
+                        onblur="this.style.borderColor='#cbd5e1';this.style.background='transparent';">
+                </td>
+                            </tr>`;
+                    });
+                    transitBody += `</tbody></table></div>`;
+
+                    // Rumusan (hanya pada halaman kemahiran terakhir pelajar)
+                    if(skillIdx === dskp.skills.length - 1) {
+                        transitBody += `
+                        <div class="transit-summary-box">
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:0.7rem;margin-bottom:6px;">
+                                <div><span style="color:#64748b;font-size:0.58rem;font-weight:700;text-transform:uppercase;">TP Purata (Keseluruhan)</span><br><span style="color:#4f46e5;font-weight:800;font-size:1.1rem;">${avgTP}</span></div>
+                                <div><span style="color:#64748b;font-size:0.58rem;font-weight:700;text-transform:uppercase;">Taburan TP</span><br><span style="font-size:0.65rem;">${tpCount.map((c,i)=>c>0?`<b>TP${i+1}:</b>${c}`:'').filter(Boolean).join(' &nbsp; ')||'—'}</span></div>
+                                <div><span style="color:#64748b;font-size:0.58rem;font-weight:700;text-transform:uppercase;">Ulasan Umum Guru</span><br><span style="font-size:0.65rem;font-style:italic;">${student.ulasan||'—'}</span></div>
+                            </div>
+                            <div style="font-size:0.68rem;color:#475569;border-top:1px solid #e2e8f0;padding-top:6px;">
+                                <strong>Tafsiran Keseluruhan:</strong> ${tafsiran}
+                            </div>
+                        </div>`;
+                    }
+
+                    // Tandatangan
+                    transitBody += `
+                    <div class="transit-sign-row">
+                        <div class="transit-sign-box">
+                            <p style="margin:0 0 20px;font-size:0.65rem;">Tandatangan Guru</p>
+                            <p style="margin:0;font-size:0.6rem;color:#64748b;">Nama: ___________________</p>
+                        </div>
+                        <div class="transit-sign-box">
+                            <p style="margin:0 0 20px;font-size:0.65rem;">Tandatangan Pelajar / Ibu Bapa</p>
+                            <p style="margin:0;font-size:0.6rem;color:#64748b;">Tarikh: ________________</p>
+                        </div>
+                        <div class="transit-sign-box">
+                            <p style="margin:0 0 20px;font-size:0.65rem;">Disahkan Oleh</p>
+                            <p style="margin:0;font-size:0.6rem;color:#64748b;">(Pengetua / GPK)</p>
+                        </div>
+                    </div>
+                    <p style="font-size:0.5rem;color:#94a3b8;text-align:center;margin-top:10px;border-top:1px solid #f1f5f9;padding-top:6px;">
+                        Dicetak pada: ${tarikhCetak} &nbsp;|&nbsp; EduTrack — Sistem Pengurusan Akademik &nbsp;|&nbsp; ${student.name} — Kemahiran ${skillPage} / ${studentTotalPages}
+                    </p>`;
+
+                    transitBody += `</div></div>`;
+                });
+            });
+
+            let printWin = window.open('', '_blank', 'width=900,height=750');
+            if(!printWin){ alert('Sila benarkan popup untuk mencetak.'); return; }
+            printWin.document.write(`<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<title>Borang Transit Individu PBD — ${kelas}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>${transitCSS}</style>
+</head>
+<body>
+<div class="no-print-bar">
+    <span style="font-weight:700;font-size:0.88rem;">📄 Borang Transit Individu PBD — ${selectedStudents.length} Pelajar | ${totalPages} Muka Surat</span>
+    <div style="display:flex;gap:8px;">
+        <button class="btn-cetak" onclick="window.print()"><i class="fas fa-print"></i> Cetak</button>
+        <button class="btn-tutup" onclick="window.close()">✕ Tutup</button>
+    </div>
+</div>
+${transitBody}
+</body>
+</html>`);
+            printWin.document.close();
+        }
+
+        function cetakBorangTransitKelas(){
+            let subj = document.getElementById("selectSubject").value;
+            let kelas = document.getElementById("selectClass").value;
+            let ting = getCurrentTingkatan();
+            let dskp = getCurrentDSKP();
+            let students = getActiveStudents();
+            if(!dskp || !students.length){ alert("Tiada data DSKP atau pelajar."); return; }
+
+            let tahun = new Date().getFullYear();
+            let tarikhCetak = new Date().toLocaleDateString('ms-MY',{day:'2-digit',month:'long',year:'numeric'});
+            // 1 kemahiran per muka surat (Kemahiran 1 = Kertas 1, Kemahiran 2 = Kertas 2, dst.)
+            const SKILLS_PER_PAGE = 1;
+
+            // Pecahkan kemahiran: 1 kemahiran per halaman
+            let skillGroups = dskp.skills.map(skill => [skill]);
+            let totalPages = skillGroups.length;
+
+            let transitHTML = `
+            <style>
+                @media print {
+                    @page { size: A4 landscape; margin: 8mm; }
+                    .transit-no-print { display: none !important; }
+                    .tk-break { page-break-before: always; }
+                }
+                * { box-sizing: border-box; }
+                body { font-family: Arial, sans-serif; margin:0; padding:0; font-size:0.7rem; background:#f1f5f9; }
+                .transit-no-print { background:#1e293b; color:#fff; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+                .transit-no-print button { border:none; padding:7px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:0.82rem; }
+                .tk-page { padding: 10px 14px; background:#fff; }
+                .tk-header { text-align:center; margin-bottom:6px; }
+                .tk-header h3 { font-size:0.88rem; font-weight:800; margin:0; text-transform:uppercase; letter-spacing:0.03em; color:#1e293b; }
+                .tk-header p { font-size:0.62rem; color:#64748b; margin:2px 0 0; }
+                hr.tk-line { border:none; border-top:2px solid #1e293b; margin:5px 0; }
+                .tk-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:7px; font-size:0.62rem; }
+                .tk-meta-item { border:1px solid #cbd5e1; border-radius:4px; padding:4px 7px; }
+                .tk-meta-label { font-size:0.52rem; color:#64748b; font-weight:700; text-transform:uppercase; }
+                .tk-meta-value { font-weight:700; color:#1e293b; }
+                .tk-table { width:100%; border-collapse:collapse; font-size:0.6rem; }
+                .tk-table th { background:#1e293b; color:#fff; padding:4px 5px; border:1px solid #334155; text-align:center; font-size:0.55rem; line-height:1.3; }
+                .tk-table td { padding:3px 4px; border:1px solid #cbd5e1; text-align:center; vertical-align:middle; height:18px; }
+                .tk-table tr:nth-child(even) td { background:#f8fafc; }
+                .tk-table tr:last-child td { background:#ecfdf5 !important; font-weight:700; }
+                .tk-skill-th { background:#312e81 !important; font-size:0.58rem !important; }
+                .tk-sp-th { background:#3730a3 !important; font-size:0.52rem !important; }
+                .tk-desc-th { background:#4338ca !important; font-size:0.48rem !important; font-weight:400 !important; }
+                .tp-chip { display:inline-block; padding:1px 5px; border-radius:6px; font-weight:800; font-size:0.55rem; min-width:18px; }
+                .tk-footer { display:flex; justify-content:space-between; align-items:flex-end; margin-top:8px; gap:16px; }
+                .tk-legend { font-size:0.55rem; }
+                .tk-sign { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; font-size:0.58rem; }
+                .tk-sign-box { text-align:center; border-top:1.5px solid #1e293b; padding-top:4px; }
+                .tk-foot-note { font-size:0.48rem; color:#94a3b8; text-align:center; margin-top:6px; border-top:1px solid #f1f5f9; padding-top:4px; }
+            </style>
+            <div class="transit-no-print">
+                <span style="font-weight:700;font-size:0.88rem;">📋 Borang Transit Kelas PBD — ${kelas} (${students.length} Pelajar | ${totalPages} Muka Surat | 1 Kemahiran/Muka Surat)</span>
+                <div style="display:flex;gap:8px;">
+                    <button style="background:#10b981;color:#fff;" onclick="window.print()"><i class="fas fa-print"></i> Cetak</button>
+                    <button style="background:#ef4444;color:#fff;" onclick="window.close()">✕ Tutup</button>
+                </div>
+            </div>`;
+
+            // Jana 1 halaman per kumpulan 2 kemahiran
+            skillGroups.forEach((skillGroup, pgIdx) => {
+                let mukaSurat = pgIdx + 1;
+                let skillNames = skillGroup.map(s => s.code + ' ' + s.name).join(' | ');
+                // Jumlah SP dalam kumpulan ini
+                let totalSP = skillGroup.reduce((sum, sk) => sum + sk.spList.length, 0);
+
+                transitHTML += `<div class="${pgIdx>0?'tk-break':''} tk-page">`;
+
+                // Header
+                transitHTML += `
+                <div class="tk-header">
+                    <h3>BORANG TRANSIT KELAS — PENTAKSIRAN BILIK DARJAH (PBD)</h3>
+                    <p>${subj} &nbsp;|&nbsp; ${kelas} &nbsp;|&nbsp; ${ting} &nbsp;|&nbsp; Tahun ${tahun} &nbsp;|&nbsp; Muka Surat ${mukaSurat} / ${totalPages} &nbsp;|&nbsp; ${skillNames}</p>
+                </div>
+                <hr class="tk-line">
+                <div class="tk-meta">
+                    <div class="tk-meta-item"><div class="tk-meta-label">Nama Guru</div><div class="tk-meta-value">_____________________</div></div>
+                    <div class="tk-meta-item"><div class="tk-meta-label">Kelas</div><div class="tk-meta-value">${kelas}</div></div>
+                    <div class="tk-meta-item"><div class="tk-meta-label">Subjek</div><div class="tk-meta-value">${subj}</div></div>
+                    <div class="tk-meta-item"><div class="tk-meta-label">Tarikh Dikemas Kini</div><div class="tk-meta-value">_______________</div></div>
+                </div>`;
+
+                // ===== JADUAL =====
+                transitHTML += `<table class="tk-table"><thead>`;
+
+                // Baris 1 — #, Nama, Kemahiran (colspan SP), Purata, Status
+                transitHTML += `<tr>
+                    <th rowspan="3" style="width:22px;">#</th>
+                    <th rowspan="3" style="width:140px;text-align:left;padding-left:6px;">Nama Pelajar</th>`;
+                skillGroup.forEach(skill => {
+                    transitHTML += `<th colspan="${skill.spList.length}" class="tk-skill-th">${skill.code}<br><span style="font-size:0.5rem;font-weight:400;">${skill.name.substring(0,30)}</span></th>`;
+                });
+                transitHTML += `<th rowspan="3" style="width:36px;">Purata<br>TP</th>
+                    <th rowspan="3" style="width:52px;">Status</th>
+                </tr>`;
+
+                // Baris 2 — Kod SP
+                transitHTML += `<tr>`;
+                skillGroup.forEach(skill => {
+                    skill.spList.forEach(sp => {
+                        transitHTML += `<th class="tk-sp-th" style="min-width:28px;">${sp.code}</th>`;
+                    });
+                });
+                transitHTML += `</tr>`;
+
+                // Baris 3 — Deskripsi SP singkatan
+                transitHTML += `<tr>`;
+                skillGroup.forEach(skill => {
+                    skill.spList.forEach(sp => {
+                        let d = sp.desc.length > 14 ? sp.desc.substring(0,12)+'…' : sp.desc;
+                        transitHTML += `<th class="tk-desc-th">${d}</th>`;
+                    });
+                });
+                transitHTML += `</tr></thead><tbody>`;
+
+                // Baris pelajar — semua pelajar
+                students.forEach((student, idx) => {
+                    let studentTPs = [];
+                    transitHTML += `<tr>
+                        <td style="color:#94a3b8;font-size:0.55rem;">${idx+1}</td>
+                        <td style="text-align:left;font-weight:600;color:#1e293b;padding-left:5px;font-size:0.62rem;">${student.name}</td>`;
+
+                    skillGroup.forEach(skill => {
+                        skill.spList.forEach(sp => {
+                            let ev = getPBD(subj, kelas, skill.code, sp.code, student.name);
+                            let tp = ev.tp || 0;
+                            let tpC = getTPColor(tp);
+                            if(tp>0) studentTPs.push(tp);
+                            transitHTML += `<td><span class="tp-chip" style="background:${tp>0?tpC.bg:'#f1f5f9'};color:${tp>0?tpC.text:'#94a3b8'};">${tp>0?tp:'—'}</span></td>`;
+                        });
+                    });
+
+                    let avgTP = studentTPs.length>0 ? (studentTPs.reduce((a,b)=>a+b,0)/studentTPs.length).toFixed(1) : '—';
+                    let avgNum = parseFloat(avgTP);
+                    let statusColor = isNaN(avgNum)?'#94a3b8':avgNum<=2?'#dc2626':avgNum<=4?'#d97706':'#059669';
+                    let statusLabel = isNaN(avgNum)?'—':avgNum<=2?'Intervensi':avgNum<=4?'Pemulihan':'Pengayaan';
+                    transitHTML += `
+                        <td style="font-weight:800;color:#4f46e5;font-size:0.62rem;">${avgTP}</td>
+                        <td><span style="font-size:0.52rem;font-weight:700;color:${statusColor};">${statusLabel}</span></td>
+                    </tr>`;
+                });
+
+                // Baris Purata Kelas
+                transitHTML += `<tr><td style="font-size:0.52rem;"></td><td style="text-align:left;font-weight:800;font-size:0.58rem;padding-left:5px;color:#065f46;">PURATA KELAS</td>`;
+                skillGroup.forEach(skill => {
+                    skill.spList.forEach(sp => {
+                        let tpList = students.map(s => { let ev=getPBD(subj,kelas,skill.code,sp.code,s.name); return ev.tp||0; }).filter(t=>t>0);
+                        let avg = tpList.length>0 ? (tpList.reduce((a,b)=>a+b,0)/tpList.length).toFixed(1) : '—';
+                        let avgC = getTPColor(Math.round(parseFloat(avg)||0));
+                        transitHTML += `<td style="font-weight:700;color:${avgC.text};font-size:0.58rem;">${avg}</td>`;
+                    });
+                });
+                // Purata keseluruhan kemahiran ini sahaja
+                let allKelasTP = [];
+                skillGroup.forEach(skill => {
+                    skill.spList.forEach(sp => {
+                        students.forEach(s => { let ev=getPBD(subj,kelas,skill.code,sp.code,s.name); if(ev.tp>0)allKelasTP.push(ev.tp); });
+                    });
+                });
+                let kelasAvg = allKelasTP.length>0 ? (allKelasTP.reduce((a,b)=>a+b,0)/allKelasTP.length).toFixed(1) : '—';
+                transitHTML += `<td style="font-weight:800;color:#4f46e5;font-size:0.6rem;">${kelasAvg}</td><td></td></tr>`;
+
+                transitHTML += `</tbody></table>`;
+
+                // Footer: legenda + tandatangan
+                transitHTML += `
+                <div class="tk-footer">
+                    <div class="tk-legend">
+                        <strong>LEGENDA:</strong>
+                        <span style="background:#fee2e2;color:#dc2626;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px;">TP 1-2 Intervensi</span>
+                        <span style="background:#fef9c3;color:#ca8a04;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px;">TP 3-4 Pemulihan</span>
+                        <span style="background:#dcfce7;color:#16a34a;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px;">TP 5-6 Pengayaan</span>
+                        <span style="background:#f1f5f9;color:#94a3b8;padding:2px 6px;border-radius:4px;margin-left:4px;">— Belum dinilai</span>
+                    </div>
+                    <div class="tk-sign">
+                        <div class="tk-sign-box">Disediakan Oleh (Guru)<br><span style="font-size:0.5rem;color:#94a3b8;">Nama &amp; Cop: _______________</span></div>
+                        <div class="tk-sign-box">Disemak Oleh (GPK)<br><span style="font-size:0.5rem;color:#94a3b8;">Tarikh: _______________</span></div>
+                        <div class="tk-sign-box">Diluluskan (Pengetua)<br><span style="font-size:0.5rem;color:#94a3b8;">Tarikh: _______________</span></div>
+                    </div>
+                </div>
+                <p class="tk-foot-note">Dicetak pada: ${tarikhCetak} &nbsp;|&nbsp; EduTrack — Sistem Pengurusan Akademik &nbsp;|&nbsp; Muka Surat ${mukaSurat} / ${totalPages}</p>`;
+
+                transitHTML += `</div>`;
+            });
+
+            let printWin = window.open('', '_blank', 'width=1200,height=800');
+            if(!printWin){ alert('Sila benarkan popup untuk mencetak.'); return; }
+            printWin.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Borang Transit Kelas PBD — ${kelas}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></head><body style="margin:0;padding:0;">${transitHTML}</body></html>`);
+            printWin.document.close();
+        }
+
+        // ==================== PENGURUSAN JENIS PEPERIKSAAN ====================
+        // examNamesCustom digunakan untuk simpan senarai peperiksaan tersuai
+        // Format: { "Tingkatan 5": ["UP1","PPSA","TOV","SPM"], ... }
+
+        function renderExamManagerHTML(ting) {
+            let exams = getExamListForTingkatan(ting);
+            let isDefault = !examNamesCustom[ting] || examNamesCustom[ting].length === 0;
+            let html = `
+            <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <span style="font-weight:700;color:#1e293b;font-size:0.85rem;">📋 Senarai Peperiksaan — <span style="color:#d97706;">${ting}</span></span>
+                ${isDefault ? `<span style="font-size:0.68rem;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;border:1px solid #fde68a;"><i class="fas fa-lock"></i> Menggunakan tetapan lalai</span>` : `<span style="font-size:0.68rem;background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;border:1px solid #6ee7b7;"><i class="fas fa-edit"></i> Tersuai</span>`}
+            </div>
+            <div id="examSortableList_${ting.replace(' ','_')}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">`;
+            exams.forEach((exam, idx) => {
+                html += `
+                <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 12px;">
+                    <span style="color:#94a3b8;font-size:0.75rem;min-width:22px;text-align:center;font-weight:700;">${idx+1}</span>
+                    <input type="text" id="examItem_${ting.replace(' ','_')}_${idx}" value="${exam}"
+                        style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-weight:600;"
+                        placeholder="Nama peperiksaan">
+                    <div style="display:flex;gap:4px;">
+                        <button onclick="naikExam('${ting}',${idx})" title="Naik" style="padding:5px 8px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-size:0.8rem;" ${idx===0?'disabled style="opacity:0.3;cursor:not-allowed;"':''}>▲</button>
+                        <button onclick="turunExam('${ting}',${idx})" title="Turun" style="padding:5px 8px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-size:0.8rem;" ${idx===exams.length-1?'disabled style="opacity:0.3;cursor:not-allowed;"':''}>▼</button>
+                        <button onclick="padamExam('${ting}',${idx})" title="Padam" style="padding:5px 9px;border-radius:7px;border:1.5px solid #fecaca;background:#fff;cursor:pointer;color:#ef4444;font-size:0.8rem;">✕</button>
+                    </div>
+                </div>`;
+            });
+            html += `</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="newExamInput_${ting.replace(' ','_')}" class="settings-input" placeholder="Nama peperiksaan baru..." style="flex:1;min-width:140px;">
+                <button class="btn btn-primary" onclick="tambahExam('${ting}')" style="background:#d97706;"><i class="fas fa-plus"></i> Tambah</button>
+                <button class="btn btn-primary" onclick="simpanSenaraiExam('${ting}')" style="background:#10b981;"><i class="fas fa-save"></i> 💾 Simpan</button>
+                ${!isDefault ? `<button class="btn btn-ghost" onclick="resetExamDefault('${ting}')" style="font-size:0.75rem;"><i class="fas fa-undo"></i> Reset Lalai</button>` : ''}
+            </div>`;
+            return html;
+        }
+
+        function pilihTingkatanExam(ting) {
+            // Update tab active state
+            ["Tingkatan 1","Tingkatan 2","Tingkatan 3","Tingkatan 4","Tingkatan 5"].forEach(t => {
+                let btn = document.getElementById("examTab_" + t.replace(' ','_'));
+                if (btn) btn.className = "btn btn-ghost";
+            });
+            let activeBtn = document.getElementById("examTab_" + ting.replace(' ','_'));
+            if (activeBtn) activeBtn.className = "btn btn-accent";
+            // Render panel
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+        }
+
+        function tambahExam(ting) {
+            let inputId = "newExamInput_" + ting.replace(' ','_');
+            let input = document.getElementById(inputId);
+            if (!input) return;
+            let nama = input.value.trim();
+            if (!nama) { alert("❌ Sila masukkan nama peperiksaan."); return; }
+            let list = getExamListForTingkatan(ting);
+            if (list.includes(nama)) { alert("⚠️ Peperiksaan '" + nama + "' sudah wujud untuk " + ting + "."); return; }
+            // Simpan input semasa sebelum tambah
+            _saveCurrentExamInputs(ting);
+            list = getExamListForTingkatan(ting);
+            list.push(nama);
+            examNamesCustom[ting] = list;
+            saveAll();
+            input.value = "";
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+        }
+
+        function padamExam(ting, idx) {
+            let list = getExamListForTingkatan(ting);
+            if (list.length <= 1) { alert("❌ Sekurang-kurangnya satu peperiksaan diperlukan."); return; }
+            if (!confirm("Padam peperiksaan '" + list[idx] + "' dari " + ting + "?\n\n⚠️ Data markah pelajar di kedudukan ini mungkin terjejas.")) return;
+            list.splice(idx, 1);
+            examNamesCustom[ting] = list;
+            // Sync completedExams
+            if (completedExams[ting]) {
+                completedExams[ting] = completedExams[ting].filter(e => list.includes(e));
+            }
+            saveAll();
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+        }
+
+        function naikExam(ting, idx) {
+            if (idx <= 0) return;
+            _saveCurrentExamInputs(ting);
+            let list = getExamListForTingkatan(ting);
+            [list[idx-1], list[idx]] = [list[idx], list[idx-1]];
+            examNamesCustom[ting] = list;
+            saveAll();
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+        }
+
+        function turunExam(ting, idx) {
+            let list = getExamListForTingkatan(ting);
+            if (idx >= list.length - 1) return;
+            _saveCurrentExamInputs(ting);
+            list = getExamListForTingkatan(ting);
+            [list[idx], list[idx+1]] = [list[idx+1], list[idx]];
+            examNamesCustom[ting] = list;
+            saveAll();
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+        }
+
+        function _saveCurrentExamInputs(ting) {
+            // Baca nilai semasa dari input fields sebelum re-render
+            let list = getExamListForTingkatan(ting);
+            let newList = [];
+            list.forEach((_, idx) => {
+                let input = document.getElementById("examItem_" + ting.replace(' ','_') + "_" + idx);
+                newList.push(input ? input.value.trim() || _ : _);
+            });
+            examNamesCustom[ting] = newList;
+        }
+
+        function simpanSenaraiExam(ting) {
+            // Baca semua nilai input
+            let list = getExamListForTingkatan(ting);
+            let newList = [];
+            let hasEmpty = false;
+            list.forEach((_, idx) => {
+                let input = document.getElementById("examItem_" + ting.replace(' ','_') + "_" + idx);
+                let val = input ? input.value.trim() : _;
+                if (!val) { hasEmpty = true; return; }
+                newList.push(val);
+            });
+            if (hasEmpty) { alert("❌ Sila isi semua nama peperiksaan. Nama tidak boleh kosong."); return; }
+            if (newList.length === 0) { alert("❌ Sekurang-kurangnya satu peperiksaan diperlukan."); return; }
+            // Check duplikat
+            let unique = [...new Set(newList)];
+            if (unique.length !== newList.length) { alert("❌ Terdapat nama peperiksaan yang sama. Sila gunakan nama berbeza."); return; }
+            examNamesCustom[ting] = newList;
+            // Sync completedExams — kekalkan yang masih wujud
+            if (completedExams[ting]) {
+                completedExams[ting] = completedExams[ting].filter(e => newList.includes(e));
+            }
+            saveAll();
+            ensureStudentMarksLength();
+            alert("✅ Senarai peperiksaan untuk " + ting + " berjaya disimpan!\n\n" + newList.map((e,i)=>(i+1)+". "+e).join("\n"));
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+            refreshSelectors();
+            renderCurrentPage();
+        }
+
+        function resetExamDefault(ting) {
+            if (!confirm("Reset senarai peperiksaan untuk " + ting + " ke tetapan lalai?\n\nTetapan lalai:\n" + getExamNamesByTingkatan(ting).join(", "))) return;
+            delete examNamesCustom[ting];
+            if (completedExams[ting]) delete completedExams[ting];
+            saveAll();
+            let panel = document.getElementById("examManagerPanel");
+            if (panel) panel.innerHTML = renderExamManagerHTML(ting);
+            alert("✅ Peperiksaan " + ting + " telah di-reset ke tetapan lalai.");
+            refreshSelectors();
+            renderCurrentPage();
+        }
+
         // ==================== TETAPAN DENGAN MUAT NAIK DSKP YANG DIPERBAIKI ====================
 function renderSettings(){
     let c=document.getElementById("settingsContent");
@@ -3791,6 +4820,26 @@ function renderSettings(){
                     <input type="text" id="newClassInput" class="settings-input" placeholder="Nama kelas baru...">
                     <button class="btn btn-primary" onclick="tambahKelas()"><i class="fas fa-plus"></i> Tambah</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- PENGURUSAN JENIS PEPERIKSAAN -->
+        <div class="settings-full-card" style="background:linear-gradient(135deg,#fef9c3,#fffbeb);border:1px solid #fde68a;margin-bottom:20px;">
+            <div class="settings-card-header"><i class="fas fa-calendar-check" style="color:#d97706;"></i> 🗓️ Pengurusan Jenis Peperiksaan</div>
+            <p style="font-size:0.78rem;color:#92400e;margin-bottom:14px;">
+                <i class="fas fa-info-circle"></i> Tambah, padam atau susun semula jenis peperiksaan bagi setiap tingkatan. 
+                Data markah pelajar <strong>tidak akan terjejas</strong> — data kekal mengikut kedudukan (index).
+            </p>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:0.75rem;font-weight:700;color:#92400e;display:block;margin-bottom:6px;">📚 Pilih Tingkatan:</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;" id="examTingkatanTabs">
+                    ${["Tingkatan 1","Tingkatan 2","Tingkatan 3","Tingkatan 4","Tingkatan 5"].map((t,i)=>`
+                    <button onclick="pilihTingkatanExam('${t}')" id="examTab_${t.replace(' ','_')}"
+                        class="btn btn-${i===0?'accent':'ghost'}" style="font-size:0.8rem;padding:7px 14px;">${t}</button>`).join('')}
+                </div>
+            </div>
+            <div id="examManagerPanel" style="background:#fff;border-radius:14px;padding:16px;border:1px solid #fde68a;">
+                ${renderExamManagerHTML("Tingkatan 1")}
             </div>
         </div>
 
@@ -3843,12 +4892,11 @@ function renderSettings(){
                     <input type="text" id="settingsName" placeholder="Nama penuh pelajar">
                     <input type="text" id="settingsIC" placeholder="No Kad Pengenalan (optional)">
                     <select id="settingsSubj"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                    <select id="settingsCls"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-                    <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan">
-                    <input type="number" id="settingsU1" value="0" placeholder="Markah UP1 (%)" min="0" max="100">
-                    <input type="number" id="settingsU2" value="0" placeholder="Markah PPSA (%)" min="0" max="100">
-                    <input type="number" id="settingsU3" value="0" placeholder="Markah TOV (%)" min="0" max="100">
-                    <input type="number" id="settingsU4" value="0" placeholder="Markah SPM (%)" min="0" max="100">
+                    <select id="settingsCls" onchange="refreshMarkInputsForClass()">${'<option value="">-- Pilih Kelas --</option>' + allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                    <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan" style="grid-column:1/-1;">
+                </div>
+                <div id="settingsMarksContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                    ${(()=>{let ting=getCurrentTingkatan();let exams=getExamListForTingkatan(ting);return exams.map((e,i)=>`<input type="number" id="settingsU${i}" value="0" placeholder="Markah ${e} (%)" min="0" max="100" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:0.8rem;background:#f8fafc;">`).join('');})()}
                 </div>
                 <button class="btn btn-success" onclick="tambahPelajar()" style="width:100%;margin-top:14px;padding:12px;"><i class="fas fa-user-check"></i> Daftar Pelajar</button>
             </div>
@@ -3934,11 +4982,68 @@ function renderSettings(){
                 statusEl.innerHTML = list;
             }
         }
-        function tambahSubjek(){let n=document.getElementById("newSubjectInput").value.trim();if(n&&!allSubjects.includes(n)){allSubjects.push(n);saveAll();refreshSelectors();refreshSettingsSelects();}}
-        function tambahKelas(){let n=document.getElementById("newClassInput").value.trim();if(n&&!allClasses.includes(n)){allClasses.push(n);saveAll();refreshSelectors();refreshSettingsSelects();}}
+        function tambahSubjek(){
+            let n=document.getElementById("newSubjectInput").value.trim();
+            if(!n){alert("❌ Sila masukkan nama subjek.");return;}
+            if(allSubjects.includes(n)){alert("⚠️ Subjek '"+n+"' sudah wujud.");return;}
+            allSubjects.push(n);
+            saveAll();
+            refreshSelectors();
+            refreshSettingsSelects();
+            document.getElementById("newSubjectInput").value="";
+            alert("✅ Subjek '"+n+"' berjaya ditambah dan disimpan!");
+        }
+        function tambahKelas(){
+            let n=document.getElementById("newClassInput").value.trim();
+            if(!n){alert("❌ Sila masukkan nama kelas.");return;}
+            if(allClasses.includes(n)){alert("⚠️ Kelas '"+n+"' sudah wujud.");return;}
+            allClasses.push(n);
+            saveAll();
+            refreshSelectors();
+            refreshSettingsSelects();
+            document.getElementById("newClassInput").value="";
+            alert("✅ Kelas '"+n+"' berjaya ditambah dan disimpan!");
+        }
         function padamSubjek(s){if(confirm(`Hapus ${s}?`)){allSubjects=allSubjects.filter(x=>x!==s);Object.keys(allData).forEach(k=>{if(k.startsWith(s+"_"))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
         function padamKelas(c){if(confirm(`Hapus ${c}?`)){allClasses=allClasses.filter(x=>x!==c);Object.keys(allData).forEach(k=>{if(k.endsWith("_"+c))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
-        function tambahPelajar(){let name=document.getElementById("settingsName").value.trim(),ic=document.getElementById("settingsIC").value.trim(),subj=document.getElementById("settingsSubj").value,cls=document.getElementById("settingsCls").value;if(!name||!subj||!cls)return alert("Lengkapkan.");let key=subj+"_"+cls;if(!allData[key])allData[key]={students:[]};if(allData[key].students.find(s=>s.name===name))return alert("Sudah wujud.");let marks=["settingsU1","settingsU2","settingsU3","settingsU4"].map(id=>parseInt(document.getElementById(id).value)||0);let buku={};masterWeeks.forEach(w=>buku[w]="kosong");allData[key].students.push({name,ic,marks,ulasan:document.getElementById("settingsUlasan").value||"-",buku,token:[],itemData:{}});saveAll();alert("✅ Didaftarkan!");refreshSelectors();document.getElementById("selectSubject").value=subj;document.getElementById("selectClass").value=cls;renderCurrentPage();}
+        function refreshMarkInputsForClass() {
+            let cls = document.getElementById("settingsCls")?.value || "";
+            let ting = "Tingkatan 5";
+            if (cls) {
+                let match = cls.match(/^(\d+)/);
+                if (match) { let n = parseInt(match[1]); if (n >= 1 && n <= 5) ting = "Tingkatan " + n; }
+            }
+            let exams = getExamListForTingkatan(ting);
+            let container = document.getElementById("settingsMarksContainer");
+            if (container) {
+                container.innerHTML = exams.map((e,i)=>`<input type="number" id="settingsU${i}" value="0" placeholder="Markah ${e} (%)" min="0" max="100" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:0.8rem;background:#f8fafc;">`).join('');
+            }
+        }
+        function tambahPelajar(){
+            let name=document.getElementById("settingsName").value.trim();
+            let ic=document.getElementById("settingsIC").value.trim();
+            let subj=document.getElementById("settingsSubj").value;
+            let cls=document.getElementById("settingsCls").value;
+            if(!name||!subj||!cls) return alert("Lengkapkan maklumat pelajar.");
+            let key=subj+"_"+cls;
+            if(!allData[key]) allData[key]={students:[]};
+            if(allData[key].students.find(s=>s.name===name)) return alert("Pelajar sudah wujud.");
+            // Baca marks secara dinamik
+            let ting="Tingkatan 5";
+            let match=cls.match(/^(\d+)/);
+            if(match){let n=parseInt(match[1]);if(n>=1&&n<=5)ting="Tingkatan "+n;}
+            let exams=getExamListForTingkatan(ting);
+            let marks=exams.map((_,i)=>parseInt(document.getElementById("settingsU"+i)?.value)||0);
+            let buku={};
+            masterWeeks.forEach(w=>buku[w]="kosong");
+            allData[key].students.push({name,ic,marks,ulasan:document.getElementById("settingsUlasan").value||"-",buku,token:[],itemData:{}});
+            saveAll();
+            alert("✅ Pelajar '"+name+"' berjaya didaftarkan!");
+            refreshSelectors();
+            document.getElementById("selectSubject").value=subj;
+            document.getElementById("selectClass").value=cls;
+            renderCurrentPage();
+        }
 // ==================== DAFTAR PELAJAR PUKAL (COPY-PASTE) ====================
 let currentRegisterMode = 'single';
 
@@ -4065,7 +5170,7 @@ function salinSenaraiPelajar() {
             newStudents.push({
                 name: student.name,
                 ic: student.ic || "-",
-                marks: [0,0,0,0],
+                marks: Array(getCurrentExamNames().length).fill(0),
                 ulasan: "-",
                 buku: {},
                 token: [],
@@ -4075,7 +5180,7 @@ function salinSenaraiPelajar() {
             newStudents.push({
                 name: student.name,
                 ic: student.ic || "-",
-                marks: [0,0,0,0],
+                marks: Array(getCurrentExamNames().length).fill(0),
                 ulasan: "-",
                 buku: {},
                 token: [],
@@ -4167,7 +5272,7 @@ function salinSenaraiPelajar() {
         function deletePelajar(idx){if(confirm("Padam?")){getActiveStudents().splice(idx,1);saveAll();renderCurrentPage();}}
         function eksportKeCSV(){let s=getActiveStudents(),rows=[["Nama","UP1","PPSA","TOV","SPM","Purata"]];s.forEach(x=>rows.push([x.name,...x.marks,((x.marks[0]+x.marks[1]+x.marks[2]+x.marks[3])/4).toFixed(1)]));let csv=rows.map(r=>r.join(",")).join("\n"),a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURI(csv);a.download="prestasi.csv";a.click();}
         function bukaModalPBDStudent(){document.getElementById("modalPBDStudent").style.display="flex";}
-        function tambahPBDStudent(){let name=document.getElementById("pbdModalName").value.trim();if(!name)return;let st=getActiveStudents();if(!st.find(s=>s.name===name)){let buku={};masterWeeks.forEach(w=>buku[w]="kosong");st.push({name,ic:document.getElementById("pbdModalIC").value.trim(),marks:[0,0,0,0],ulasan:"-",buku,token:[],itemData:{}});saveAll();}tutupModal("modalPBDStudent");renderPBDTable();}
+        function tambahPBDStudent(){let name=document.getElementById("pbdModalName").value.trim();if(!name)return;let st=getActiveStudents();if(!st.find(s=>s.name===name)){let buku={};masterWeeks.forEach(w=>buku[w]="kosong");let examCount=getCurrentExamNames().length;let marks=Array(examCount).fill(0);st.push({name,ic:document.getElementById("pbdModalIC").value.trim(),marks,ulasan:"-",buku,token:[],itemData:{}});saveAll();}tutupModal("modalPBDStudent");renderPBDTable();}
         function renderIntervensi(){
     let st = getActiveStudents();
     let examNames = getCurrentExamNames();
@@ -4372,6 +5477,7 @@ let pelajarWithAvg = st.map(s => {
         });
         window.onclick=function(e){if(e.target.classList.contains("modal")||e.target.classList.contains("print-analysis-modal"))e.target.style.display="none";};
         window.tukarPenapis=tukarPenapis;window.eksportKeCSV=eksportKeCSV;window.eksportPBDExcel=eksportPBDExcel;
+        window.cetakBorangTransitIndividu=cetakBorangTransitIndividu;window.cetakBorangTransitKelas=cetakBorangTransitKelas;
         window.uploadDSKP=uploadDSKP;window.tambahSubjek=tambahSubjek;window.tambahKelas=tambahKelas;
         window.padamSubjek=padamSubjek;window.padamKelas=padamKelas;window.tambahPelajar=tambahPelajar;
                 window.bukaModalEdit=bukaModalEdit;window.simpanEditPelajar=simpanEditPelajar;window.simpanAnalisisItem=simpanAnalisisItem;window.hitungCepat=hitungCepat;
@@ -4687,6 +5793,40 @@ let pelajarWithAvg = st.map(s => {
             checkLogin();
             setInterval(maybeNotifyGuruAdminExpiry, 60000);
         }, 100);
+
+        // ==================== FUNGSI PILIHAN CETAK (PORTRAIT / LANDSCAPE) ====================
+        let _printOrientasi = 'landscape';
+
+        function tunjukPilihanCetak() {
+            let modal = document.getElementById('modalPilihanCetak');
+            if (!modal) return;
+            _printOrientasi = 'landscape';
+            document.getElementById('pc-opt-landscape').classList.add('selected');
+            document.getElementById('pc-opt-portrait').classList.remove('selected');
+            modal.style.display = 'flex';
+        }
+
+        function pc_pilihOrientasi(orientasi) {
+            _printOrientasi = orientasi;
+            document.getElementById('pc-opt-landscape').classList.toggle('selected', orientasi === 'landscape');
+            document.getElementById('pc-opt-portrait').classList.toggle('selected', orientasi === 'portrait');
+        }
+
+        function pc_cetakSekarang() {
+            let existing = document.getElementById('printOrientationStyle');
+            if (existing) existing.remove();
+            let styleEl = document.createElement('style');
+            styleEl.id = 'printOrientationStyle';
+            let margin = _printOrientasi === 'landscape' ? '8mm' : '10mm';
+            styleEl.textContent = '@media print { @page { size: A4 ' + _printOrientasi + '; margin: ' + margin + '; } }';
+            document.head.appendChild(styleEl);
+            document.getElementById('modalPilihanCetak').style.display = 'none';
+            setTimeout(function() { window.print(); }, 150);
+        }
+
+        function pc_tutup() {
+            document.getElementById('modalPilihanCetak').style.display = 'none';
+        }
         // ==================== BACKUP & RESTORE FUNCTIONS ====================
         function backupData() {
             let backup = {
@@ -4750,6 +5890,30 @@ let pelajarWithAvg = st.map(s => {
             reader.readAsText(file);
         }
     </script>
+    <!-- ===== MODAL PILIHAN CETAK ===== -->
+    <div id="modalPilihanCetak">
+        <div class="pc-box">
+            <div style="font-size:2.2rem; margin-bottom:10px;">🖨️</div>
+            <div class="pc-title">Pilihan Orientasi Cetakan</div>
+            <div class="pc-sub">Sila pilih saiz kertas sebelum mencetak</div>
+            <div class="pc-options">
+                <div class="pc-opt selected" id="pc-opt-landscape" onclick="pc_pilihOrientasi('landscape')">
+                    <div class="pc-opt-icon">📄</div>
+                    <div class="pc-opt-label">Landscape</div>
+                    <div class="pc-opt-desc">Melintang (A4)<br>Sesuai untuk jadual lebar</div>
+                </div>
+                <div class="pc-opt" id="pc-opt-portrait" onclick="pc_pilihOrientasi('portrait')">
+                    <div class="pc-opt-icon">📃</div>
+                    <div class="pc-opt-label">Portrait</div>
+                    <div class="pc-opt-desc">Menegak (A4)<br>Sesuai untuk senarai</div>
+                </div>
+            </div>
+            <div class="pc-actions">
+                <button class="pc-btn-batal" onclick="pc_tutup()">✕ Batal</button>
+                <button class="pc-btn-cetak" onclick="pc_cetakSekarang()"><i class="fas fa-print"></i> Cetak Sekarang</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 
