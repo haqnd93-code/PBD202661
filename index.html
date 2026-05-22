@@ -13,8 +13,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore-compat.js"></script>
+
     <style>
         :root { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --bg: #f1f5f9; --text: #1e293b; --border: #e2e8f0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -349,91 +349,117 @@
         .score-green { color: #059669; font-weight: 700; }
         .score-yellow { color: #d97706; font-weight: 700; }
         .score-red { color: #dc2626; font-weight: 700; }
-        /* ===== SETTINGS PREMIUM STYLES ===== */
+        /* ===== SETTINGS COLORFUL STYLES ===== */
         .settings-container { display: flex; flex-direction: column; gap: 20px; }
         .settings-hero {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border-radius: 20px; padding: 24px 28px; color: #fff;
-            display: flex; align-items: center; gap: 20px;
+            background:
+                radial-gradient(circle at 85% 15%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 35%),
+                linear-gradient(130deg, #0f766e 0%, #0ea5a3 42%, #f97316 100%);
+            border-radius: 22px; padding: 24px 28px; color: #fff;
+            display: flex; align-items: center; gap: 18px;
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 12px 30px rgba(15, 118, 110, 0.25);
         }
         .settings-hero-icon {
-            width: 52px; height: 52px; border-radius: 14px;
-            background: rgba(255,255,255,0.2); display: flex;
+            width: 54px; height: 54px; border-radius: 16px;
+            background: rgba(255,255,255,0.22); display: flex;
             align-items: center; justify-content: center; font-size: 1.4rem;
+            border: 1px solid rgba(255,255,255,0.35);
         }
-        .settings-hero h2 { font-size: 1.2rem; font-weight: 700; }
-        .settings-hero p { font-size: 0.75rem; opacity: 0.8; margin-top: 2px; }
-        
-        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .settings-card {
-            background: #fff; border-radius: 20px; padding: 24px;
-            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            transition: all 0.2s;
+        .settings-hero h2 { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.01em; }
+        .settings-hero p { font-size: 0.76rem; opacity: 0.93; margin-top: 2px; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .settings-card, .settings-full-card {
+            background: linear-gradient(180deg, #ffffff 0%, #fffbf7 100%);
+            border-radius: 18px; padding: 22px;
+            border: 1px solid #fde7d7;
+            box-shadow: 0 8px 24px rgba(249, 115, 22, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
-        .settings-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .settings-card:hover, .settings-full-card:hover {
+            transform: translateY(-2px);
+            border-color: #fdba74;
+            box-shadow: 0 14px 30px rgba(249, 115, 22, 0.14);
+        }
         .settings-card-header {
-            font-size: 0.9rem; font-weight: 700; margin-bottom: 16px;
-            display: flex; align-items: center; gap: 10px; color: #1e293b;
+            font-size: 0.9rem; font-weight: 800; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 10px; color: #0f172a;
         }
-        .settings-card-header i { color: #6366f1; font-size: 1.1rem; }
-        
+        .settings-card-header i { color: #ea580c; font-size: 1.08rem; }
+
         .settings-tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
         .settings-tag {
             display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 12px; border-radius: 10px; font-size: 0.78rem;
-            font-weight: 500; background: #f1f5f9;
+            padding: 6px 12px; border-radius: 999px; font-size: 0.77rem;
+            font-weight: 700; border: 1px solid transparent;
         }
-        .settings-tag.purple { background: #ede9fe; color: #5b21b6; }
-        .settings-tag.blue { background: #dbeafe; color: #1e40af; }
-        .settings-tag i { cursor: pointer; opacity: 0.5; transition: all 0.2s; font-size: 0.7rem; }
-        .settings-tag i:hover { opacity: 1; color: #ef4444; }
-        
+        .settings-tag.purple { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+        .settings-tag.blue { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+        .settings-tag i { cursor: pointer; opacity: 0.62; transition: all 0.2s; font-size: 0.7rem; }
+        .settings-tag i:hover { opacity: 1; color: #dc2626; transform: scale(1.05); }
+
         .settings-input-group { display: flex; gap: 8px; margin-top: 12px; }
-        .settings-input {
+        .settings-input, .settings-student-form input, .settings-student-form select {
             flex: 1; padding: 10px 14px; border-radius: 10px;
-            border: 1.5px solid #e2e8f0; font-size: 0.82rem;
-            background: #f8fafc; transition: all 0.2s;
+            border: 1.5px solid #fcd9be; font-size: 0.82rem;
+            background: #fffdfb; transition: all 0.2s;
         }
-        .settings-input:focus { border-color: #6366f1; background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-        
-        .settings-full-card {
-            background: #fff; border-radius: 20px; padding: 24px;
-            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        .settings-input:focus, .settings-student-form input:focus, .settings-student-form select:focus {
+            border-color: #0ea5a3; background: #fff; outline: none;
+            box-shadow: 0 0 0 3px rgba(14, 165, 163, 0.15);
         }
-        
-        .settings-dskp-info {
-            display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0;
-        }
+
+        .settings-dskp-info { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
         .settings-dskp-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 8px;
-            font-size: 0.68rem; font-weight: 600;
+            display: inline-block; padding: 4px 10px; border-radius: 999px;
+            font-size: 0.68rem; font-weight: 700;
         }
-        .settings-dskp-badge.active { background: #d1fae5; color: #065f46; }
-        .settings-dskp-badge.inactive { background: #fee2e2; color: #991b1b; }
-        
-        .settings-student-form {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-        }
-        .settings-student-form input, .settings-student-form select {
-            padding: 10px 12px; border-radius: 10px; border: 1.5px solid #e2e8f0;
-            font-size: 0.8rem; background: #f8fafc;
-        }
-        .settings-student-form input:focus, .settings-student-form select:focus {
-            border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
-        }
-        
+        .settings-dskp-badge.active { background: #ccfbf1; color: #0f766e; border: 1px solid #5eead4; }
+        .settings-dskp-badge.inactive { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .settings-student-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
         .settings-upload-zone {
-            border: 2px dashed #cbd5e1; border-radius: 14px;
+            border: 2px dashed #5eead4; border-radius: 14px;
             padding: 20px; text-align: center; transition: all 0.2s;
-            cursor: pointer; background: #f8fafc;
+            cursor: pointer; background: #f0fdfa;
         }
-        .settings-upload-zone:hover { border-color: #6366f1; background: #ede9fe; }
-        .settings-upload-zone i { font-size: 2rem; color: #94a3b8; margin-bottom: 8px; display: block; }
-        .settings-upload-zone p { font-size: 0.78rem; color: #64748b; }
+        .settings-upload-zone:hover { border-color: #0ea5a3; background: #ccfbf1; }
+        .settings-upload-zone i { font-size: 2rem; color: #0f766e; margin-bottom: 8px; display: block; }
+        .settings-upload-zone p { font-size: 0.78rem; color: #134e4a; }
         .settings-upload-zone input[type="file"] { display: none; }
-        
-        .settings-divider {
-            height: 1px; background: #e2e8f0; margin: 20px 0;
+
+        .settings-divider { height: 1px; background: #fed7aa; margin: 20px 0; }
+        .settings-tabs {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;
+            background: linear-gradient(135deg, #fff7ed 0%, #f0fdfa 100%);
+            border: 1px solid #fed7aa; border-radius: 14px; padding: 8px;
+        }
+        .settings-tab-btn {
+            border: 1px solid #fdba74;
+            background: #fffaf5; color: #9a3412;
+            border-radius: 10px; padding: 9px 12px;
+            font-size: 0.76rem; font-weight: 800;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .settings-tab-btn:hover {
+            background: #ffedd5; color: #7c2d12;
+            transform: translateY(-1px);
+        }
+        .settings-tab-btn.active {
+            background: linear-gradient(135deg, #0ea5a3 0%, #14b8a6 100%);
+            border-color: #0f766e; color: #ffffff;
+            box-shadow: 0 8px 18px rgba(20, 184, 166, 0.24);
+        }
+        .settings-section { display: none; }
+        .settings-section.active {
+            display: block;
+            animation: settingsFadeIn 0.24s ease;
+        }
+        @keyframes settingsFadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         @media (max-width: 768px) {
@@ -618,6 +644,7 @@
     <div class="main-content">
         <div class="topbar"><div>Selamat Datang, <strong style="color:#6366f1;">Mohamad Nasrulhaq</strong> 👋</div><div style="margin-left:auto;"><button class="btn btn-ghost" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button></div></div>
         <div class="selector-bar">
+            <select id="selectYear" onchange="tukarTahun()" style="background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;font-weight:600;"></select>
             <select id="selectSubject" onchange="tukarPenapis()"></select>
             <select id="selectClass" onchange="tukarPenapis()"></select>
             <span id="selectorInfo" style="font-size:0.8rem;color:#64748b;"></span>
@@ -648,6 +675,8 @@
         let allSubjects = ["Bahasa Melayu", "Bahasa Inggeris", "Matematik", "Sains", "Sejarah"];
         let allClasses = ["3 IBNU SINAR", "5 IBNU SINA", "5 IBNU HAYYAN"];
         let allData = {};
+        let allYears = [String(new Date().getFullYear())];
+        let currentYear = String(new Date().getFullYear());
         let masterWeeks = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"];
         let bookMonths = {}; // { "Januari": { minggu: { "Minggu 1": { hari: [], tugas: "" } } } }
         let currentBookBulan = "Januari";
@@ -678,7 +707,7 @@ function getCurrentExamNames() {
         let currentBMEditStudent = null, currentBMEditExam = null;
 // Untuk menyimpan nama peperiksaan tersuai bagi setiap tingkatan
 let examNamesCustom = {}; // format: { "Tingkatan 5": ["UP1", "PPSA", "TOV", "SPM"], "Tingkatan 4": [...], "Tingkatan 3": [...] }
-// Daftar peperiksaan yang telah dijalankan (akan disimpan dalam localStorage)
+// Daftar peperiksaan yang telah dijalankan (disimpan ke Firebase)
 let completedExams = {}; // format: { "Tingkatan 5": ["UP1", "PPSA"], "Tingkatan 4": ["UP1"], ... }
 let adminSystemLock = { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
 const ADMIN_AREA_PASSWORD = "9876";
@@ -687,6 +716,41 @@ const MASTER_LOGIN_PASSWORD = "931014";
 let adminSessionUnlocked = false;
 const ADMIN_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 jam sebelum tamat
 const ADMIN_REMINDER_ALERT_COOLDOWN_MS = 60 * 60 * 1000; // popup setiap 1 jam
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDi5uRJHa2lAJJqcTM6sawqmNGo7lU5ExE",
+    authDomain: "pbd2026-1316a.firebaseapp.com",
+    projectId: "pbd2026-1316a",
+    storageBucket: "pbd2026-1316a.firebasestorage.app",
+    messagingSenderId: "184542634941",
+    appId: "1:184542634941:web:7df66e9c3f7da6588668d4",
+    measurementId: "G-NGMJ8GQRJK"
+};
+const FIRESTORE_COLLECTION = "edutrack_shared";
+const FIRESTORE_DOC_ID = "main_state_v1";
+const LEGACY_STORAGE_KEYS = [
+    "et_allData",
+    "et_subjects",
+    "et_classes",
+    "et_years",
+    "et_currentYear",
+    "et_weeks",
+    "et_bookMonths",
+    "et_pbd",
+    "et_dskp",
+    "et_itemConfig",
+    "et_completedExams",
+    "et_examNamesCustom",
+    "et_adminLock"
+];
+let firebaseApp = null;
+let firestoreDb = null;
+let cloudDocRef = null;
+let cloudSyncReady = false;
+let cloudHydrated = false;
+let cloudSyncUnsubscribe = null;
+let cloudSaveTimer = null;
+let lastSavedPayloadHash = "";
+let isApplyingRemoteState = false;
 
 // Fungsi untuk dapatkan peperiksaan yang telah dijalankan sahaja
 function getCompletedExams() {
@@ -910,60 +974,7 @@ getCurrentExamNames = function() {
     return originalGetExamNames();
 };
 
-        // ==================== FIREBASE CONFIG (DIKONGSI SEMUA PERANTI) ====================
-        // PENTING: Tetapkan Firestore Security Rules dalam Firebase Console:
-        // rules_version = '2';
-        // service cloud.firestore {
-        //   match /databases/{database}/documents {
-        //     match /edutrack_shared/{document=**} {
-        //       allow read, write: if true;
-        //     }
-        //   }
-        // }
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDi5uRJHa2lAJJqcTM6sawqmNGo7lU5ExE",
-            authDomain: "pbd2026-1316a.firebaseapp.com",
-            projectId: "pbd2026-1316a",
-            storageBucket: "pbd2026-1316a.firebasestorage.app",
-            messagingSenderId: "184542634941",
-            appId: "1:184542634941:web:7df66e9c3f7da6588668d4",
-            measurementId: "G-NGMJ8GQRJK"
-        };
-        // Satu dokumen dikongsi — semua peranti baca & tulis dari sini
-        const FIRESTORE_SHARED_COLLECTION = "edutrack_shared";
-        const FIRESTORE_SHARED_DOCUMENT   = "sekolah_data_v1";
-
-        let cloudEnabled = false;
-        let firestoreDb = null;
-        let firestoreDocRef = null;
-        let saveDebounceTimer = null;
-        let cloudUnsubscribe = null;
-        let applyingRemoteUpdate = false;
-
-        function setSyncStatus(text, type = "warn") {
-            let el = document.getElementById("syncStatus");
-            if (!el) {
-                const selectorBar = document.querySelector(".selector-bar");
-                if (selectorBar) {
-                    el = document.createElement("span");
-                    el.id = "syncStatus";
-                    el.style.fontSize = "0.75rem";
-                    el.style.padding = "5px 10px";
-                    el.style.borderRadius = "999px";
-                    selectorBar.insertBefore(el, selectorBar.querySelector(".btn-primary"));
-                }
-            }
-            if (!el) return;
-            const colorMap = {
-                ok: { bg: "#d1fae5", fg: "#065f46" },
-                warn: { bg: "#fef3c7", fg: "#92400e" },
-                error: { bg: "#fee2e2", fg: "#991b1b" }
-            };
-            let colors = colorMap[type] || colorMap.warn;
-            el.innerText = text;
-            el.style.background = colors.bg;
-            el.style.color = colors.fg;
-        }
+        // Storage: Firebase Firestore (dengan migrasi data lama localStorage sekali sahaja)
 // Fungsi untuk mendapatkan gred berdasarkan markah (Gred SPM sebenar)
 function getGredSPM(marks, tingkatan) {
     // Gred SPM hanya untuk Tingkatan 4 dan 5
@@ -1064,6 +1075,8 @@ function lihatPemetaanExam() {
                 allData: allData || {},
                 allSubjects: allSubjects || [],
                 allClasses: allClasses || [],
+                allYears: allYears || [String(new Date().getFullYear())],
+                currentYear: currentYear || String(new Date().getFullYear()),
                 masterWeeks: masterWeeks || [],
                 bookMonths: bookMonths || {},
                 pbdData: pbdData || {},
@@ -1080,6 +1093,8 @@ function lihatPemetaanExam() {
             allData = payload.allData || {};
             allSubjects = payload.allSubjects || ["Bahasa Melayu", "Bahasa Inggeris", "Matematik", "Sains", "Sejarah"];
             allClasses = payload.allClasses || ["3 IBNU SINAR", "5 IBNU SINA", "5 IBNU HAYYAN"];
+            allYears = payload.allYears || [String(new Date().getFullYear())];
+            currentYear = payload.currentYear || String(new Date().getFullYear());
             masterWeeks = payload.masterWeeks || ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"];
             bookMonths = payload.bookMonths || {};
             pbdData = payload.pbdData || {};
@@ -1091,33 +1106,222 @@ function lihatPemetaanExam() {
             normalizeAdminLockState();
         }
 
-        function saveLocalState() {
-            localStorage.setItem("et_allData", JSON.stringify(allData));
-            localStorage.setItem("et_subjects", JSON.stringify(allSubjects));
-            localStorage.setItem("et_classes", JSON.stringify(allClasses));
-            localStorage.setItem("et_weeks", JSON.stringify(masterWeeks));
-            localStorage.setItem("et_bookMonths", JSON.stringify(bookMonths));
-            localStorage.setItem("et_pbd", JSON.stringify(pbdData));
-            localStorage.setItem("et_dskp", JSON.stringify(dskpDatabase));
-            localStorage.setItem("et_itemConfig", JSON.stringify(itemConfigGlobal));
-            localStorage.setItem("et_completedExams", JSON.stringify(completedExams));
-            localStorage.setItem("et_examNamesCustom", JSON.stringify(examNamesCustom));
-            localStorage.setItem("et_adminLock", JSON.stringify(adminSystemLock));
+        function safeParseJSON(rawValue, fallback) {
+            try {
+                return rawValue ? JSON.parse(rawValue) : fallback;
+            } catch (err) {
+                return fallback;
+            }
         }
 
-        function loadLocalState() {
-            allData = JSON.parse(localStorage.getItem("et_allData") || "{}");
-            allSubjects = JSON.parse(localStorage.getItem("et_subjects") || '["Bahasa Melayu","Bahasa Inggeris","Matematik","Sains","Sejarah"]');
-            allClasses = JSON.parse(localStorage.getItem("et_classes") || '["3 IBNU SINAR","5 IBNU SINA","5 IBNU HAYYAN"]');
-            masterWeeks = JSON.parse(localStorage.getItem("et_weeks") || '["Minggu 1","Minggu 2","Minggu 3","Minggu 4"]');
-            bookMonths = JSON.parse(localStorage.getItem("et_bookMonths") || "{}");
-            pbdData = JSON.parse(localStorage.getItem("et_pbd") || "{}");
-            dskpDatabase = JSON.parse(localStorage.getItem("et_dskp") || "{}");
-            itemConfigGlobal = JSON.parse(localStorage.getItem("et_itemConfig") || "{}");
-            completedExams = JSON.parse(localStorage.getItem("et_completedExams") || "{}");
-            examNamesCustom = JSON.parse(localStorage.getItem("et_examNamesCustom") || "{}");
-            adminSystemLock = JSON.parse(localStorage.getItem("et_adminLock") || '{"mode":"manual","enabled":false,"untilDate":"","startAt":"","endAt":""}');
-            // Jika completedExams kosong untuk tingkatan semasa, set default kepada semua peperiksaan
+        function initFirebaseIfNeeded() {
+            if (cloudSyncReady && cloudDocRef) return true;
+            if (!window.firebase || !window.firebase.firestore) {
+                console.error("Firebase Firestore tidak tersedia.");
+                return false;
+            }
+            try {
+                firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+                firestoreDb = firebaseApp.firestore();
+                cloudDocRef = firestoreDb.collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOC_ID);
+                cloudSyncReady = true;
+                return true;
+            } catch (err) {
+                console.error("Gagal inisialisasi Firebase:", err);
+                return false;
+            }
+        }
+
+        function readLegacyLocalPayload() {
+            if (typeof localStorage === "undefined") return null;
+            let allDataLegacy = safeParseJSON(localStorage.getItem("et_allData"), null);
+            if (!allDataLegacy || typeof allDataLegacy !== "object") return null;
+            return {
+                allData: allDataLegacy || {},
+                allSubjects: safeParseJSON(localStorage.getItem("et_subjects"), ["Bahasa Melayu", "Bahasa Inggeris", "Matematik", "Sains", "Sejarah"]),
+                allClasses: safeParseJSON(localStorage.getItem("et_classes"), ["3 IBNU SINAR", "5 IBNU SINA", "5 IBNU HAYYAN"]),
+                allYears: safeParseJSON(localStorage.getItem("et_years"), [String(new Date().getFullYear())]),
+                currentYear: localStorage.getItem("et_currentYear") || String(new Date().getFullYear()),
+                masterWeeks: safeParseJSON(localStorage.getItem("et_weeks"), ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]),
+                bookMonths: safeParseJSON(localStorage.getItem("et_bookMonths"), {}),
+                pbdData: safeParseJSON(localStorage.getItem("et_pbd"), {}),
+                dskpDatabase: safeParseJSON(localStorage.getItem("et_dskp"), {}),
+                itemConfigGlobal: safeParseJSON(localStorage.getItem("et_itemConfig"), {}),
+                completedExams: safeParseJSON(localStorage.getItem("et_completedExams"), {}),
+                examNamesCustom: safeParseJSON(localStorage.getItem("et_examNamesCustom"), {}),
+                adminSystemLock: safeParseJSON(localStorage.getItem("et_adminLock"), { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" })
+            };
+        }
+
+        function clearLegacyLocalPayload() {
+            if (typeof localStorage === "undefined") return;
+            LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
+        }
+
+        async function loadCloudState() {
+            cloudHydrated = false;
+            if (!initFirebaseIfNeeded()) {
+                let legacy = readLegacyLocalPayload();
+                if (legacy) {
+                    applyStatePayload(legacy);
+                    migrateAllDataKeysByYear();
+                    clearLegacyLocalPayload();
+                }
+                cloudHydrated = true;
+                return;
+            }
+            try {
+                let snapshot = await cloudDocRef.get();
+                if (snapshot.exists && snapshot.data()?.payload) {
+                    applyStatePayload(snapshot.data().payload);
+                    migrateAllDataKeysByYear();
+                } else {
+                    let legacy = readLegacyLocalPayload();
+                    if (legacy) {
+                        applyStatePayload(legacy);
+                        migrateAllDataKeysByYear();
+                        await cloudDocRef.set({
+                            payload: buildStatePayload(),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        clearLegacyLocalPayload();
+                    }
+                }
+                clearLegacyLocalPayload();
+                lastSavedPayloadHash = JSON.stringify(buildStatePayload());
+                startCloudRealtimeSync();
+            } catch (err) {
+                console.error("Gagal muat data Firebase:", err);
+                let legacy = readLegacyLocalPayload();
+                if (legacy) {
+                    applyStatePayload(legacy);
+                    migrateAllDataKeysByYear();
+                    clearLegacyLocalPayload();
+                }
+            } finally {
+                cloudHydrated = true;
+            }
+        }
+
+        function startCloudRealtimeSync() {
+            if (!cloudSyncReady || !cloudDocRef || cloudSyncUnsubscribe) return;
+            cloudSyncUnsubscribe = cloudDocRef.onSnapshot(snapshot => {
+                if (!snapshot.exists) return;
+                let data = snapshot.data() || {};
+                if (!data.payload) return;
+                let incomingHash = JSON.stringify(data.payload);
+                if (incomingHash === lastSavedPayloadHash) return;
+                isApplyingRemoteState = true;
+                applyStatePayload(data.payload);
+                migrateAllDataKeysByYear();
+                lastSavedPayloadHash = incomingHash;
+                isApplyingRemoteState = false;
+                refreshSelectors();
+                refreshSettingsSelects();
+                renderCurrentPage();
+                applyAdminSettingsUI();
+                setSystemControlsLocked();
+                maybeNotifyGuruAdminExpiry();
+            }, err => {
+                console.error("Gagal realtime sync Firebase:", err);
+            });
+        }
+
+        async function persistCloudState(payload) {
+            if (!cloudSyncReady || !cloudDocRef) return;
+            try {
+                await cloudDocRef.set({
+                    payload: payload,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            } catch (err) {
+                console.error("Gagal simpan data Firebase:", err);
+            }
+        }
+
+        function queueCloudSave(immediate) {
+            if (isApplyingRemoteState || !cloudHydrated) return;
+            if (!initFirebaseIfNeeded()) return;
+            let payload = buildStatePayload();
+            let payloadHash = JSON.stringify(payload);
+            if (payloadHash === lastSavedPayloadHash) return;
+            let saveNow = async () => {
+                lastSavedPayloadHash = payloadHash;
+                await persistCloudState(payload);
+            };
+            if (cloudSaveTimer) {
+                clearTimeout(cloudSaveTimer);
+                cloudSaveTimer = null;
+            }
+            if (immediate) {
+                saveNow();
+            } else {
+                cloudSaveTimer = setTimeout(saveNow, 450);
+            }
+        }
+
+        function buildDataKey(subject, className, yearOverride) {
+            let y = yearOverride || document.getElementById("selectYear")?.value || currentYear || String(new Date().getFullYear());
+            return y + "||" + subject + "||" + className;
+        }
+
+        function parseDataKey(key) {
+            if (typeof key !== "string") return null;
+            if (key.includes("||")) {
+                let parts = key.split("||");
+                if (parts.length >= 3 && /^\d{4}$/.test(parts[0])) {
+                    return { year: parts[0], subject: parts[1], className: parts.slice(2).join("||"), isYearKey: true };
+                }
+            }
+            let idx = key.indexOf("_");
+            if (idx < 0) return null;
+            return { year: null, subject: key.slice(0, idx), className: key.slice(idx + 1), isYearKey: false };
+        }
+
+        function migrateAllDataKeysByYear() {
+            if (!allData || typeof allData !== "object") return;
+            let sortedYears = Array.isArray(allYears) ? allYears.slice().sort() : [];
+            let yearForLegacy = sortedYears[0] || currentYear || String(new Date().getFullYear());
+            let keys = Object.keys(allData);
+            if (!keys.length) return;
+            let changed = false;
+            let migrated = {};
+
+            keys.forEach(k => {
+                let payload = allData[k];
+                let parsed = parseDataKey(k);
+                if (!parsed) {
+                    migrated[k] = payload;
+                    return;
+                }
+                let targetKey = parsed.isYearKey ? k : buildDataKey(parsed.subject, parsed.className, yearForLegacy);
+                if (!parsed.isYearKey) changed = true;
+
+                if (!migrated[targetKey]) {
+                    migrated[targetKey] = payload;
+                } else {
+                    let existingStudents = migrated[targetKey].students || [];
+                    let incomingStudents = payload?.students || [];
+                    let nameSet = new Set(existingStudents.map(s => String(s.name || "").toLowerCase()));
+                    incomingStudents.forEach(s => {
+                        let nm = String(s?.name || "").toLowerCase();
+                        if (!nameSet.has(nm)) {
+                            existingStudents.push(s);
+                            nameSet.add(nm);
+                        }
+                    });
+                    migrated[targetKey].students = existingStudents;
+                }
+            });
+
+            if (changed) {
+                allData = migrated;
+                queueCloudSave(false);
+            }
+        }
+        async function loadAll() {
+            await loadCloudState();
+            if (!allYears || allYears.length === 0) allYears = [String(new Date().getFullYear())];
             let currentTing = getCurrentTingkatan();
             if (!completedExams[currentTing] || completedExams[currentTing].length === 0) {
                 completedExams[currentTing] = getCurrentExamNames();
@@ -1125,119 +1329,12 @@ function lihatPemetaanExam() {
             normalizeAdminLockState();
         }
 
-        async function pushStateToCloud() {
-            if (!cloudEnabled || !firestoreDocRef || applyingRemoteUpdate) return;
-            try {
-                await firestoreDocRef.set(
-                    {
-                        ...buildStatePayload(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    },
-                    { merge: true }
-                );
-                setSyncStatus("☁️ Diselaraskan", "ok");
-            } catch (err) {
-                console.error("Gagal simpan ke cloud:", err);
-                setSyncStatus("☁️ Ralat simpan", "error");
-            }
-        }
-
-        function scheduleCloudSave() {
-            if (!cloudEnabled || applyingRemoteUpdate) return;
-            if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
-            setSyncStatus("☁️ Menyimpan...", "warn");
-            saveDebounceTimer = setTimeout(() => {
-                pushStateToCloud();
-            }, 600);
-        }
-
-        function subscribeCloudRealtime() {
-            if (!firestoreDocRef) return;
-            if (cloudUnsubscribe) cloudUnsubscribe();
-            cloudUnsubscribe = firestoreDocRef.onSnapshot(
-                (snapshot) => {
-                    if (!snapshot.exists) return;
-                    const remoteData = snapshot.data();
-                    if (!remoteData) return;
-                    applyingRemoteUpdate = true;
-                    try {
-                        applyStatePayload(remoteData);
-                        saveLocalState();
-                        refreshSelectors();
-                        renderCurrentPage();
-                        if (typeof refreshSettingsSelects === "function") refreshSettingsSelects();
-                        setSyncStatus("☁️ Kemas kini langsung", "ok");
-                    } finally {
-                        applyingRemoteUpdate = false;
-                    }
-                },
-                (err) => {
-                    console.error("Realtime sync gagal:", err);
-                    setSyncStatus("☁️ Realtime terganggu", "error");
-                }
-            );
-        }
-
-        async function resolveInitialCloudData() {
-            const snapshot = await firestoreDocRef.get();
-            if (snapshot.exists) {
-                const remoteData = snapshot.data();
-                // Guna data cloud jika lebih baru dari local
-                if (remoteData && remoteData.updatedAt) {
-                    applyStatePayload(remoteData);
-                    saveLocalState();
-                    setSyncStatus("☁️ Data dimuat dari cloud", "ok");
-                } else {
-                    setSyncStatus("☁️ Data dimuat", "ok");
-                }
-                return;
-            }
-            // Dokumen belum wujud — cipta dengan data local semasa
-            await firestoreDocRef.set(
-                {
-                    ...buildStatePayload(),
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                { merge: true }
-            );
-            setSyncStatus("☁️ Dokumen baru dicipta", "ok");
-        }
-
-        async function initFirebaseSync() {
-            if (typeof firebase === "undefined") {
-                setSyncStatus("☁️ SDK tidak dimuat", "error");
-                return;
-            }
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(FIREBASE_CONFIG);
-                }
-                firestoreDb = firebase.firestore();
-                firestoreDocRef = firestoreDb
-                    .collection(FIRESTORE_SHARED_COLLECTION)
-                    .doc(FIRESTORE_SHARED_DOCUMENT);
-                cloudEnabled = true;
-                setSyncStatus("☁️ Menyambung...", "warn");
-                await resolveInitialCloudData();
-                subscribeCloudRealtime();
-            } catch (err) {
-                console.error("Firebase init gagal:", err);
-                cloudEnabled = false;
-                setSyncStatus("☁️ Guna local sahaja", "error");
-            }
-        }
-
         function saveAll() {
-            saveLocalState();
-            scheduleCloudSave();
-        }
-        function loadAll() {
-            loadLocalState();
+            queueCloudSave(false);
         }
         function initDefaults() {
             if (Object.keys(allData).length > 0) return;
-            let key = "Bahasa Melayu_3 IBNU SINAR";
+            let key = buildDataKey("Bahasa Melayu", "3 IBNU SINAR", currentYear);
             allData[key] = { students: [{ name: "Pok Wei", ic: "030405-10-1234", marks: [65,70,68,75], ulasan: "Berpotensi, perlu lebih latihan karangan", buku: {}, token: [{type:"positif",desc:"Tugasan lengkap"}] }] };
             masterWeeks.forEach(w => allData[key].students[0].buku[w] = "hantar");
             allData[key].students[0].buku["Minggu 4"] = "tidakhantar";
@@ -1682,22 +1779,61 @@ function lihatPemetaanExam() {
             return "Tingkatan 5";
         }
         function refreshSelectors() {
+            let ySel=document.getElementById("selectYear");
             let sSel=document.getElementById("selectSubject"), cSel=document.getElementById("selectClass");
-            // Simpan pilihan semasa sebelum refresh
+            let prevYear = ySel ? ySel.value || currentYear : currentYear;
             let prevSubj = sSel.value || allSubjects[0] || '';
             let prevCls  = cSel.value  || allClasses[0]  || '';
+            if(ySel){
+                ySel.innerHTML='';
+                allYears.forEach(y=>ySel.appendChild(new Option('📅 '+y, y)));
+                ySel.value = allYears.includes(prevYear) ? prevYear : (allYears[allYears.length-1]||'');
+                if(ySel.value) currentYear = ySel.value;
+            }
             sSel.innerHTML='<option value="">-- Subjek --</option>'; cSel.innerHTML='<option value="">-- Kelas --</option>';
             allSubjects.forEach(s=>sSel.appendChild(new Option(s,s))); allClasses.forEach(c=>cSel.appendChild(new Option(c,c)));
-            // Pulihkan pilihan lama jika masih wujud, jika tidak guna pertama
             sSel.value = allSubjects.includes(prevSubj) ? prevSubj : (allSubjects[0]||'');
             cSel.value = allClasses.includes(prevCls)   ? prevCls  : (allClasses[0] ||'');
             updateSelectorInfo();
         }
+        function tukarTahun(){
+            let sel=document.getElementById("selectYear");
+            if(sel&&sel.value){ currentYear=sel.value; saveAll(); }
+            updateSelectorInfo(); renderCurrentPage();
+        }
+        function tambahTahun(){
+            let n=document.getElementById("newYearInput").value.trim();
+            if(!n){alert("❌ Sila masukkan tahun.");return;}
+            if(!/^\d{4}$/.test(n)){alert("❌ Format tahun tidak sah. Contoh: 2025");return;}
+            if(allYears.includes(n)){alert("⚠️ Tahun '"+n+"' sudah wujud.");return;}
+            allYears.push(n);
+            allYears.sort();
+            saveAll();
+            refreshSelectors();
+            refreshSettingsSelects();
+            document.getElementById("newYearInput").value="";
+            alert("✅ Tahun '"+n+"' berjaya ditambah!\n\nNota: Tahun baru bermula dengan data pelajar kosong sehingga anda daftar pelajar baharu.");
+        }
+        function padamTahun(y){
+            if(allYears.length<=1){alert("❌ Sekurang-kurangnya satu tahun mesti wujud.");return;}
+            if(!confirm("Hapus tahun "+y+"? Data pelajar TIDAK akan terpadam.")){return;}
+            allYears=allYears.filter(x=>x!==y);
+            if(currentYear===y) currentYear=allYears[allYears.length-1]||'';
+            saveAll(); refreshSelectors(); refreshSettingsSelects();
+        }
+        function setTahunAktif(y){
+            currentYear=y; saveAll(); refreshSelectors(); renderCurrentPage();
+        }
         function updateSelectorInfo() {
             let s=document.getElementById("selectSubject").value, c=document.getElementById("selectClass").value;
-                        document.getElementById("selectorInfo").innerText=s&&c?`${s} · ${c}`:'';
+            let y=document.getElementById("selectYear")?.value||currentYear;
+                        document.getElementById("selectorInfo").innerText=s&&c?`${s} · ${c} · Tahun ${y}`:'';
         }
-        function getActiveKey() { return document.getElementById("selectSubject").value+"_"+document.getElementById("selectClass").value; }
+        function getActiveKey() {
+            let subj = document.getElementById("selectSubject").value;
+            let cls = document.getElementById("selectClass").value;
+            return buildDataKey(subj, cls);
+        }
         function getActiveStudents() { let k=getActiveKey(); if(!allData[k])allData[k]={students:[]}; return allData[k].students; }
         function getItemConfig(examOverride) {
             let s = document.getElementById("selectSubject").value;
@@ -4778,193 +4914,275 @@ ${transitBody}
             renderCurrentPage();
         }
 
-        // ==================== TETAPAN DENGAN MUAT NAIK DSKP YANG DIPERBAIKI ====================
-function renderSettings(){
-    let c=document.getElementById("settingsContent");
-    let dskpInfo = '';
-    let hasDSKP = false;
-    Object.keys(dskpDatabase).forEach(subj=>{
-        let tings=Object.keys(dskpDatabase[subj]);
-        if(tings.length>0){
-            hasDSKP = true;
-            tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
-        }
-    });
-    if(!hasDSKP) dskpInfo = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
-    
-    c.innerHTML=`
-    <div class="settings-container">
-        <div class="settings-hero">
-            <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
-            <div><h2>Pusat Tetapan Sistem</h2><p>Urus subjek, kelas, DSKP & pendaftaran pelajar</p></div>
-        </div>
-        
-        <div class="settings-grid">
-            <div class="settings-card">
-                <div class="settings-card-header"><i class="fas fa-book"></i> Pengurusan Subjek</div>
-                <div class="settings-tag-list" id="subjectTagList">
-                    ${allSubjects.map(s=>`<span class="settings-tag purple">${s} <i class="fas fa-times" onclick="padamSubjek('${s}')" title="Padam"></i></span>`).join('')}
-                </div>
-                <div class="settings-input-group">
-                    <input type="text" id="newSubjectInput" class="settings-input" placeholder="Nama subjek baru...">
-                    <button class="btn btn-primary" onclick="tambahSubjek()"><i class="fas fa-plus"></i> Tambah</button>
-                </div>
-            </div>
-            
-            <div class="settings-card">
-                <div class="settings-card-header"><i class="fas fa-school"></i> Pengurusan Kelas</div>
-                <div class="settings-tag-list" id="classTagList">
-                    ${allClasses.map(c=>`<span class="settings-tag blue">${c} <i class="fas fa-times" onclick="padamKelas('${c}')" title="Padam"></i></span>`).join('')}
-                </div>
-                <div class="settings-input-group">
-                    <input type="text" id="newClassInput" class="settings-input" placeholder="Nama kelas baru...">
-                    <button class="btn btn-primary" onclick="tambahKelas()"><i class="fas fa-plus"></i> Tambah</button>
-                </div>
-            </div>
-        </div>
+        // ==================== TETAPAN DENGAN TAB HEADER ====================
+        let currentSettingsSection = "akademik";
 
-        <!-- PENGURUSAN JENIS PEPERIKSAAN -->
-        <div class="settings-full-card" style="background:linear-gradient(135deg,#fef9c3,#fffbeb);border:1px solid #fde68a;margin-bottom:20px;">
-            <div class="settings-card-header"><i class="fas fa-calendar-check" style="color:#d97706;"></i> 🗓️ Pengurusan Jenis Peperiksaan</div>
-            <p style="font-size:0.78rem;color:#92400e;margin-bottom:14px;">
-                <i class="fas fa-info-circle"></i> Tambah, padam atau susun semula jenis peperiksaan bagi setiap tingkatan. 
-                Data markah pelajar <strong>tidak akan terjejas</strong> — data kekal mengikut kedudukan (index).
-            </p>
-            <div style="margin-bottom:14px;">
-                <label style="font-size:0.75rem;font-weight:700;color:#92400e;display:block;margin-bottom:6px;">📚 Pilih Tingkatan:</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;" id="examTingkatanTabs">
-                    ${["Tingkatan 1","Tingkatan 2","Tingkatan 3","Tingkatan 4","Tingkatan 5"].map((t,i)=>`
-                    <button onclick="pilihTingkatanExam('${t}')" id="examTab_${t.replace(' ','_')}"
-                        class="btn btn-${i===0?'accent':'ghost'}" style="font-size:0.8rem;padding:7px 14px;">${t}</button>`).join('')}
-                </div>
-            </div>
-            <div id="examManagerPanel" style="background:#fff;border-radius:14px;padding:16px;border:1px solid #fde68a;">
-                ${renderExamManagerHTML("Tingkatan 1")}
-            </div>
-        </div>
-
-        <div class="settings-full-card" style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #bfdbfe; margin-bottom: 20px;">
-            <div class="settings-card-header"><i class="fas fa-copy" style="color:#2563eb;"></i> 📋 Salin Senarai Pelajar (Kelas Sama, Subjek Berbeza)</div>
-            <p style="font-size:0.78rem;color:#1e40af;margin-bottom:12px;"><i class="fas fa-lightbulb"></i> <strong>Guna jika anda mengajar 2 subjek dalam kelas yang sama.</strong><br>Contoh: Sudah daftar pelajar untuk <strong>Bahasa Melayu</strong> → terus salin ke <strong>Sejarah</strong> tanpa perlu tulis semula!</p>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
-                <div style="flex:1;min-width:160px;">
-                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">🏫 Kelas</div>
-                    <select id="copyClassSelect" class="settings-input"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-                </div>
-                <div style="flex:1;min-width:160px;">
-                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📖 Subjek SUMBER</div>
-                    <select id="copySourceSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                </div>
-                <div style="flex:1;min-width:160px;">
-                    <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📚 Subjek DESTINASI</div>
-                    <select id="copyTargetSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                </div>
-                <div><button class="btn btn-primary" onclick="salinSenaraiPelajar()" style="background:#2563eb;"><i class="fas fa-arrow-right"></i> Salin Sekarang</button></div>
-            </div>
-        </div>
-        
-        <div class="settings-full-card">
-            <div class="settings-card-header"><i class="fas fa-cloud-upload-alt"></i> Muat Naik DSKP (Standard Kurikulum)</div>
-            <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Muat naik fail JSON DSKP. Pilih subjek, kemudian pilih fail JSON. <b>Tingkatan dikesan automatik.</b></p>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                <select id="dskpSubjectSelect" class="settings-input" style="flex:1;min-width:200px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                <label class="settings-upload-zone" for="dskpFileInput" style="flex:1;min-width:200px;padding:12px;cursor:pointer;">
-                    <i class="fas fa-file-upload" style="font-size:1.2rem;margin-bottom:4px;"></i>
-                    <p style="margin:0;">Klik untuk pilih fail JSON</p>
-                    <input type="file" id="dskpFileInput" accept=".json" onchange="this.parentElement.querySelector('p').textContent=this.files[0]?this.files[0].name:'Klik untuk pilih fail JSON'">
-                </label>
-                <button class="btn btn-success" onclick="uploadDSKP()"><i class="fas fa-upload"></i> Muat Naik</button>
-            </div>
-            <div class="settings-dskp-info" id="dskpStatusArea">${dskpInfo}</div>
-        </div>
-        
-        <!-- DAFTAR PELAJAR -->
-        <div class="settings-full-card">
-            <div class="settings-card-header"><i class="fas fa-user-plus"></i> Pendaftaran Pelajar Baru</div>
-            
-            <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid #e2e8f0;">
-                <button id="registerSingleTab" class="btn btn-primary" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('single')">✏️ Daftar Seorang</button>
-                <button id="registerBulkTab" class="btn btn-ghost" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('bulk')">📋 Daftar Pukal (Copy-Paste)</button>
-            </div>
-            
-            <div id="registerSingleMode">
-                <div class="settings-student-form">
-                    <input type="text" id="settingsName" placeholder="Nama penuh pelajar">
-                    <input type="text" id="settingsIC" placeholder="No Kad Pengenalan (optional)">
-                    <select id="settingsSubj"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                    <select id="settingsCls" onchange="refreshMarkInputsForClass()">${'<option value="">-- Pilih Kelas --</option>' + allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-                    <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan" style="grid-column:1/-1;">
-                </div>
-                <div id="settingsMarksContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
-                    ${(()=>{let ting=getCurrentTingkatan();let exams=getExamListForTingkatan(ting);return exams.map((e,i)=>`<input type="number" id="settingsU${i}" value="0" placeholder="Markah ${e} (%)" min="0" max="100" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:0.8rem;background:#f8fafc;">`).join('');})()}
-                </div>
-                <button class="btn btn-success" onclick="tambahPelajar()" style="width:100%;margin-top:14px;padding:12px;"><i class="fas fa-user-check"></i> Daftar Pelajar</button>
-            </div>
-            
-            <div id="registerBulkMode" style="display:none;">
-                <div style="background:#fef3c7; border-radius:12px; padding:12px; margin-bottom:16px;">
-                    <p style="font-size:0.75rem; color:#92400e; margin:0;"><i class="fas fa-info-circle"></i> <strong>Cara Guna:</strong><br>1. Salin senarai nama dari Excel/Word (satu baris = satu nama)<br>2. Pilih Subjek dan Kelas yang sama untuk semua pelajar<br>3. Klik "Daftar Semua Pelajar"</p>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size:0.75rem; font-weight:600;">📚 Subjek (untuk semua pelajar)</label>
-                    <select id="bulkSubjectSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size:0.75rem; font-weight:600;">🏫 Kelas (untuk semua pelajar)</label>
-                    <select id="bulkClassSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size:0.75rem; font-weight:600;">📋 Senarai Nama (satu baris satu nama)</label>
-                    <textarea id="bulkNamesTextarea" rows="6" class="settings-input" style="width:100%; font-family:monospace; font-size:0.8rem; margin-top:4px;" placeholder="Contoh:&#10;Ahmad Bin Abdullah&#10;Siti Nurhaliza Binti Mohd&#10;Muhammad Danish Bin Rizal&#10;Nur Aisyah Binti Kamal"></textarea>
-                </div>
-                <div style="display:flex; gap:12px; margin-top:8px;">
-                    <button class="btn btn-primary" onclick="daftarPelajarPukal()" style="flex:1;"><i class="fas fa-users"></i> 📋 Daftar Semua Pelajar</button>
-                    <button class="btn btn-ghost" onclick="clearBulkTextarea()" style="flex:0;"><i class="fas fa-eraser"></i> Kosongkan</button>
-                </div>
-                <div id="bulkPreviewResult" style="margin-top:12px; font-size:0.7rem; color:#64748b;"></div>
-            </div>
-        </div>
-        
-        ${(currentUser && currentUser.role === 'guru') ? `
-        <div class="settings-full-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 1px solid #fcd34d; margin-top: 20px;">
-            <div class="settings-card-header"><i class="fas fa-database" style="color:#d97706;"></i> 💾 Backup & Restore Data</div>
-            <p style="font-size:0.78rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i> <strong>Penting!</strong> Selalu buat backup data untuk mengelakkan kehilangan.</p>
-            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                <button class="btn btn-accent" onclick="backupData()" style="background:#d97706; flex:1;"><i class="fas fa-download"></i> 💾 Backup Data (Simpan ke fail)</button>
-                <label class="btn btn-primary" style="background:#6366f1; cursor:pointer; flex:1; text-align:center;"><i class="fas fa-upload"></i> 📂 Restore Data (Pilih fail)<input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreData(this.files[0])"></label>
-            </div>
-        </div>
-        ` : ''}
-    </div>`;
-    
-    setTimeout(function() { 
-        setupBulkPreview(); 
-        if(document.getElementById('registerSingleMode')) {
-            document.getElementById('registerSingleMode').style.display = 'block';
-            document.getElementById('registerBulkMode').style.display = 'none';
+        function setSettingsSection(section){
+            currentSettingsSection = section;
+            let tabButtons = document.querySelectorAll("[data-settings-tab]");
+            let sections = document.querySelectorAll("[data-settings-section]");
+            tabButtons.forEach(btn=>{
+                btn.classList.toggle("active", btn.getAttribute("data-settings-tab") === section);
+            });
+            sections.forEach(sec=>{
+                sec.classList.toggle("active", sec.getAttribute("data-settings-section") === section);
+            });
         }
-    }, 50);
-}
-                function refreshSettingsSelects(){
+
+        function renderSettings(){
+            let c=document.getElementById("settingsContent");
+            let dskpInfo = '';
+            let hasDSKP = false;
+            Object.keys(dskpDatabase).forEach(subj=>{
+                let tings=Object.keys(dskpDatabase[subj]);
+                if(tings.length>0){
+                    hasDSKP = true;
+                    tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
+                }
+            });
+            if(!hasDSKP) dskpInfo = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
+
+            c.innerHTML=`
+            <div class="settings-container">
+                <div class="settings-hero">
+                    <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
+                    <div><h2>Pusat Tetapan Sistem</h2><p>Pilih fungsi di header: Akademik, Peperiksaan, Pelajar, DSKP atau Data.</p></div>
+                </div>
+
+                <div class="settings-tabs">
+                    <button type="button" class="settings-tab-btn" data-settings-tab="akademik" onclick="setSettingsSection('akademik')"><i class="fas fa-school"></i> Akademik</button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="peperiksaan" onclick="setSettingsSection('peperiksaan')"><i class="fas fa-calendar-check"></i> Peperiksaan</button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="pelajar" onclick="setSettingsSection('pelajar')"><i class="fas fa-user-plus"></i> Pelajar</button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="dskp" onclick="setSettingsSection('dskp')"><i class="fas fa-cloud-upload-alt"></i> DSKP</button>
+                    <button type="button" class="settings-tab-btn" data-settings-tab="data" onclick="setSettingsSection('data')"><i class="fas fa-database"></i> Data</button>
+                </div>
+
+                <div class="settings-section" data-settings-section="akademik">
+                    <div class="settings-grid">
+                        <div class="settings-card">
+                            <div class="settings-card-header"><i class="fas fa-book"></i> Pengurusan Subjek</div>
+                            <div class="settings-tag-list" id="subjectTagList">
+                                ${allSubjects.map(s=>`<span class="settings-tag purple">${s} <i class="fas fa-times" onclick="padamSubjek('${s}')" title="Padam"></i></span>`).join('')}
+                            </div>
+                            <div class="settings-input-group">
+                                <input type="text" id="newSubjectInput" class="settings-input" placeholder="Nama subjek baru...">
+                                <button class="btn btn-primary" onclick="tambahSubjek()"><i class="fas fa-plus"></i> Tambah</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="settings-card-header"><i class="fas fa-school"></i> Pengurusan Kelas</div>
+                            <div class="settings-tag-list" id="classTagList">
+                                ${allClasses.map(c=>`<span class="settings-tag blue">${c} <i class="fas fa-times" onclick="padamKelas('${c}')" title="Padam"></i></span>`).join('')}
+                            </div>
+                            <div class="settings-input-group">
+                                <input type="text" id="newClassInput" class="settings-input" placeholder="Nama kelas baru...">
+                                <button class="btn btn-primary" onclick="tambahKelas()"><i class="fas fa-plus"></i> Tambah</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-full-card" style="background:linear-gradient(135deg,#f0fdfa,#fff7ed);border:1px solid #99f6e4;margin-top:20px;">
+                        <div class="settings-card-header"><i class="fas fa-calendar-alt" style="color:#0f766e;"></i> 📅 Pengurusan Tahun Pengajaran</div>
+                        <p style="font-size:0.78rem;color:#134e4a;margin-bottom:14px;"><i class="fas fa-info-circle"></i> Tahun aktif menentukan dataset semasa. Setiap tahun menyimpan data pelajar berasingan mengikut Subjek + Kelas.</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;" id="yearTagList">
+                            ${allYears.map(y=>`<span class="settings-tag" style="background:${y===currentYear?'#0f766e':'#ccfbf1'};color:${y===currentYear?'#fff':'#134e4a'};border:1.5px solid ${y===currentYear?'#0f766e':'#5eead4'};cursor:pointer;" onclick="setTahunAktif('${y}')" title="Klik untuk aktifkan">${y===currentYear?'✅ ':''} ${y} <i class="fas fa-times" onclick="event.stopPropagation();padamTahun('${y}')" title="Padam" style="margin-left:6px;opacity:0.7;"></i></span>`).join('')}
+                        </div>
+                        <div class="settings-input-group">
+                            <input type="number" id="newYearInput" class="settings-input" placeholder="Tahun baru (cth: 2026)" min="2000" max="2100" style="max-width:200px;">
+                            <button class="btn btn-primary" style="background:#0f766e;" onclick="tambahTahun()"><i class="fas fa-plus"></i> Tambah Tahun</button>
+                        </div>
+                        <div style="margin-top:10px;font-size:0.75rem;color:#134e4a;background:#ccfbf1;border-radius:8px;padding:8px 12px;">
+                            <i class="fas fa-lightbulb"></i> <strong>Tahun Aktif Sekarang:</strong> <span style="font-weight:800;color:#0f766e;">${currentYear}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-settings-section="peperiksaan">
+                    <div class="settings-full-card" style="background:linear-gradient(135deg,#fef9c3,#fffbeb);border:1px solid #fde68a;">
+                        <div class="settings-card-header"><i class="fas fa-calendar-check" style="color:#d97706;"></i> 🗓️ Pengurusan Jenis Peperiksaan</div>
+                        <p style="font-size:0.78rem;color:#92400e;margin-bottom:14px;">
+                            <i class="fas fa-info-circle"></i> Tambah, padam atau susun semula jenis peperiksaan bagi setiap tingkatan.
+                            Data markah pelajar <strong>tidak akan terjejas</strong> — data kekal mengikut kedudukan (index).
+                        </p>
+                        <div style="margin-bottom:14px;">
+                            <label style="font-size:0.75rem;font-weight:700;color:#92400e;display:block;margin-bottom:6px;">📚 Pilih Tingkatan:</label>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;" id="examTingkatanTabs">
+                                ${["Tingkatan 1","Tingkatan 2","Tingkatan 3","Tingkatan 4","Tingkatan 5"].map((t,i)=>`
+                                <button onclick="pilihTingkatanExam('${t}')" id="examTab_${t.replace(' ','_')}"
+                                    class="btn btn-${i===0?'accent':'ghost'}" style="font-size:0.8rem;padding:7px 14px;">${t}</button>`).join('')}
+                            </div>
+                        </div>
+                        <div id="examManagerPanel" style="background:#fff;border-radius:14px;padding:16px;border:1px solid #fde68a;">
+                            ${renderExamManagerHTML("Tingkatan 1")}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-settings-section="pelajar">
+                    <div class="settings-full-card" style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%); border: 1px solid #bfdbfe; margin-bottom: 20px;">
+                        <div class="settings-card-header"><i class="fas fa-copy" style="color:#2563eb;"></i> 📋 Salin Senarai Pelajar (Kelas Sama, Subjek Berbeza)</div>
+                        <p style="font-size:0.78rem;color:#1e40af;margin-bottom:12px;"><i class="fas fa-lightbulb"></i> <strong>Guna jika anda mengajar 2 subjek dalam kelas yang sama.</strong><br>Contoh: Sudah daftar pelajar untuk <strong>Bahasa Melayu</strong> → terus salin ke <strong>Sejarah</strong> tanpa perlu tulis semula!</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                            <div style="flex:1;min-width:160px;">
+                                <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">🏫 Kelas</div>
+                                <select id="copyClassSelect" class="settings-input"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                            </div>
+                            <div style="flex:1;min-width:160px;">
+                                <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📖 Subjek SUMBER</div>
+                                <select id="copySourceSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                            </div>
+                            <div style="flex:1;min-width:160px;">
+                                <div style="font-size:0.7rem;font-weight:600;margin-bottom:4px;">📚 Subjek DESTINASI</div>
+                                <select id="copyTargetSubject" class="settings-input"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                            </div>
+                            <div><button class="btn btn-primary" onclick="salinSenaraiPelajar()" style="background:#2563eb;"><i class="fas fa-arrow-right"></i> Salin Sekarang</button></div>
+                        </div>
+                    </div>
+
+                    <div class="settings-full-card">
+                        <div class="settings-card-header"><i class="fas fa-user-plus"></i> Pendaftaran Pelajar Baru</div>
+                        <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Data pelajar didaftar mengikut <strong>Tahun + Subjek + Kelas</strong>. Tahun berbeza akan mempunyai set data pelajar berasingan.</p>
+
+                        <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid #e2e8f0;">
+                            <button id="registerSingleTab" class="btn btn-primary" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('single')">✏️ Daftar Seorang</button>
+                            <button id="registerBulkTab" class="btn btn-ghost" style="border-radius:20px 20px 0 0; margin-bottom:-1px;" onclick="toggleRegisterMode('bulk')">📋 Daftar Pukal (Copy-Paste)</button>
+                        </div>
+
+                        <div id="registerSingleMode">
+                            <div class="settings-student-form">
+                                <input type="text" id="settingsName" placeholder="Nama penuh pelajar">
+                                <input type="text" id="settingsIC" placeholder="No Kad Pengenalan (optional)">
+                                <select id="settingsSubj"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                                <select id="settingsCls" onchange="refreshMarkInputsForClass()">${'<option value="">-- Pilih Kelas --</option>' + allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                                <select id="settingsYear" style="border:1.5px solid #5eead4;background:#f0fdfa;color:#134e4a;font-weight:700;border-radius:10px;padding:10px 12px;font-size:0.875rem;">${allYears.map(y=>`<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}</select>
+                                <input type="text" id="settingsUlasan" placeholder="Ulasan / Catatan" style="grid-column:1/-1;">
+                            </div>
+                            <div id="settingsMarksContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                                ${(()=>{let ting=getCurrentTingkatan();let exams=getExamListForTingkatan(ting);return exams.map((e,i)=>`<input type="number" id="settingsU${i}" value="0" placeholder="Markah ${e} (%)" min="0" max="100" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:0.8rem;background:#f8fafc;">`).join('');})()}
+                            </div>
+                            <button class="btn btn-success" onclick="tambahPelajar()" style="width:100%;margin-top:14px;padding:12px;"><i class="fas fa-user-check"></i> Daftar Pelajar</button>
+                        </div>
+
+                        <div id="registerBulkMode" style="display:none;">
+                            <div style="background:#fef3c7; border-radius:12px; padding:12px; margin-bottom:16px;">
+                                <p style="font-size:0.75rem; color:#92400e; margin:0;"><i class="fas fa-info-circle"></i> <strong>Cara Guna:</strong><br>1. Salin senarai nama dari Excel/Word (satu baris = satu nama)<br>2. Pilih Subjek dan Kelas yang sama untuk semua pelajar<br>3. Klik "Daftar Semua Pelajar"</p>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.75rem; font-weight:600;">📚 Subjek (untuk semua pelajar)</label>
+                                <select id="bulkSubjectSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.75rem; font-weight:600;">🏫 Kelas (untuk semua pelajar)</label>
+                                <select id="bulkClassSelect" class="settings-input" style="width:100%; margin-top:4px;"><option value="">-- Pilih Kelas --</option>${allClasses.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.75rem; font-weight:600;">📅 Tahun Pengajaran (untuk semua pelajar)</label>
+                                <select id="bulkYearSelect" class="settings-input" style="width:100%; margin-top:4px; border-color:#5eead4; background:#f0fdfa; color:#134e4a; font-weight:700;">${allYears.map(y=>`<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}</select>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label style="font-size:0.75rem; font-weight:600;">📋 Senarai Nama (satu baris satu nama)</label>
+                                <textarea id="bulkNamesTextarea" rows="6" class="settings-input" style="width:100%; font-family:monospace; font-size:0.8rem; margin-top:4px;" placeholder="Contoh:&#10;Ahmad Bin Abdullah&#10;Siti Nurhaliza Binti Mohd&#10;Muhammad Danish Bin Rizal&#10;Nur Aisyah Binti Kamal"></textarea>
+                            </div>
+                            <div style="display:flex; gap:12px; margin-top:8px;">
+                                <button class="btn btn-primary" onclick="daftarPelajarPukal()" style="flex:1;"><i class="fas fa-users"></i> 📋 Daftar Semua Pelajar</button>
+                                <button class="btn btn-ghost" onclick="clearBulkTextarea()" style="flex:0;"><i class="fas fa-eraser"></i> Kosongkan</button>
+                            </div>
+                            <div id="bulkPreviewResult" style="margin-top:12px; font-size:0.7rem; color:#64748b;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-settings-section="dskp">
+                    <div class="settings-full-card">
+                        <div class="settings-card-header"><i class="fas fa-cloud-upload-alt"></i> Muat Naik DSKP (Standard Kurikulum)</div>
+                        <p style="font-size:0.78rem;color:#64748b;margin-bottom:12px;">Muat naik fail JSON DSKP. Pilih subjek, kemudian pilih fail JSON. <b>Tingkatan dikesan automatik.</b></p>
+                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                            <select id="dskpSubjectSelect" class="settings-input" style="flex:1;min-width:200px;"><option value="">-- Pilih Subjek --</option>${allSubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+                            <label class="settings-upload-zone" for="dskpFileInput" style="flex:1;min-width:200px;padding:12px;cursor:pointer;">
+                                <i class="fas fa-file-upload" style="font-size:1.2rem;margin-bottom:4px;"></i>
+                                <p style="margin:0;">Klik untuk pilih fail JSON</p>
+                                <input type="file" id="dskpFileInput" accept=".json" onchange="this.parentElement.querySelector('p').textContent=this.files[0]?this.files[0].name:'Klik untuk pilih fail JSON'">
+                            </label>
+                            <button class="btn btn-success" onclick="uploadDSKP()"><i class="fas fa-upload"></i> Muat Naik</button>
+                        </div>
+                        <div class="settings-dskp-info" id="dskpStatusArea">${dskpInfo}</div>
+                    </div>
+                </div>
+
+                <div class="settings-section" data-settings-section="data">
+                    ${(currentUser && currentUser.role === 'guru') ? `
+                    <div class="settings-full-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 1px solid #fcd34d;">
+                        <div class="settings-card-header"><i class="fas fa-database" style="color:#d97706;"></i> 💾 Backup & Restore Data</div>
+                        <p style="font-size:0.78rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i> <strong>Penting!</strong> Selalu buat backup data untuk mengelakkan kehilangan.</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                            <button class="btn btn-accent" onclick="backupData()" style="background:#d97706; flex:1;"><i class="fas fa-download"></i> 💾 Backup Data (Simpan ke fail)</button>
+                            <label class="btn btn-primary" style="background:#0f766e; cursor:pointer; flex:1; text-align:center;"><i class="fas fa-upload"></i> 📂 Restore Data (Pilih fail)<input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreData(this.files[0])"></label>
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="settings-full-card">
+                        <div class="settings-card-header"><i class="fas fa-lock"></i> Data Sistem</div>
+                        <p style="font-size:0.8rem;color:#64748b;">Hanya akaun guru boleh mengakses fungsi backup/restore data.</p>
+                    </div>
+                    `}
+                </div>
+            </div>`;
+
+            setTimeout(function() {
+                setupBulkPreview();
+                toggleRegisterMode(currentRegisterMode || "single");
+                if(!["akademik","peperiksaan","pelajar","dskp","data"].includes(currentSettingsSection)){
+                    currentSettingsSection = "akademik";
+                }
+                setSettingsSection(currentSettingsSection);
+            }, 50);
+        }
+
+        function refreshSettingsSelects(){
             // Update tag lists jika di halaman settings
             let subjList = document.getElementById("subjectTagList");
             let clsList = document.getElementById("classTagList");
+            let yearList = document.getElementById("yearTagList");
             if(subjList) subjList.innerHTML = allSubjects.map(s=>`<span class="settings-tag purple">${s} <i class="fas fa-times" onclick="padamSubjek('${s}')" title="Padam"></i></span>`).join('');
             if(clsList) clsList.innerHTML = allClasses.map(c=>`<span class="settings-tag blue">${c} <i class="fas fa-times" onclick="padamKelas('${c}')" title="Padam"></i></span>`).join('');
+            if(yearList) yearList.innerHTML = allYears.map(y=>`<span class="settings-tag" style="background:${y===currentYear?'#0f766e':'#ccfbf1'};color:${y===currentYear?'#fff':'#134e4a'};border:1.5px solid ${y===currentYear?'#0f766e':'#5eead4'};cursor:pointer;" onclick="setTahunAktif('${y}')" title="Klik untuk aktifkan">${y===currentYear?'✅ ':''} ${y} <i class="fas fa-times" onclick="event.stopPropagation();padamTahun('${y}')" title="Padam" style="margin-left:6px;opacity:0.7;"></i></span>`).join('');
             
-            // Update dropdowns
-            ["dskpSubjectSelect","settingsSubj"].forEach(id=>{
+            // Update subject dropdowns
+            ["dskpSubjectSelect","settingsSubj","bulkSubjectSelect","copySourceSubject","copyTargetSubject"].forEach(id=>{
                 let s=document.getElementById(id);
                 if(s){
-                    s.innerHTML='<option value="">-- Pilih --</option>';
+                    let prev = s.value;
+                    s.innerHTML='<option value="">-- Pilih Subjek --</option>';
                     allSubjects.forEach(x=>s.appendChild(new Option(x,x)));
+                    if(allSubjects.includes(prev)) s.value = prev;
                 }
             });
-            let sCls=document.getElementById("settingsCls");
-            if(sCls){
-                sCls.innerHTML='<option value="">-- Pilih --</option>';
-                allClasses.forEach(c=>sCls.appendChild(new Option(c,c)));
-            }
+
+            // Update class dropdowns
+            ["settingsCls","bulkClassSelect","copyClassSelect"].forEach(id=>{
+                let s=document.getElementById(id);
+                if(s){
+                    let prev = s.value;
+                    s.innerHTML='<option value="">-- Pilih Kelas --</option>';
+                    allClasses.forEach(x=>s.appendChild(new Option(x,x)));
+                    if(allClasses.includes(prev)) s.value = prev;
+                }
+            });
+
+            // Update year dropdowns in registration forms
+            ["settingsYear","bulkYearSelect"].forEach(id=>{
+                let el=document.getElementById(id);
+                if(el){
+                    let prev = el.value;
+                    el.innerHTML='';
+                    allYears.forEach(y=>{
+                        let o=new Option(y,y);
+                        if((prev && y===prev) || (!prev && y===currentYear)) o.selected=true;
+                        el.appendChild(o);
+                    });
+                }
+            });
             
             // Update DSKP status
             let statusEl = document.getElementById("dskpStatusArea");
@@ -5004,8 +5222,26 @@ function renderSettings(){
             document.getElementById("newClassInput").value="";
             alert("✅ Kelas '"+n+"' berjaya ditambah dan disimpan!");
         }
-        function padamSubjek(s){if(confirm(`Hapus ${s}?`)){allSubjects=allSubjects.filter(x=>x!==s);Object.keys(allData).forEach(k=>{if(k.startsWith(s+"_"))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
-        function padamKelas(c){if(confirm(`Hapus ${c}?`)){allClasses=allClasses.filter(x=>x!==c);Object.keys(allData).forEach(k=>{if(k.endsWith("_"+c))delete allData[k];});saveAll();refreshSelectors();refreshSettingsSelects();}}
+        function padamSubjek(s){
+            if(confirm(`Hapus ${s}?`)){
+                allSubjects=allSubjects.filter(x=>x!==s);
+                Object.keys(allData).forEach(k=>{
+                    let parsed = parseDataKey(k);
+                    if(parsed && parsed.subject === s) delete allData[k];
+                });
+                saveAll();refreshSelectors();refreshSettingsSelects();
+            }
+        }
+        function padamKelas(c){
+            if(confirm(`Hapus ${c}?`)){
+                allClasses=allClasses.filter(x=>x!==c);
+                Object.keys(allData).forEach(k=>{
+                    let parsed = parseDataKey(k);
+                    if(parsed && parsed.className === c) delete allData[k];
+                });
+                saveAll();refreshSelectors();refreshSettingsSelects();
+            }
+        }
         function refreshMarkInputsForClass() {
             let cls = document.getElementById("settingsCls")?.value || "";
             let ting = "Tingkatan 5";
@@ -5024,8 +5260,9 @@ function renderSettings(){
             let ic=document.getElementById("settingsIC").value.trim();
             let subj=document.getElementById("settingsSubj").value;
             let cls=document.getElementById("settingsCls").value;
+            let tahunDaftar=document.getElementById("settingsYear")?.value || currentYear;
             if(!name||!subj||!cls) return alert("Lengkapkan maklumat pelajar.");
-            let key=subj+"_"+cls;
+            let key=buildDataKey(subj, cls, tahunDaftar);
             if(!allData[key]) allData[key]={students:[]};
             if(allData[key].students.find(s=>s.name===name)) return alert("Pelajar sudah wujud.");
             // Baca marks secara dinamik
@@ -5036,12 +5273,15 @@ function renderSettings(){
             let marks=exams.map((_,i)=>parseInt(document.getElementById("settingsU"+i)?.value)||0);
             let buku={};
             masterWeeks.forEach(w=>buku[w]="kosong");
-            allData[key].students.push({name,ic,marks,ulasan:document.getElementById("settingsUlasan").value||"-",buku,token:[],itemData:{}});
+            allData[key].students.push({name,ic,marks,ulasan:document.getElementById("settingsUlasan").value||"-",buku,token:[],itemData:{},tahunDaftar:tahunDaftar});
             saveAll();
-            alert("✅ Pelajar '"+name+"' berjaya didaftarkan!");
+            alert("✅ Pelajar '"+name+"' berjaya didaftarkan untuk tahun "+tahunDaftar+"!");
             refreshSelectors();
             document.getElementById("selectSubject").value=subj;
             document.getElementById("selectClass").value=cls;
+            document.getElementById("selectYear").value=tahunDaftar;
+            currentYear = tahunDaftar;
+            saveAll();
             renderCurrentPage();
         }
 // ==================== DAFTAR PELAJAR PUKAL (COPY-PASTE) ====================
@@ -5075,32 +5315,39 @@ function clearBulkTextarea() {
 function daftarPelajarPukal() {
     let subjek = document.getElementById('bulkSubjectSelect').value;
     let kelas = document.getElementById('bulkClassSelect').value;
+    let tahunDaftar = document.getElementById('bulkYearSelect')?.value || currentYear;
     let namesText = document.getElementById('bulkNamesTextarea').value;
     if(!subjek || !kelas) { alert('❌ Sila pilih Subjek dan Kelas terlebih dahulu!'); return; }
     if(!namesText.trim()) { alert('❌ Sila masukkan senarai nama pelajar!'); return; }
     let names = namesText.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
     if(names.length === 0) { alert('❌ Tiada nama yang sah!'); return; }
-    let key = subjek + "_" + kelas;
+    let key = buildDataKey(subjek, kelas, tahunDaftar);
     if(!allData[key]) allData[key] = { students: [] };
     let existingNames = allData[key].students.map(s => s.name);
     let newStudents = [], duplicates = [];
-    let examNamesLocal = getCurrentExamNames();
+    let ting = "Tingkatan 5";
+    let match = kelas.match(/^(\d+)/);
+    if(match){let n=parseInt(match[1]);if(n>=1&&n<=5)ting="Tingkatan "+n;}
+    let examNamesLocal = getExamListForTingkatan(ting);
     for(let name of names) {
         if(existingNames.includes(name)) { duplicates.push(name); continue; }
-        let newStudent = { name: name, ic: "-", marks: new Array(examNamesLocal.length).fill(0), ulasan: "-", buku: {}, token: [], itemData: {} };
+        let newStudent = { name: name, ic: "-", marks: new Array(examNamesLocal.length).fill(0), ulasan: "-", buku: {}, token: [], itemData: {}, tahunDaftar: tahunDaftar };
         masterWeeks.forEach(w => { newStudent.buku[w] = "kosong"; });
         allData[key].students.push(newStudent);
         newStudents.push(name);
     }
     saveAll();
     let previewHtml = '';
-    if(newStudents.length > 0) previewHtml += '<div style="background:#d1fae5; border-radius:10px; padding:10px; margin-top:10px;"><strong>✅ Berjaya daftar: ' + newStudents.length + ' pelajar</strong><br><span style="font-size:0.65rem;">' + newStudents.join(', ') + '</span></div>';
+    if(newStudents.length > 0) previewHtml += '<div style="background:#d1fae5; border-radius:10px; padding:10px; margin-top:10px;"><strong>✅ Berjaya daftar: ' + newStudents.length + ' pelajar (Tahun: '+tahunDaftar+')</strong><br><span style="font-size:0.65rem;">' + newStudents.join(', ') + '</span></div>';
     if(duplicates.length > 0) previewHtml += '<div style="background:#fee2e2; border-radius:10px; padding:10px; margin-top:8px;"><strong>⚠️ Sudah wujud: ' + duplicates.length + ' pelajar</strong><br><span style="font-size:0.65rem;">' + duplicates.join(', ') + '</span></div>';
     document.getElementById('bulkPreviewResult').innerHTML = previewHtml;
     refreshSelectors(); refreshSettingsSelects();
     document.getElementById("selectSubject").value = subjek;
     document.getElementById("selectClass").value = kelas;
-    if(newStudents.length > 0) alert('✅ ' + newStudents.length + ' pelajar berjaya didaftarkan!');
+    document.getElementById("selectYear").value = tahunDaftar;
+    currentYear = tahunDaftar;
+    saveAll();
+    if(newStudents.length > 0) alert('✅ ' + newStudents.length + ' pelajar berjaya didaftarkan! (Tahun: '+tahunDaftar+')');
     else alert('⚠️ Tiada pelajar baru didaftar. ' + duplicates.length + ' nama sudah wujud.');
     renderCurrentPage();
 }
@@ -5132,8 +5379,9 @@ function salinSenaraiPelajar() {
         return;
     }
     
-    let keySumber = subjekSumber + "_" + kelas;
-    let keyDestinasi = subjekDestinasi + "_" + kelas;
+    let tahunOperasi = document.getElementById("selectYear")?.value || currentYear;
+    let keySumber = buildDataKey(subjekSumber, kelas, tahunOperasi);
+    let keyDestinasi = buildDataKey(subjekDestinasi, kelas, tahunOperasi);
     
     if(!allData[keySumber] || !allData[keySumber].students || allData[keySumber].students.length === 0) {
         alert(`❌ Subjek ${subjekSumber} (${kelas}) tiada data pelajar.`);
@@ -5201,7 +5449,7 @@ function salinSenaraiPelajar() {
     allData[keyDestinasi].students = newStudents;
     saveAll();
     
-    alert(`✅ BERJAYA! ${newStudents.length} pelajar disalin ke ${subjekDestinasi} (${kelas})`);
+    alert(`✅ BERJAYA! ${newStudents.length} pelajar disalin ke ${subjekDestinasi} (${kelas}) untuk tahun ${tahunOperasi}`);
     
     refreshSelectors();
     document.getElementById("selectSubject").value = subjekDestinasi;
@@ -5448,8 +5696,7 @@ let pelajarWithAvg = st.map(s => {
         function toggleDarkMode(){document.body.classList.toggle("dark-mode");}
 
         async function init(){
-            loadAll();
-            await initFirebaseSync();
+            await loadAll();
             initDefaults();
             initBookMonths();
             refreshSelectors();
@@ -5480,6 +5727,7 @@ let pelajarWithAvg = st.map(s => {
         window.cetakBorangTransitIndividu=cetakBorangTransitIndividu;window.cetakBorangTransitKelas=cetakBorangTransitKelas;
         window.uploadDSKP=uploadDSKP;window.tambahSubjek=tambahSubjek;window.tambahKelas=tambahKelas;
         window.padamSubjek=padamSubjek;window.padamKelas=padamKelas;window.tambahPelajar=tambahPelajar;
+        window.tambahTahun=tambahTahun;window.padamTahun=padamTahun;window.setTahunAktif=setTahunAktif;window.tukarTahun=tukarTahun;
                 window.bukaModalEdit=bukaModalEdit;window.simpanEditPelajar=simpanEditPelajar;window.simpanAnalisisItem=simpanAnalisisItem;window.hitungCepat=hitungCepat;
         window.hitungPurataBM=hitungPurataBM;window.simpanMarkahBM=simpanMarkahBM;window.bukaAnalisisItemDariBM=bukaAnalisisItemDariBM;
         window.bukaKonfigurasiItem=bukaKonfigurasiItem;window.tambahSoalanCfg=tambahSoalanCfg;window.padamSoalanCfg=padamSoalanCfg;window.tambahKertasCfg=tambahKertasCfg;window.padamKertasCfg=padamKertasCfg;window.simpanKonfigurasiItem=simpanKonfigurasiItem;
@@ -5499,10 +5747,7 @@ let pelajarWithAvg = st.map(s => {
         window.saveAdminSettingsFromUI = saveAdminSettingsFromUI;
         window.renderAdmin = renderAdmin;
         window.verifyAdminAccess = verifyAdminAccess;
-        init().catch(err => {
-            console.error("Init aplikasi gagal:", err);
-            setSyncStatus("Cloud: Gagal inisialisasi", "error");
-        });
+        init().catch(err => { console.error("Init aplikasi gagal:", err); });
         window.pilihStudentProfil=pilihStudentProfil;
         window.bukaCetakAnalisisItem=bukaCetakAnalisisItem;
                 // ==================== LOGIN SYSTEM ====================
@@ -5542,7 +5787,7 @@ let pelajarWithAvg = st.map(s => {
                 if(username === MASTER_LOGIN_USERNAME && password === MASTER_LOGIN_PASSWORD) {
                     currentUser = { role: 'guru', name: 'MASTER KEY', isMaster: true };
                     adminSessionUnlocked = true;
-                    localStorage.setItem('edutrack_user', JSON.stringify(currentUser));
+                    sessionStorage.setItem('edutrack_user', JSON.stringify(currentUser));
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#f59e0b;">Master ${MASTER_LOGIN_USERNAME}</strong> 🔑`;
                     renderCurrentPage();
@@ -5551,7 +5796,7 @@ let pelajarWithAvg = st.map(s => {
                     maybeNotifyGuruAdminExpiry();
                 } else if(username === 'HAQHENSEM' && password === '12345') {
                     currentUser = { role: 'guru', name: username };
-                    localStorage.setItem('edutrack_user', JSON.stringify(currentUser));
+                    sessionStorage.setItem('edutrack_user', JSON.stringify(currentUser));
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#6366f1;">Guru ${username}</strong> 👋`;
                     renderCurrentPage();
@@ -5578,7 +5823,7 @@ let pelajarWithAvg = st.map(s => {
                 
                 if(found) {
                     currentUser = { role: 'pelajar', name: studentName };
-                    localStorage.setItem('edutrack_user', JSON.stringify(currentUser));
+                    sessionStorage.setItem('edutrack_user', JSON.stringify(currentUser));
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.querySelector('.topbar div:first-child').innerHTML = `Selamat Datang, <strong style="color:#10b981;">${studentName}</strong> (Pelajar) 👋`;
                     
@@ -5655,7 +5900,7 @@ let pelajarWithAvg = st.map(s => {
         }
 
         function checkLogin() {
-            let saved = localStorage.getItem('edutrack_user');
+            let saved = sessionStorage.getItem('edutrack_user');
             if(saved) {
                 currentUser = JSON.parse(saved);
                 if(currentUser.role === 'guru') {
@@ -5695,19 +5940,19 @@ let pelajarWithAvg = st.map(s => {
         if(confirmBackup) {
             backupData();
             setTimeout(() => {
-                localStorage.removeItem('edutrack_user');
+                sessionStorage.removeItem('edutrack_user');
                 currentUser = null;
                 adminSessionUnlocked = false;
                 location.reload();
             }, 500);
         } else {
-            localStorage.removeItem('edutrack_user');
+            sessionStorage.removeItem('edutrack_user');
             currentUser = null;
             adminSessionUnlocked = false;
             location.reload();
         }
     } else {
-        localStorage.removeItem('edutrack_user');
+        sessionStorage.removeItem('edutrack_user');
         currentUser = null;
         adminSessionUnlocked = false;
         location.reload();
@@ -5835,6 +6080,8 @@ let pelajarWithAvg = st.map(s => {
                 allData: allData,
                 allSubjects: allSubjects,
                 allClasses: allClasses,
+                allYears: allYears,
+                currentYear: currentYear,
                 masterWeeks: masterWeeks,
                 bookMonths: bookMonths,
                 pbdData: pbdData,
@@ -5870,6 +6117,8 @@ let pelajarWithAvg = st.map(s => {
                     allData = backup.allData;
                     allSubjects = backup.allSubjects;
                     allClasses = backup.allClasses;
+                    allYears = backup.allYears || [String(new Date().getFullYear())];
+                    currentYear = backup.currentYear || String(new Date().getFullYear());
                     masterWeeks = backup.masterWeeks || masterWeeks;
                     bookMonths = backup.bookMonths || bookMonths;
                     pbdData = backup.pbdData || {};
