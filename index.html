@@ -1836,15 +1836,27 @@ function lihatPemetaanExam() {
             return buildDataKey(subj, cls);
         }
         function getActiveStudents() { let k=getActiveKey(); if(!allData[k])allData[k]={students:[]}; return allData[k].students; }
+        function _getConfigContext() {
+            let s   = document.getElementById("selectSubject").value;
+            let cls = document.getElementById("selectClass").value;
+            let y   = document.getElementById("selectYear")?.value || currentYear || String(new Date().getFullYear());
+            return { s, cls, y };
+        }
+        function buildItemConfigKey(subj, cls, year, exam) {
+            // Kunci unik: subjek||kelas||tahun||peperiksaan
+            return subj + "||" + cls + "||" + year + "||" + exam;
+        }
         function getItemConfig(examOverride) {
-            let s = document.getElementById("selectSubject").value;
-            // Gunakan exam override atau ambil dari currentBMEditExam atau peperiksaan pertama
+            let { s, cls, y } = _getConfigContext();
             let exam = examOverride || currentBMEditExam || getCurrentExamNames()[0] || "default";
-            let configKey = s + "||" + exam;
-            // Sokong config lama (per subjek sahaja) - migrate jika perlu
+            let configKey = buildItemConfigKey(s, cls, y, exam);
+
             if (!itemConfigGlobal[configKey]) {
-                // Cuba migrate dari config lama (per subjek)
-                if (itemConfigGlobal[s] && !examOverride) {
+                // Cuba cari kunci lama (subjek||exam) untuk migrate data sedia ada
+                let legacyKey = s + "||" + exam;
+                if (itemConfigGlobal[legacyKey]) {
+                    itemConfigGlobal[configKey] = JSON.parse(JSON.stringify(itemConfigGlobal[legacyKey]));
+                } else if (itemConfigGlobal[s]) {
                     itemConfigGlobal[configKey] = JSON.parse(JSON.stringify(itemConfigGlobal[s]));
                 } else {
                     itemConfigGlobal[configKey] = {kertas:[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}]};
@@ -1853,9 +1865,9 @@ function lihatPemetaanExam() {
             return itemConfigGlobal[configKey];
         }
         function getItemConfigKey(examName) {
-            let s = document.getElementById("selectSubject").value;
+            let { s, cls, y } = _getConfigContext();
             let exam = examName || currentBMEditExam || getCurrentExamNames()[0] || "default";
-            return s + "||" + exam;
+            return buildItemConfigKey(s, cls, y, exam);
         }
         function toNumber(value, fallback = 0) {
             let num = Number(value);
@@ -2195,6 +2207,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let examNames = getCurrentExamNames();
             let defaultExam = currentBMEditExam || examNames[0];
             let subj = document.getElementById("selectSubject").value;
+            let cls  = document.getElementById("selectClass").value;
+            let y    = document.getElementById("selectYear")?.value || currentYear;
             
             function buildKonfigHTML(selectedExam) {
                 let cfg = getItemConfig(selectedExam);
@@ -2205,11 +2219,16 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                         <i class="fas fa-plus-circle"></i> Tambah / Urus Peperiksaan
                     </button>
                 </h3>
-                <p style="font-size:0.8rem;color:#64748b;margin-bottom:12px;">Tetapan item berbeza untuk setiap peperiksaan bagi subjek <strong>${subj}</strong>.</p>
+                <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+                    <span style="font-size:0.78rem;color:#166534;"><strong>📚 Subjek:</strong> ${subj}</span>
+                    <span style="font-size:0.78rem;color:#166534;"><strong>🏫 Kelas:</strong> ${cls}</span>
+                    <span style="font-size:0.78rem;color:#166534;"><strong>📅 Tahun:</strong> ${y}</span>
+                    <span style="font-size:0.72rem;color:#15803d;"><i class="fas fa-info-circle"></i> Konfigurasi ini <strong>khusus</strong> untuk kelas &amp; tahun ini sahaja</span>
+                </div>
                 <div style="background:#ede9fe;border-radius:12px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <label style="font-size:0.8rem;font-weight:700;color:#5b21b6;">🗓️ Peperiksaan:</label>
                     <select id="cfgExamSelect" style="padding:8px 14px;border-radius:10px;border:1.5px solid #c4b5fd;background:#fff;font-weight:600;font-size:0.85rem;color:#5b21b6;" onchange="bukaKonfigurasiItemUntuk(this.value)">${examOptions}</select>
-                    <span style="font-size:0.72rem;color:#7c3aed;"><i class="fas fa-info-circle"></i> Setiap peperiksaan boleh ada soalan & markah berbeza</span>
+                    <span style="font-size:0.72rem;color:#7c3aed;"><i class="fas fa-info-circle"></i> Setiap peperiksaan boleh ada soalan &amp; markah berbeza</span>
                 </div>
                 <div id="cfgKertasContainer">`;
                 cfg.kertas.forEach((kertas, ki) => {
@@ -2423,9 +2442,9 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         function tambahKertasCfg(){let modal=document.getElementById("modalKonfigurasiItemContent");let ki=modal.querySelectorAll('[id^="cfgNamaKertas_"]').length;let d=document.createElement("div");d.style.cssText="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;";d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><input value="Kertas ${ki+1}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;"><button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">🗑️</button></div><div id="soalanList_${ki}"></div><button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>`;modal.insertBefore(d,modal.querySelector('button[onclick*="tambahKertasCfg"]'));}
         function padamKertasCfg(ki){let el=document.getElementById("cfgNamaKertas_"+ki);if(el)el.parentElement.parentElement.remove();}
         function simpanKonfigurasiItem(){
-            let subj=document.getElementById("selectSubject").value;
+            let { s, cls, y } = _getConfigContext();
             let examName = window._cfgCurrentExam || document.getElementById("cfgExamSelect")?.value || getCurrentExamNames()[0];
-            let configKey = subj + "||" + examName;
+            let configKey = buildItemConfigKey(s, cls, y, examName);
             let modal=document.getElementById("modalKonfigurasiItemContent");
             let kertasEls=modal.querySelectorAll('[id^="cfgNamaKertas_"]');
             let kertas=[];
@@ -2444,7 +2463,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             if(kertas.length===0) kertas=[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}];
             itemConfigGlobal[configKey]={kertas};
             saveAll();
-            alert("✅ Konfigurasi disimpan untuk "+subj+" · "+examName+"!");
+            alert("✅ Konfigurasi disimpan untuk:\n📚 " + s + "\n🏫 " + cls + "  |  📅 Tahun " + y + "\n📝 " + examName);
             tutupModal("modalKonfigurasiItem");
             renderCurrentPage();
         }
