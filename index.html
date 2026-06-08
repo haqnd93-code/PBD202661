@@ -1000,12 +1000,13 @@ function getGredByTingkatan(marks, tingkatan) {
     if (tingkatan === "Tingkatan 4" || tingkatan === "Tingkatan 5") {
         return getGredSPM(marks, tingkatan);
     }
-    // Untuk Tingkatan 1-3 (mengikut sistem sekolah biasa)
-    if (marks >= 80) return { gred: "A", point: 4.00, warna: "#10b981", desc: "Cemerlang" };
-    if (marks >= 65) return { gred: "B", point: 3.00, warna: "#3b82f6", desc: "Baik" };
+    // Untuk Tingkatan 1-3
+    if (marks >= 82) return { gred: "A", point: 4.00, warna: "#10b981", desc: "Cemerlang" };
+    if (marks >= 66) return { gred: "B", point: 3.00, warna: "#3b82f6", desc: "Baik" };
     if (marks >= 50) return { gred: "C", point: 2.00, warna: "#f59e0b", desc: "Sederhana" };
-    if (marks >= 40) return { gred: "D", point: 1.00, warna: "#f97316", desc: "Lemah" };
-    return { gred: "E", point: 0.00, warna: "#ef4444", desc: "Gagal" };
+    if (marks >= 35) return { gred: "D", point: 1.00, warna: "#f97316", desc: "Lemah" };
+    if (marks >= 20) return { gred: "E", point: 0.50, warna: "#ef4444", desc: "Sangat Lemah" };
+    return { gred: "F", point: 0.00, warna: "#dc2626", desc: "Gagal" };
 }
 // Fungsi untuk melihat pemetaan nama peperiksaan (debug/rujukan)
 function lihatPemetaanExam() {
@@ -2172,7 +2173,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         <td style="font-weight:600;color:#6366f1;">${x.name}</td>
         ${examNames.map((e,j)=>`<td style="text-align:center;">
             <span class="clickable-mark" onclick="bukaModalEdit(${i},'${e}')">${x.marks[j] || 0}%</span>
-            ${isSPMLevel ? `<br><span style="font-size:0.6rem;color:${getGredByTingkatan(x.marks[j] || 0, ting).warna};">${getGredByTingkatan(x.marks[j] || 0, ting).gred}</span>` : ''}
+            ${`<br><span style="font-size:0.6rem;color:${getGredByTingkatan(x.marks[j] || 0, ting).warna};">${getGredByTingkatan(x.marks[j] || 0, ting).gred}</span>`}
         </td>`).join('')}
         <td><span class="badge ${gredClass}" style="background:${gredInfo.warna}20;color:${gredInfo.warna};">${p}%</span></td>
         <td><div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${p>=80?'#10b981':p>=65?'#6366f1':p>=50?'#f59e0b':'#ef4444'};"></div></div></td>
@@ -2476,8 +2477,10 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         let examIdx = examNames.indexOf(examName);
         html+=`<div style="background:linear-gradient(135deg,#ede9fe,#dbeafe);padding:14px;border-radius:12px;text-align:center;margin-bottom:12px;">
           <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">Markah Keseluruhan (%)</div>
-          <input type="number" id="editBMOverall" value="${examIdx>=0?(x.marks[examIdx]||0):0}" min="0" max="100" step="0.01" style="width:100px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
-          <div style="font-size:0.65rem;color:#94a3b8;margin-top:4px;">Taip peratusan (0-100)</div>
+          <input type="number" id="editBMOverall" value="${examIdx>=0?(x.marks[examIdx]||0):0}" min="0" max="100" step="0.01" style="width:100px;padding:8px;border-radius:8px;border:2px solid #6366f1;text-align:center;font-weight:700;font-size:1.3rem;" placeholder="%">
+          <div style="font-size:0.65rem;color:#6366f1;margin-top:4px;font-weight:600;">✏️ Taip markah keseluruhan secara manual (0-100)</div>
+          <div style="font-size:0.6rem;color:#94a3b8;margin-top:2px;">Nilai ini yang akan disimpan sebagai markah pelajar</div>
+          <div id="bmSuggestPct" style="display:none;font-size:0.7rem;color:#059669;font-weight:700;margin-top:6px;background:#d1fae5;padding:4px 10px;border-radius:8px;"></div>
         </div>`;
         html+=`<div style="display:flex;gap:8px;margin-bottom:12px;">
           <button class="btn btn-accent" onclick="bukaAnalisisItemDariBM()" style="flex:1;"><i class="fas fa-microscope"></i> Analisis Item</button>
@@ -2511,8 +2514,13 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 allMarkah+=kMark;
                 allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
             });
-            let el=document.getElementById("overallPct");
-            if(el)el.innerText=allFull>0?Math.round(allMarkah/allFull*100)+"% ("+allMarkah+"/"+allFull+")":"0%";
+            // Tunjuk cadangan sahaja — JANGAN overwrite input manual
+            let suggestEl=document.getElementById("analisisSuggestPct");
+            if(suggestEl){
+                let suggested=allFull>0?Math.round(allMarkah/allFull*100):0;
+                suggestEl.innerText='Cadangan auto: '+suggested+'% ('+allMarkah+'/'+allFull+')';
+                suggestEl.style.display='inline-block';
+            }
         }
         function hitungPurataBM(){
             let x=getActiveStudents()[currentBMEditStudent];
@@ -2527,8 +2535,13 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 let pctEl=document.getElementById("bmPct_"+ki);
                 if(pctEl)pctEl.innerText=pct+'%';
             });
-            let overallInput=document.getElementById("editBMOverall");
-            if(overallInput) overallInput.value=allFull>0?Math.round(allMarkah/allFull*100):0;
+            // Tunjuk cadangan sahaja — JANGAN overwrite input manual
+            let suggestEl=document.getElementById("bmSuggestPct");
+            if(suggestEl){
+                let suggested=allFull>0?Math.round(allMarkah/allFull*100):0;
+                suggestEl.innerText='Cadangan: '+suggested+'%';
+                suggestEl.style.display='inline';
+            }
         }
 
                 function simpanMarkahBM(){
@@ -2539,7 +2552,6 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             if(examIdx < 0){ alert("Ralat: peperiksaan tidak ditemui."); return; }
             let cfg=getItemConfig(currentBMEditExam);
             let examData=getStudentItemData(x,currentBMEditExam);
-            let allMarkah=0,allFull=0;
 
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=examData[kertas.nama]||[];
@@ -2558,11 +2570,13 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 });
 
                 examData[kertas.nama]=items.slice(0,kertas.soalan.length);
-                allMarkah+=target;
-                allFull+=kFull;
             });
 
-            x.marks[examIdx] = allFull>0 ? Math.round(allMarkah/allFull*100) : 0;
+            // Gunakan nilai manual dari kotak "Markah Keseluruhan (%)" terus
+            let overallVal = toNumber(document.getElementById("editBMOverall")?.value, NaN);
+            if(!Number.isNaN(overallVal)){
+                x.marks[examIdx] = Math.max(0, Math.min(100, Math.round(overallVal)));
+            }
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
             tutupModal("modalEditMarkah");
@@ -2633,9 +2647,13 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 html+=`</div></div>`;
             });
             
+            let examIdxDisplay = examNames.indexOf(exam);
+            let curOverall = examIdxDisplay>=0 ? (x.marks[examIdxDisplay]||0) : 0;
             html+=`<div style="background:linear-gradient(135deg,#ede9fe,#dbeafe);padding:14px;border-radius:12px;text-align:center;margin-bottom:12px;">
-              <div style="font-size:0.7rem;color:#64748b;">Markah Keseluruhan</div>
-              <div style="font-size:1.8rem;font-weight:800;color:#6366f1;" id="overallPct">${allFull>0?Math.round(allMarkah/allFull*100):0}% (${allMarkah}/${allFull})</div>
+              <div style="font-size:0.7rem;color:#64748b;margin-bottom:6px;font-weight:600;">Markah Keseluruhan (%)</div>
+              <input type="number" id="overallPct" value="${curOverall}" min="0" max="100" step="0.01" style="width:110px;padding:8px;border-radius:8px;border:2px solid #6366f1;text-align:center;font-weight:800;font-size:1.5rem;background:#fff;" placeholder="%">
+              <div style="font-size:0.65rem;color:#6366f1;margin-top:4px;font-weight:600;">✏️ Taip markah keseluruhan secara manual (0-100)</div>
+              <div id="analisisSuggestPct" style="display:none;font-size:0.7rem;color:#059669;font-weight:700;margin-top:6px;background:#d1fae5;padding:4px 10px;border-radius:8px;"></div>
             </div>
             <div style="margin-bottom:12px;">
               <label style="font-size:0.75rem;color:#64748b;">Ulasan</label>
@@ -2660,25 +2678,24 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             if(examIdx<0){alert("Ralat: peperiksaan tidak ditemui.");return;}
             let cfg=getItemConfig(savedExam);
             let examData=getStudentItemData(x,savedExam);
-            let allMarkah=0,allFull=0;
 
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=examData[kertas.nama]||[];
-                let kMark=0;
                 kertas.soalan.forEach((soal,si)=>{
                     if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
                     let val=toNumber(document.getElementById("im_"+ki+"_"+si)?.value,NaN);
                     if(Number.isNaN(val)) val=toNumber(items[si].mark,0);
                     items[si].fullMark=soal.markahPenuh;
                     items[si].mark=Math.max(0,val);
-                    kMark+=items[si].mark;
                 });
                 examData[kertas.nama]=items.slice(0,kertas.soalan.length);
-                allMarkah+=kMark;
-                allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
             });
 
-            x.marks[examIdx]=allFull>0?Math.round(allMarkah/allFull*100):0;
+            // Gunakan nilai manual dari kotak "Markah Keseluruhan (%)" terus
+            let overallVal = toNumber(document.getElementById("overallPct")?.value, NaN);
+            if(!Number.isNaN(overallVal)){
+                x.marks[examIdx] = Math.max(0, Math.min(100, Math.round(overallVal)));
+            }
             x.ulasan=document.getElementById("editUlasan")?.value||'';
             saveAll();
             tutupModal("modalEditMarkah");
@@ -3230,7 +3247,7 @@ let purata = completedExamsList.length > 0 ? (sumMarks / completedExamsList.leng
                         </div>
                         <div style="text-align:right;">
                             <span class="exam-score" style="color:${barColor};">${score}%</span>
-                            ${isSPMLevel ? `<br><span style="font-size:0.65rem;font-weight:700;color:${gredInfo.warna};">${gredInfo.gred}</span>` : ''}
+                            ${`<br><span style="font-size:0.65rem;font-weight:700;color:${gredInfo.warna};">${gredInfo.gred}</span>`}
                         </div>
                     </div>`;
                 }).join('')}
@@ -3651,253 +3668,203 @@ function jalanCetakAnalisis(examPilihan){
     let cfg = getItemConfig(examPilihan);
     let kelas = document.getElementById("selectClass").value;
     let ting = getCurrentTingkatan();
-    let examNames = getCurrentExamNames();
-    let examIdx = examNames.indexOf(examPilihan);
     let isSPMLevel = (ting === "Tingkatan 4" || ting === "Tingkatan 5");
-    
-    // ID unik untuk jadual ini
+
+    if(!cfg || !cfg.kertas || cfg.kertas.length === 0){
+        alert("Tiada konfigurasi item untuk peperiksaan ini.\nSila konfigurasi item dahulu.");
+        return;
+    }
+
     let tableId = "analisisTable_" + Date.now();
-    
-    let html = '<div class="no-print" style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap; justify-content:space-between; align-items:center;">';
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    html += '<button class="btn btn-primary" onclick="tunjukPilihanCetak()" style="margin-right:8px;"><i class="fas fa-print"></i> Cetak</button>';
-    html += '<button class="btn btn-ghost" onclick="bukaCetakAnalisisItem()">← Tukar Peperiksaan</button>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    html += '<button class="btn btn-danger" onclick="highlightPelajarLemah(\'' + tableId + '\')" style="background:#dc2626;"><i class="fas fa-exclamation-triangle"></i> 🔴 Highlight Pelajar Lemah (<50%)</button>';
-    html += '<button class="btn btn-warning" onclick="resetHighlight(\'' + tableId + '\')" style="background:#f59e0b; color:white;"><i class="fas fa-undo-alt"></i> Reset Highlight</button>';
-    html += '</div>';
-    html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">✕ Tutup</button>';
-    html += '</div>';
-    
-    // Panel untuk pilih pelajar individu
-    html += '<div class="no-print" style="background:#f1f5f9; border-radius:12px; padding:12px; margin-bottom:16px;">';
-    html += '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">';
-    html += '<span style="font-weight:600; font-size:0.75rem;"><i class="fas fa-check-square"></i> Highlight Pelajar:</span>';
-    html += '<div id="studentChecklist_' + tableId + '" style="display:flex; flex-wrap:wrap; gap:8px;">';
-    for(let i = 0; i < pelajar.length; i++) {
-        let p = pelajar[i];
-        let purata = 0;
-        for(let j = 0; j < examNames.length; j++) purata += p.marks[j] || 0;
-        purata = examNames.length > 0 ? purata / examNames.length : 0;
-        let isLemah = purata < 50;
-        html += '<label style="display:flex; align-items:center; gap:4px; background:white; padding:4px 8px; border-radius:20px; font-size:0.7rem; cursor:pointer; border:1px solid #e2e8f0;">';
-        html += '<input type="checkbox" class="student-checkbox" data-student="' + i + '" data-table="' + tableId + '" onchange="toggleHighlightPelajar(this, \'' + tableId + '\')" ' + (isLemah ? 'checked' : '') + '>';
-        html += '<span style="' + (isLemah ? 'color:#dc2626; font-weight:600;' : '') + '">' + p.name + '</span>';
-        html += '</label>';
-    }
-    html += '</div>';
-    html += '<button class="btn btn-sm btn-ghost" onclick="pilihSemuaPelajar(\'' + tableId + '\', true)" style="font-size:0.65rem; padding:4px 8px;">Pilih Semua</button>';
-    html += '<button class="btn btn-sm btn-ghost" onclick="pilihSemuaPelajar(\'' + tableId + '\', false)" style="font-size:0.65rem; padding:4px 8px;">Nyah Pilih</button>';
-    html += '</div>';
-    html += '</div>';
-    
-    html += '<div class="print-header" style="border-bottom:2px solid #2563eb; margin-bottom:16px; padding-bottom:8px;">';
-    html += '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + '</h2>';
-    html += '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + '</p>';
-    html += '</div>';
-    
-    // JADUAL UTAMA
-    html += '<table id="' + tableId + '" style="width:100%; border-collapse:collapse; font-size:0.7rem;">';
-    html += '<thead>';
-    
-    // BARIS 1: Header Kertas
-    html += '<tr>';
-    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Bil</th>';
-    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Nama Pelajar</th>';
-    
-    for(let ki = 0; ki < cfg.kertas.length; ki++) {
-        let k = cfg.kertas[ki];
-        html += '<th colspan="' + (k.soalan.length + 1) + '" style="padding:8px 4px; background:#2563eb; border:1px solid #1d4ed8; text-align:center; font-weight:600; color:white;">' + k.nama + '</th>';
-    }
-    
-    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Purata (%)</th>';
-    html += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Gred</th>';
-    html += '</tr>';
-    
-    // BARIS 2: Header Soalan + Jumlah
-    html += '<tr>';
-    for(let ki = 0; ki < cfg.kertas.length; ki++) {
-        let k = cfg.kertas[ki];
-        for(let si = 0; si < k.soalan.length; si++) {
-            let s = k.soalan[si];
-            html += '<th style="padding:6px 4px; background:#dbeafe; border:1px solid #bfdbfe; font-size:0.65rem; text-align:center; font-weight:600; color:#1e40af;">' + s.no + '<br><span style="font-size:0.55rem; font-weight:400;">/' + s.markahPenuh + '</span></th>';
-        }
-        let totalPenuhKertas = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
-        html += '<th style="padding:6px 4px; background:#bfdbfe; border:1px solid #93c5fd; font-size:0.68rem; text-align:center; font-weight:700; color:#1e3a8a;">Jumlah<br><span style="font-size:0.6rem; font-weight:400;">/' + totalPenuhKertas + '</span></th>';
-    }
-    html += '</tr>';
-    html += '</thead><tbody>';
-    
-    // Kumpul data pelajar
+
+    // ===== KUMPUL DATA PELAJAR =====
     let pelajarData = [];
-    let purataPelajar = [];
-    
-    for(let i = 0; i < pelajar.length; i++) {
+    for(let i = 0; i < pelajar.length; i++){
         let p = pelajar[i];
-        let semuaMarkah = [];
-        let totalMarkah = 0;
-        let totalPenuh = 0;
-        let kertasMarkah = [];
-        
-        for(let ki = 0; ki < cfg.kertas.length; ki++) {
+        let semuaMarkah = [], kertasMarkah = [];
+        let totalMarkah = 0, totalPenuh = 0;
+        for(let ki = 0; ki < cfg.kertas.length; ki++){
             let k = cfg.kertas[ki];
             let itemData = getStudentItemData(p, examPilihan);
             let kertasData = itemData[k.nama] || [];
-            let kertasTotal = 0;
-            let kertasPenuh = 0;
-            
-            for(let si = 0; si < k.soalan.length; si++) {
+            let kt = 0, kp = 0;
+            for(let si = 0; si < k.soalan.length; si++){
                 let s = k.soalan[si];
-                let item = kertasData[si] || {mark: 0};
-                let markah = item.mark || 0;
+                let markah = (kertasData[si] || {mark:0}).mark || 0;
                 semuaMarkah.push(markah);
-                kertasTotal += markah;
-                kertasPenuh += s.markahPenuh;
-                totalMarkah += markah;
+                kt += markah; kp += s.markahPenuh; totalMarkah += markah;
             }
-            totalPenuh += kertasPenuh;
-            kertasMarkah.push(kertasTotal);
+            totalPenuh += kp;
+            kertasMarkah.push(kt);
         }
-        
-        let overallPercent = totalPenuh > 0 ? Math.round((totalMarkah/totalPenuh)*100) : 0;
-        let gredInfo = getGredByTingkatan(overallPercent, ting);
-        
+        let pct = totalPenuh > 0 ? Math.round((totalMarkah/totalPenuh)*100) : 0;
         pelajarData.push({
             name: p.name,
             semuaMarkah: semuaMarkah,
             kertasMarkah: kertasMarkah,
-            overallPercent: overallPercent,
-            gredInfo: gredInfo,
-            isLemah: overallPercent < 50
+            overallPercent: pct,
+            gredInfo: getGredByTingkatan(pct, ting),
+            isLemah: pct < 50
         });
-        purataPelajar.push(overallPercent);
     }
-    
-    // ===== BARIS DATA PELAJAR - 15 PER MUKA SURAT =====
-    const ROWS_PER_PAGE = 15;
-    
-    // Bina HTML header untuk diulang pada setiap halaman
-    function buildTableHeaderHtml() {
-        let hHtml = '';
-        hHtml += '<tr>';
-        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Bil</th>';
-        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Nama Pelajar</th>';
-        for(let ki2 = 0; ki2 < cfg.kertas.length; ki2++) {
-            let k2 = cfg.kertas[ki2];
-            hHtml += '<th colspan="' + (k2.soalan.length + 1) + '" style="padding:8px 4px; background:#2563eb; border:1px solid #1d4ed8; text-align:center; font-weight:600; color:white;">' + k2.nama + '</th>';
+
+    // ===== BINA HTML HEADER JADUAL =====
+    function mkHeader(){
+        let h = '<tr>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Bil</th>';
+        h += '<th rowspan="2" style="padding:8px 8px;background:#1e40af;border:1px solid #1e3a8a;text-align:left;color:white;min-width:160px;font-size:0.78rem;">Nama Pelajar</th>';
+        for(let ki=0;ki<cfg.kertas.length;ki++){
+            let k=cfg.kertas[ki];
+            h += '<th colspan="'+(k.soalan.length+1)+'" style="padding:8px 5px;background:#2563eb;border:1px solid #1d4ed8;text-align:center;color:white;font-weight:600;font-size:0.82rem;">'+k.nama+'</th>';
         }
-        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Purata (%)</th>';
-        hHtml += '<th rowspan="2" style="padding:8px 6px; background:#1e40af; border:1px solid #1e3a8a; text-align:center; font-weight:600; color:white;">Gred</th>';
-        hHtml += '</tr><tr>';
-        for(let ki2 = 0; ki2 < cfg.kertas.length; ki2++) {
-            let k2 = cfg.kertas[ki2];
-            for(let si2 = 0; si2 < k2.soalan.length; si2++) {
-                let s2 = k2.soalan[si2];
-                hHtml += '<th style="padding:6px 4px; background:#dbeafe; border:1px solid #bfdbfe; font-size:0.65rem; text-align:center; font-weight:600; color:#1e40af;">' + s2.no + '<br><span style="font-size:0.55rem; font-weight:400;">/' + s2.markahPenuh + '</span></th>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Purata (%)</th>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;font-size:0.78rem;">Gred</th>';
+        h += '</tr><tr>';
+        for(let ki=0;ki<cfg.kertas.length;ki++){
+            let k=cfg.kertas[ki];
+            for(let si=0;si<k.soalan.length;si++){
+                let s=k.soalan[si];
+                h += '<th style="padding:6px 4px;background:#dbeafe;border:1px solid #bfdbfe;font-size:0.75rem;text-align:center;color:#1e40af;">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
             }
-            let totalPenuhK = k2.soalan.reduce((sum, s2) => sum + s2.markahPenuh, 0);
-            hHtml += '<th style="padding:6px 4px; background:#bfdbfe; border:1px solid #93c5fd; font-size:0.68rem; text-align:center; font-weight:700; color:#1e3a8a;">Jumlah<br><span style="font-size:0.6rem; font-weight:400;">/' + totalPenuhK + '</span></th>';
+            let tp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
+            h += '<th style="padding:6px 4px;background:#bfdbfe;border:1px solid #93c5fd;font-size:0.78rem;text-align:center;color:#1e3a8a;font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
         }
-        hHtml += '</tr>';
-        return hHtml;
+        h += '</tr>';
+        return h;
     }
-    
-    let totalPages = Math.ceil(pelajarData.length / ROWS_PER_PAGE);
-    
-    for(let page = 0; page < totalPages; page++) {
-        let startIdx = page * ROWS_PER_PAGE;
-        let endIdx = Math.min(startIdx + ROWS_PER_PAGE, pelajarData.length);
-        let mukaSurat = page + 1;
-        
-        // Page break untuk halaman ke-2 dan seterusnya
-        if(page > 0) {
-            html += '</tbody></table>';
-            // Header ulang untuk muka surat baru
-            html += '<div style="page-break-before:always; margin-top:0;">';
-            html += '<div class="print-header" style="border-bottom:2px solid #2563eb; margin-bottom:8px; padding-bottom:6px;">';
-            html += '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + ' <span style="font-size:0.75rem; color:#2563eb;">(Muka Surat ' + mukaSurat + ' / ' + totalPages + ')</span></h2>';
-            html += '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + ' · Pelajar ' + (startIdx+1) + ' - ' + endIdx + ' daripada ' + pelajarData.length + '</p>';
-            html += '</div>';
-            html += '<table id="' + tableId + '_p' + page + '" style="width:100%; border-collapse:collapse; font-size:0.7rem;">';
-            html += '<thead>' + buildTableHeaderHtml() + '</thead><tbody>';
-        } else {
-            // Tambah info muka surat pada header pertama
-            if(totalPages > 1) {
-                html = html.replace(
-                    '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + '</h2>',
-                    '<h2 style="color:#1e3a8a; font-size:1rem; margin:0; font-weight:700;">LAPORAN ANALISIS ITEM - ' + subjek + ' <span style="font-size:0.75rem; color:#2563eb;">(Muka Surat 1 / ' + totalPages + ')</span></h2>'
-                );
-                // Tambah info julat pelajar
-                html = html.replace(
-                    '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + '</p>',
-                    '<p style="color:#64748b; font-size:0.7rem; margin:4px 0 0;">' + kelas + ' · ' + ting + ' · ' + examPilihan + ' · ' + new Date().toLocaleDateString('ms-MY') + ' · Pelajar 1 - ' + endIdx + ' daripada ' + pelajarData.length + '</p>'
-                );
-            }
-        }
-        
-        // Baris pelajar untuk halaman ini
-        for(let i = startIdx; i < endIdx; i++) {
-            let p = pelajarData[i];
-            let rowBg = ((i - startIdx) % 2 === 0) ? '#ffffff' : '#f8fafc';
-            let highlightStyle = p.isLemah ? 'background:#fee2e2 !important; border-left:4px solid #dc2626;' : '';
-            
-            html += '<tr id="row_' + tableId + '_' + i + '" data-student="' + i + '" data-lemah="' + p.isLemah + '" style="background:' + rowBg + ';' + highlightStyle + '">';
-            html += '<td style="padding:6px 4px; border:1px solid #e2e8f0; text-align:center; color:#64748b;">' + (i+1) + '</td>';
-            html += '<td style="padding:6px 6px; border:1px solid #e2e8f0; font-weight:600; color:#1e293b;">' + p.name + '</td>';
-            
-            let markahIdx = 0;
-            for(let ki = 0; ki < cfg.kertas.length; ki++) {
-                let k = cfg.kertas[ki];
-                for(let si = 0; si < k.soalan.length; si++) {
-                    let markah = p.semuaMarkah[markahIdx] || 0;
-                    let s = k.soalan[si];
-                    let peratus = s.markahPenuh > 0 ? (markah/s.markahPenuh)*100 : 0;
-                    let colorClass = peratus >= 80 ? '#059669' : (peratus >= 50 ? '#d97706' : '#dc2626');
-                    html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:500; color:' + colorClass + ';">' + markah + '</td>';
-                    markahIdx++;
+
+    // ===== BINA BARIS DATA =====
+    function mkRows(){
+        let rows = '';
+        for(let i=0;i<pelajarData.length;i++){
+            let p=pelajarData[i];
+            let bg=(i%2===0)?'#ffffff':'#f8fafc';
+            let hl=p.isLemah?'border-left:3px solid #dc2626;':'';
+            rows += '<tr style="background:'+bg+';'+hl+'" data-idx="'+i+'" data-lemah="'+p.isLemah+'">';
+            rows += '<td style="padding:6px 5px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:0.75rem;">'+(i+1)+'</td>';
+            rows += '<td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:600;color:#1e293b;font-size:0.78rem;">'+p.name+'</td>';
+            let mIdx=0;
+            for(let ki=0;ki<cfg.kertas.length;ki++){
+                let k=cfg.kertas[ki];
+                for(let si=0;si<k.soalan.length;si++){
+                    let m=p.semuaMarkah[mIdx]||0;
+                    let s=k.soalan[si];
+                    let pt=s.markahPenuh>0?(m/s.markahPenuh)*100:0;
+                    let clr=pt>=80?'#059669':(pt>=50?'#d97706':'#dc2626');
+                    rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:'+clr+';font-weight:500;font-size:0.78rem;">'+m+'</td>';
+                    mIdx++;
                 }
-                let kertasMarkah = p.kertasMarkah[ki];
-                let kertasPenuh = k.soalan.reduce((sum, s) => sum + s.markahPenuh, 0);
-                let percentKertas = kertasPenuh > 0 ? Math.round((kertasMarkah / kertasPenuh) * 100) : 0;
-                let warnaJumlah = percentKertas >= 80 ? '#059669' : (percentKertas >= 50 ? '#d97706' : '#dc2626');
-                html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; background:#eff6ff; font-weight:600; color:' + warnaJumlah + ';">' + kertasMarkah + '<span style="font-size:0.6rem; color:#94a3b8;">/' + kertasPenuh + '</span></td>';
+                let km=p.kertasMarkah[ki];
+                let kp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
+                let pkp=kp>0?Math.round((km/kp)*100):0;
+                let wk=pkp>=80?'#059669':(pkp>=50?'#d97706':'#dc2626');
+                rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:#eff6ff;font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
             }
-            let purataWarna = p.overallPercent >= 80 ? '#059669' : (p.overallPercent >= 50 ? '#d97706' : '#dc2626');
-            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0; font-weight:700; color:' + purataWarna + ';">' + p.overallPercent + '%</td>';
-            let badgeBg = p.gredInfo.warna + '15';
-            html += '<td style="padding:6px 4px; text-align:center; border:1px solid #e2e8f0;"><span style="display:inline-block; padding:2px 8px; border-radius:12px; background:' + badgeBg + '; color:' + p.gredInfo.warna + '; font-weight:600; font-size:0.65rem;">' + (isSPMLevel ? p.gredInfo.gred : '-') + '</span></td>';
-            html += '</tr>';
+            let pw=p.overallPercent>=80?'#059669':(p.overallPercent>=50?'#d97706':'#dc2626');
+            rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;font-weight:700;color:'+pw+';font-size:0.78rem;">'+p.overallPercent+'%</td>';
+            let gbg=p.gredInfo.warna+'22';
+            rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;"><span style="display:inline-block;padding:3px 10px;border-radius:10px;background:'+gbg+';color:'+p.gredInfo.warna+';font-weight:700;font-size:0.78rem;">'+p.gredInfo.gred+'</span></td>';
+            rows += '</tr>';
         }
-        
-        if(page > 0) {
-            html += '</div>';
-        }
+        return rows;
     }
-    html += '</tbody></table>';
-    
-    // Tambah CSS untuk highlight
+
+    // ===== BINA HTML PAPARAN =====
+    let html = '';
+
+    // Butang kawalan atas (tidak cetak)
+    html += '<div class="no-print" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center;">';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    html += '<button class="btn btn-primary" onclick="tunjukPilihanCetak()"><i class="fas fa-print"></i> Cetak</button>';
+    html += '<button class="btn btn-ghost" onclick="bukaCetakAnalisisItem()">← Tukar Peperiksaan</button>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;">';
+    html += '<button class="btn" onclick="hlLemah(\''+tableId+'\')" style="background:#dc2626;color:white;font-size:0.78rem;"><i class="fas fa-exclamation-triangle"></i> Highlight &lt;50%</button>';
+    html += '<button class="btn" onclick="hlReset(\''+tableId+'\')" style="background:#f59e0b;color:white;font-size:0.78rem;"><i class="fas fa-undo-alt"></i> Reset</button>';
+    html += '</div>';
+    html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">✕ Tutup</button>';
+    html += '</div>';
+
+    // Panel highlight nama (tidak cetak) - SEMUA NAMA DALAM SATU PANEL
+    html += '<div class="no-print" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-bottom:10px;">';
+    html += '<span style="font-weight:700;font-size:0.72rem;color:#475569;"><i class="fas fa-highlighter"></i> Highlight Pelajar:</span>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">';
+    for(let i=0;i<pelajarData.length;i++){
+        let p=pelajarData[i];
+        let borderClr=p.isLemah?'#fca5a5':'#e2e8f0';
+        let txtClr=p.isLemah?'#dc2626':'#334155';
+        let fw=p.isLemah?'600':'400';
+        html += '<label style="display:inline-flex;align-items:center;gap:3px;background:white;padding:3px 7px;border-radius:14px;font-size:0.67rem;cursor:pointer;border:1px solid '+borderClr+';color:'+txtClr+';font-weight:'+fw+';">';
+        html += '<input type="checkbox" class="hl-cb-'+tableId+'" data-idx="'+i+'" onchange="hlToggle(this,\''+tableId+'\')" '+(p.isLemah?'checked':'')+' style="margin:0;width:11px;height:11px;">';
+        html += p.name+'</label>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:6px;display:flex;gap:6px;">';
+    html += '<button onclick="hlAll(\''+tableId+'\',true)" style="font-size:0.62rem;padding:2px 8px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;">✅ Semua</button>';
+    html += '<button onclick="hlAll(\''+tableId+'\',false)" style="font-size:0.62rem;padding:2px 8px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;">❌ Nyah Pilih</button>';
+    html += '</div>';
+    html += '</div>';
+
+    // Header laporan
+    html += '<div style="border-bottom:2px solid #2563eb;margin-bottom:10px;padding-bottom:6px;">';
+    html += '<h2 style="color:#1e3a8a;font-size:1.15rem;margin:0;font-weight:700;">LAPORAN ANALISIS ITEM — '+subjek+'</h2>';
+    html += '<p style="color:#64748b;font-size:0.8rem;margin:3px 0 0;">'+kelas+' · '+ting+' · '+examPilihan+' · '+new Date().toLocaleDateString('ms-MY')+' · '+pelajarData.length+' pelajar</p>';
+    html += '</div>';
+
+    // JADUAL TUNGGAL — semua pelajar
+    html += '<div style="overflow-x:auto;">';
+    html += '<table id="'+tableId+'" style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+    html += '<thead>'+mkHeader()+'</thead>';
+    html += '<tbody>'+mkRows()+'</tbody>';
+    html += '</table></div>';
+
+    // CSS highlight
     html += '<style>';
-    html += '.row-highlight { background: #fef3c7 !important; border-left: 4px solid #f59e0b !important; }';
-    html += '.row-lemah { background: #fee2e2 !important; border-left: 4px solid #dc2626 !important; }';
-    html += '.row-lemah td { background: #fee2e2 !important; }';
-    html += '.row-highlight td { background: #fef3c7 !important; }';
+    html += '#'+tableId+' tr.hl-lemah { background:#fee2e2 !important; border-left:3px solid #dc2626 !important; }';
+    html += '#'+tableId+' tr.hl-lemah td { background:#fee2e2 !important; }';
+    html += '#'+tableId+' tr.hl-pilih { background:#fef9c3 !important; border-left:3px solid #eab308 !important; }';
+    html += '#'+tableId+' tr.hl-pilih td { background:#fef9c3 !important; }';
     html += '</style>';
-    
+
     document.getElementById("printAnalysisReport").innerHTML = html;
-    
-    // Auto highlight pelajar lemah (purata <50%)
-    setTimeout(function() {
-        highlightPelajarLemah(tableId);
-        // Set checkbox untuk pelajar lemah sebagai checked
-        let checkboxes = document.querySelectorAll('.student-checkbox[data-table="' + tableId + '"]');
-        checkboxes.forEach(function(cb) {
-            let studentIdx = parseInt(cb.getAttribute('data-student'));
-            if(pelajarData[studentIdx] && pelajarData[studentIdx].isLemah) {
-                cb.checked = true;
-            }
-        });
-    }, 100);
+    document.getElementById("modalCetakAnalisis").style.display = "flex";
+
+    // Auto highlight pelajar lemah
+    setTimeout(function(){ hlLemah(tableId); }, 80);
+}
+
+// ===== FUNGSI HIGHLIGHT =====
+function hlLemah(tid){
+    let tbl = document.getElementById(tid);
+    if(!tbl) return;
+    tbl.querySelectorAll('tbody tr[data-lemah="true"]').forEach(function(r){ r.classList.add('hl-lemah'); });
+}
+function hlReset(tid){
+    let tbl = document.getElementById(tid);
+    if(!tbl) return;
+    tbl.querySelectorAll('tbody tr').forEach(function(r){ r.classList.remove('hl-lemah','hl-pilih'); });
+    document.querySelectorAll('.hl-cb-'+tid).forEach(function(cb){ cb.checked=false; });
+}
+function hlToggle(cb, tid){
+    let idx = parseInt(cb.getAttribute('data-idx'));
+    let tbl = document.getElementById(tid);
+    if(!tbl) return;
+    let rows = tbl.querySelectorAll('tbody tr');
+    if(!rows[idx]) return;
+    if(cb.checked){ rows[idx].classList.add('hl-pilih'); rows[idx].classList.remove('hl-lemah'); }
+    else { rows[idx].classList.remove('hl-pilih','hl-lemah'); }
+}
+function hlAll(tid, pilih){
+    let tbl = document.getElementById(tid);
+    if(!tbl) return;
+    let rows = tbl.querySelectorAll('tbody tr');
+    document.querySelectorAll('.hl-cb-'+tid).forEach(function(cb){
+        cb.checked = pilih;
+        let idx = parseInt(cb.getAttribute('data-idx'));
+        if(!rows[idx]) return;
+        if(pilih){ rows[idx].classList.add('hl-pilih'); rows[idx].classList.remove('hl-lemah'); }
+        else { rows[idx].classList.remove('hl-pilih','hl-lemah'); }
+    });
 }
 
 // ==================== FUNGSI UNTUK HIGHLIGHT ====================
@@ -6058,15 +6025,66 @@ let pelajarWithAvg = st.map(s => {
         }
 
         function pc_cetakSekarang() {
-            let existing = document.getElementById('printOrientationStyle');
-            if (existing) existing.remove();
-            let styleEl = document.createElement('style');
-            styleEl.id = 'printOrientationStyle';
-            let margin = _printOrientasi === 'landscape' ? '8mm' : '10mm';
-            styleEl.textContent = '@media print { @page { size: A4 ' + _printOrientasi + '; margin: ' + margin + '; } }';
-            document.head.appendChild(styleEl);
             document.getElementById('modalPilihanCetak').style.display = 'none';
-            setTimeout(function() { window.print(); }, 150);
+            let orientasi = _printOrientasi || 'landscape';
+            let margin = orientasi === 'landscape' ? '8mm' : '10mm';
+
+            let reportDiv = document.getElementById('printAnalysisReport');
+            if (!reportDiv) return;
+
+            let cloned = reportDiv.cloneNode(true);
+            cloned.querySelectorAll('.no-print').forEach(function(el){ el.remove(); });
+            let reportHTML = cloned.innerHTML;
+
+            let printHTML = `<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<title>Laporan Analisis Item</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #fff; font-size: 0.82rem; color: #1e293b; padding: 10px; }
+@media print {
+    @page { size: A4 ${orientasi}; margin: ${margin}; }
+    .analisis-no-print { display: none !important; }
+    body { padding: 0; font-size: 0.82rem; }
+    table { page-break-inside: auto; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+}
+.analisis-no-print {
+    background: #1e293b; color: #fff; padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100; margin: -10px -10px 12px -10px;
+}
+.analisis-no-print button {
+    border: none; padding: 8px 18px; border-radius: 8px;
+    cursor: pointer; font-weight: 700; font-size: 0.85rem;
+}
+table { width: 100%; border-collapse: collapse; }
+td, th { font-size: 0.78rem; }
+tr.hl-lemah { background: #fee2e2 !important; border-left: 3px solid #dc2626 !important; }
+tr.hl-lemah td { background: #fee2e2 !important; }
+tr.hl-pilih { background: #fef9c3 !important; border-left: 3px solid #eab308 !important; }
+tr.hl-pilih td { background: #fef9c3 !important; }
+</style>
+</head>
+<body>
+<div class="analisis-no-print">
+    <span style="font-weight:700;font-size:0.9rem;">📋 Laporan Analisis Item — Orientasi: ${orientasi === 'landscape' ? 'Landskap' : 'Potret'}</span>
+    <div style="display:flex;gap:8px;">
+        <button style="background:#10b981;color:#fff;" onclick="window.print()">🖨️ Cetak</button>
+        <button style="background:#ef4444;color:#fff;" onclick="window.close()">✕ Tutup</button>
+    </div>
+</div>
+${reportHTML}
+</body>
+</html>`;
+
+            let printWin = window.open('', '_blank', 'width=1200,height=800');
+            if (!printWin) { alert('Sila benarkan popup untuk mencetak.'); return; }
+            printWin.document.write(printHTML);
+            printWin.document.close();
         }
 
         function pc_tutup() {
