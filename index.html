@@ -2533,12 +2533,10 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 allMarkah+=kMark;
                 allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
             });
-            // Tunjuk cadangan sahaja — JANGAN overwrite input manual
+            // Fungsi cadangan auto telah dimatikan atas permintaan pengguna
             let suggestEl=document.getElementById("analisisSuggestPct");
             if(suggestEl){
-                let suggested=allFull>0?Math.round(allMarkah/allFull*100):0;
-                suggestEl.innerText='Cadangan auto: '+suggested+'% ('+allMarkah+'/'+allFull+')';
-                suggestEl.style.display='inline-block';
+                suggestEl.style.display='none';
             }
         }
         function hitungPurataBM(){
@@ -2554,12 +2552,10 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 let pctEl=document.getElementById("bmPct_"+ki);
                 if(pctEl)pctEl.innerText=pct+'%';
             });
-            // Tunjuk cadangan sahaja — JANGAN overwrite input manual
+            // Fungsi cadangan auto telah dimatikan atas permintaan pengguna
             let suggestEl=document.getElementById("bmSuggestPct");
             if(suggestEl){
-                let suggested=allFull>0?Math.round(allMarkah/allFull*100):0;
-                suggestEl.innerText='Cadangan: '+suggested+'%';
-                suggestEl.style.display='inline';
+                suggestEl.style.display='none';
             }
         }
 
@@ -6202,6 +6198,5 @@ ${reportHTML}
     </div>
 </body>
 </html>
-
 
 
