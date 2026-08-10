@@ -19,18 +19,22 @@
         :root { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --bg: #f1f5f9; --text: #1e293b; --border: #e2e8f0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; overflow-x: hidden; color: #1e293b; }
-        .sidebar { width: 280px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: #fff; position: fixed; height: 100vh; z-index: 100; overflow-y: auto; }
-        .sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar { width: 280px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: #fff; position: fixed; height: 100vh; z-index: 200; overflow-y: auto; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
         .sidebar-header .logo { width: 44px; height: 44px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 12px; }
+        .sidebar-close-btn { display: none; background: rgba(255,255,255,0.08); border: none; color: #fff; width: 34px; height: 34px; border-radius: 10px; font-size: 1rem; cursor: pointer; align-items: center; justify-content: center; }
         .nav-menu { list-style: none; padding: 16px 12px; }
         .nav-menu li { margin-bottom: 4px; }
         .nav-menu a { display: flex; align-items: center; gap: 12px; padding: 11px 16px; color: #94a3b8; border-radius: 12px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
         .nav-menu a:hover, .nav-menu .active a { background: rgba(99,102,241,0.2); color: #fff; }
         .intervensi-panel { margin: 16px 12px; padding: 16px; background: rgba(239,68,68,0.08); border-radius: 16px; border: 1px solid rgba(239,68,68,0.15); }
-        .main-content { margin-left: 280px; padding: 24px 28px; min-height: 100vh; }
+        .main-content { margin-left: 280px; padding: 24px 28px; min-height: 100vh; transition: margin-left 0.3s ease; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 150; }
+        .sidebar-overlay.show { display: block; }
+        .hamburger-btn { display: none; background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #1e293b; width: 42px; height: 42px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 12px; }
         .topbar { background: #fff; border-radius: 20px; padding: 18px 28px; margin-bottom: 20px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
         .selector-bar { background: #fff; border-radius: 20px; padding: 16px 24px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
-        .selector-bar select { padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-size: 0.875rem; background: #f8fafc; min-width: 170px; }
+        .selector-bar select { padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-size: 0.875rem; background: #f8fafc; min-width: 170px; flex: 1 1 170px; }
         .btn { padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px; }
         .btn-primary { background: #6366f1; color: #fff; }
         .btn-primary:hover { background: #4f46e5; }
@@ -172,7 +176,45 @@
         .radar-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
         @media (max-width: 1024px) { .analysis-grid { grid-template-columns: 1fr; } .hero-stats-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { .hero-stats-grid { grid-template-columns: 1fr 1fr; } .hero-content { flex-direction: column; text-align: center; } }
-                        @media (max-width:900px) { .sidebar { width: 72px; } .sidebar span:not(.nav-icon), .sidebar-header p, .intervensi-panel { display: none; } .nav-menu a { justify-content: center; padding: 12px; } .main-content { margin-left: 72px; } }
+                        body.view-mobile .hamburger-btn { display: flex !important; }
+                        body.view-mobile .sidebar-close-btn { display: flex !important; }
+                        body.view-mobile .sidebar { width: 280px !important; transform: translateX(-100%) !important; box-shadow: 8px 0 30px rgba(0,0,0,0.25) !important; }
+                        body.view-mobile .sidebar.mobile-open { transform: translateX(0) !important; }
+                        body.view-mobile .main-content { margin-left: 0 !important; padding: 16px !important; }
+                        body.view-mobile .topbar { padding: 14px 16px !important; border-radius: 16px !important; flex-wrap: wrap !important; }
+                        body.view-mobile .selector-bar { padding: 14px 16px !important; border-radius: 16px !important; }
+                        body.view-mobile .selector-bar select, body.view-mobile .selector-bar input { min-width: 0 !important; flex: 1 1 45% !important; }
+                        body.view-mobile .selector-bar > .btn { margin-left: 0 !important; flex: 1 1 100% !important; justify-content: center !important; }
+                        body.view-mobile .card { padding: 16px !important; border-radius: 16px !important; }
+                        body.view-mobile .modal-content { padding: 18px !important; border-radius: 18px !important; width: 95% !important; }
+                        body.view-mobile th, body.view-mobile td { padding: 9px 10px !important; font-size: 0.78rem !important; }
+                        body.view-mobile .stat-value, body.view-mobile .dash-stat-num, body.view-mobile .dash-hero-stat-value { font-size: 1.4rem !important; }
+                        body.view-mobile .hero-info h2 { font-size: 1.35rem !important; }
+                        body.view-mobile table { display: block !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+                        body.view-mobile table th, body.view-mobile table td { white-space: nowrap !important; }
+                        body.view-mobile div[style*="grid-template-columns:repeat(4"],
+                        body.view-mobile div[style*="grid-template-columns: repeat(4"],
+                        body.view-mobile div[style*="grid-template-columns:1fr 1fr 1fr"],
+                        body.view-mobile div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+                            grid-template-columns: 1fr 1fr !important;
+                        }
+                        body.view-mobile div[style*="grid-template-columns:1fr 1fr"]:not([style*="1fr 1fr 1fr"]),
+                        body.view-mobile div[style*="grid-template-columns: 1fr 1fr"]:not([style*="1fr 1fr 1fr"]) {
+                            grid-template-columns: 1fr !important;
+                        }
+                        body.view-mobile.view-xs .main-content { padding: 10px !important; }
+                        body.view-mobile.view-xs .card { padding: 12px !important; }
+                        body.view-mobile.view-xs .btn { padding: 9px 14px !important; font-size: 0.8rem !important; }
+                        body.view-mobile.view-xs .selector-bar select, body.view-mobile.view-xs .selector-bar input { flex: 1 1 100% !important; }
+                        body.view-mobile.view-xs div[style*="grid-template-columns:repeat(4"],
+                        body.view-mobile.view-xs div[style*="grid-template-columns: repeat(4"] {
+                            grid-template-columns: 1fr 1fr !important;
+                        }
+                        body.view-desktop { overflow-x: auto !important; }
+                        body.view-desktop .main-content { min-width: 900px; }
+                        .view-mode-switch { position: fixed; bottom: 18px; right: 18px; z-index: 500; background: #1e293b; border-radius: 30px; padding: 5px; display: flex; gap: 3px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+                        .view-mode-switch button { border: none; background: transparent; color: #94a3b8; padding: 8px 14px; border-radius: 24px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+                        .view-mode-switch button.active { background: #6366f1; color: #fff; }
         #pbdChart { max-height: 400px !important; max-width: 600px !important; }
         #pbdAnalisisContent { font-size: 0.7rem !important; line-height: 1.2 !important; }
         #pbdAnalisisContent div { padding: 2px 0 !important; font-size: 0.7rem !important; }
@@ -626,8 +668,14 @@
             <div id="loginError" class="login-error"></div>
         </div>
     </div>
-    <div class="sidebar">
-        <div class="sidebar-header"><div class="logo"><i class="fas fa-graduation-cap"></i></div><h2>EduTrack</h2><p></p></div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="tutupSidebarMobile()"></div>
+    <div class="view-mode-switch" id="viewModeSwitch">
+        <button type="button" data-mode="auto" onclick="setViewMode('auto')"><i class="fas fa-magic"></i> Auto</button>
+        <button type="button" data-mode="desktop" onclick="setViewMode('desktop')"><i class="fas fa-desktop"></i> Desktop</button>
+        <button type="button" data-mode="mobile" onclick="setViewMode('mobile')"><i class="fas fa-mobile-alt"></i> Phone</button>
+    </div>
+    <div class="sidebar" id="sidebarEl">
+        <div class="sidebar-header"><div><div class="logo"><i class="fas fa-graduation-cap"></i></div><h2>EduTrack</h2><p></p></div><button class="sidebar-close-btn" onclick="tutupSidebarMobile()"><i class="fas fa-times"></i></button></div>
         <ul class="nav-menu">
             <li class="nav-item active" data-page="dashboard"><a><i class="fas fa-th-large"></i> <span>Papan Pemuka</span></a></li>
             <li class="nav-item" data-page="prestasi"><a><i class="fas fa-chart-bar"></i> <span>Prestasi Pelajar</span></a></li>
@@ -642,7 +690,7 @@
     </div>
 
     <div class="main-content">
-        <div class="topbar"><div>Selamat Datang, <strong style="color:#6366f1;">Mohamad Nasrulhaq</strong> 👋</div><div style="margin-left:auto;"><button class="btn btn-ghost" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button></div></div>
+        <div class="topbar"><div>Selamat Datang, <strong style="color:#6366f1;">Mohamad Nasrulhaq</strong> 👋</div><button class="hamburger-btn" id="hamburgerBtn" style="order:-1;" onclick="bukaSidebarMobile()"><i class="fas fa-bars"></i></button><div style="margin-left:auto;"><button class="btn btn-ghost" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button></div></div>
         <div class="selector-bar">
             <select id="selectYear" onchange="tukarTahun()" style="background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;font-weight:600;"></select>
             <select id="selectSubject" onchange="tukarPenapis()"></select>
@@ -5702,8 +5750,42 @@ let pelajarWithAvg = st.map(s => {
                 applyAdminSettingsUI();
                 setSystemControlsLocked();
                 maybeNotifyGuruAdminExpiry();
+                tutupSidebarMobile();
             });
         });
+        function bukaSidebarMobile(){
+            document.getElementById("sidebarEl").classList.add("mobile-open");
+            document.getElementById("sidebarOverlay").classList.add("show");
+        }
+        function tutupSidebarMobile(){
+            document.getElementById("sidebarEl").classList.remove("mobile-open");
+            document.getElementById("sidebarOverlay").classList.remove("show");
+        }
+        function computeAndApplyViewMode(){
+            let saved = localStorage.getItem("eduTrackViewMode") || "auto";
+            let isMobile;
+            if (saved === "mobile") isMobile = true;
+            else if (saved === "desktop") isMobile = false;
+            else isMobile = window.innerWidth <= 900;
+            document.body.classList.toggle("view-mobile", isMobile);
+            document.body.classList.toggle("view-desktop", !isMobile);
+            document.body.classList.toggle("view-xs", isMobile && window.innerWidth <= 480);
+            if (!isMobile) tutupSidebarMobile();
+            document.querySelectorAll("#viewModeSwitch button").forEach(b=>{
+                b.classList.toggle("active", b.getAttribute("data-mode") === saved);
+            });
+        }
+        function setViewMode(mode){
+            localStorage.setItem("eduTrackViewMode", mode);
+            computeAndApplyViewMode();
+        }
+        window.addEventListener("resize", ()=>{
+            let saved = localStorage.getItem("eduTrackViewMode") || "auto";
+            if (saved === "auto") computeAndApplyViewMode();
+        });
+        document.addEventListener("DOMContentLoaded", computeAndApplyViewMode);
+        computeAndApplyViewMode();
+        window.bukaSidebarMobile=bukaSidebarMobile;window.tutupSidebarMobile=tutupSidebarMobile;window.setViewMode=setViewMode;
         window.onclick=function(e){if(e.target.classList.contains("modal")||e.target.classList.contains("print-analysis-modal"))e.target.style.display="none";};
         window.tukarPenapis=tukarPenapis;window.eksportKeCSV=eksportKeCSV;window.eksportPBDExcel=eksportPBDExcel;
         window.cetakBorangTransitIndividu=cetakBorangTransitIndividu;window.cetakBorangTransitKelas=cetakBorangTransitKelas;
