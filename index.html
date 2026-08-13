@@ -2535,7 +2535,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             allMarkah+=kMark; allFull+=kFull;
             html+=`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;">
               <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">${kertas.nama}</div>
-              <input type="number" id="bmComp_${ki}" value="${kMark}" min="0" max="${kFull}" step="0.01" style="width:80px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.1rem;" onchange="hitungPurataBM()" placeholder="Markah">
+              <input type="number" id="bmComp_${ki}" data-orig="${kMark}" value="${kMark}" min="0" max="${kFull}" step="0.01" style="width:80px;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;text-align:center;font-weight:700;font-size:1.1rem;" onchange="hitungPurataBM()" placeholder="Markah">
               <div style="font-size:0.65rem;color:#94a3b8;margin-top:4px;">/${kFull} markah</div>
               <div style="font-size:0.7rem;color:#6366f1;font-weight:600;margin-top:2px;" id="bmPct_${ki}">${kFull>0?Math.round(kMark/kFull*100):0}%</div>
             </div>`;
@@ -2619,18 +2619,34 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=examData[kertas.nama]||[];
                 let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
-                let target=toNumber(document.getElementById("bmComp_"+ki)?.value,NaN);
-                if(Number.isNaN(target)) target=items.reduce((a,b)=>a+toNumber(b.mark,0),0);
+                let inputEl=document.getElementById("bmComp_"+ki);
+                let target=toNumber(inputEl?.value,NaN);
+                let orig=toNumber(inputEl?.dataset?.orig,NaN);
+                let currentSum=items.reduce((a,b)=>a+toNumber(b.mark,0),0);
+                if(Number.isNaN(target)) target=currentSum;
                 target=Math.max(0,Math.min(target,kFull));
-                let baki=target;
 
-                kertas.soalan.forEach((soal,si)=>{
-                    if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
-                    items[si].fullMark=soal.markahPenuh;
-                    let isi=Math.min(baki,soal.markahPenuh);
-                    items[si].mark=Math.max(0,isi);
-                    baki-=isi;
-                });
+                // Hanya agih semula markah setiap soalan jika guru BETUL-BETUL
+                // mengubah kotak jumlah kertas ini (berbeza drpd nilai asal semasa modal dibuka).
+                // Jika tidak diubah, kekalkan taburan markah sebenar dari Analisis Item
+                // supaya tidak ditulis ganti secara tidak sengaja setiap kali "Simpan" ditekan.
+                let unchanged = !Number.isNaN(orig) && Math.abs(target-orig) < 0.005;
+
+                if(!unchanged){
+                    let baki=target;
+                    kertas.soalan.forEach((soal,si)=>{
+                        if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                        items[si].fullMark=soal.markahPenuh;
+                        let isi=Math.min(baki,soal.markahPenuh);
+                        items[si].mark=Math.max(0,isi);
+                        baki-=isi;
+                    });
+                } else {
+                    kertas.soalan.forEach((soal,si)=>{
+                        if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
+                        items[si].fullMark=soal.markahPenuh;
+                    });
+                }
 
                 examData[kertas.nama]=items.slice(0,kertas.soalan.length);
             });
