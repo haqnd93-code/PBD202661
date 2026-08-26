@@ -454,11 +454,18 @@
 
         .settings-dskp-info { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
         .settings-dskp-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; border-radius: 999px;
             font-size: 0.68rem; font-weight: 700;
         }
         .settings-dskp-badge.active { background: #ccfbf1; color: #0f766e; border: 1px solid #5eead4; }
         .settings-dskp-badge.inactive { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .settings-dskp-badge-del {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(15,118,110,0.15); color: #0f766e; font-size: 0.62rem; line-height: 1;
+            padding: 0; transition: background 0.15s, color 0.15s;
+        }
+        .settings-dskp-badge-del:hover { background: #ef4444; color: #fff; }
 
         .settings-student-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
@@ -3532,6 +3539,17 @@ function renderProfilRadarChart(pbdSkills){
                 }
             }
         }
+        function parseTarikhMY(tarikhStr){
+    // Format disimpan: DD/MM/YYYY (cth: "15/01/2026"). Tidak boleh guna new Date(str) sebab
+    // ia disalahtafsir sebagai MM/DD/YYYY oleh JavaScript (punca borang transit tak papar tarikh betul).
+    if(!tarikhStr || tarikhStr === "-") return null;
+    let parts = tarikhStr.split("/");
+    if(parts.length !== 3) return null;
+    let day = parseInt(parts[0],10), month = parseInt(parts[1],10), year = parseInt(parts[2],10);
+    if(!day || !month || !year) return null;
+    let d = new Date(year, month-1, day);
+    return isNaN(d) ? null : d;
+}
         function getPBD(subj,kelas,skill,sp,name){
     let data = pbdData[subj]?.[kelas]?.[skill]?.[sp]?.[name];
     if(data && data.tp > 0){
@@ -4535,7 +4553,7 @@ function renderRankingAnalisisSoalan(examPilihan) {
                                 <td class="transit-ulasan-cell">${ulasanSP || '<span style="color:#cbd5e1;">________________</span>'}</td>
                                 <td style="text-align:center;padding:2px;">
                     <input type="date" class="transit-tarikh-input no-print-border"
-                        value="${ev.tarikh && ev.tarikh!=='-' ? (()=>{ try{ let d=new Date(ev.tarikh); if(!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){} return ''; })() : ''}"
+                        value="${(()=>{ let d=parseTarikhMY(ev.tarikh); if(!d) return ''; let y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; })()}"
                         title="${ev.tarikh && ev.tarikh!=='-' ? ev.tarikh : 'Tiada tarikh'}"
                         style="font-size:0.55rem;color:#1e293b;border:1px dashed #cbd5e1;border-radius:4px;padding:2px 3px;width:100%;max-width:90px;background:transparent;cursor:pointer;text-align:center;"
                         onfocus="this.style.borderColor='#6366f1';this.style.background='#ede9fe';"
@@ -4983,7 +5001,7 @@ ${transitBody}
                 let tings=Object.keys(dskpDatabase[subj]);
                 if(tings.length>0){
                     hasDSKP = true;
-                    tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
+                    tings.forEach(t=>{ dskpInfo+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}<button type="button" class="settings-dskp-badge-del" title="Padam DSKP ini" onclick="padamDSKP('${subj.replace(/'/g,"\\'")}','${t.replace(/'/g,"\\'")}')"><i class="fas fa-times"></i></button></span>`; });
                 }
             });
             if(!hasDSKP) dskpInfo = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
@@ -5239,7 +5257,7 @@ ${transitBody}
                     let tings=Object.keys(dskpDatabase[subj]);
                     if(tings.length>0){
                         hasDSKP = true;
-                        tings.forEach(t=>{ list+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}</span>`; });
+                        tings.forEach(t=>{ list+=`<span class="settings-dskp-badge active">✅ ${subj}: ${t}<button type="button" class="settings-dskp-badge-del" title="Padam DSKP ini" onclick="padamDSKP('${subj.replace(/'/g,"\\'")}','${t.replace(/'/g,"\\'")}')"><i class="fas fa-times"></i></button></span>`; });
                     }
                 });
                 if(!hasDSKP) list = '<span class="settings-dskp-badge inactive">⚠️ Tiada DSKP dimuat naik</span>';
@@ -5286,6 +5304,16 @@ ${transitBody}
                     if(parsed && parsed.className === c) delete allData[k];
                 });
                 saveAll();refreshSelectors();refreshSettingsSelects();
+            }
+        }
+        function padamDSKP(subj, ting){
+            if(!dskpDatabase[subj] || !dskpDatabase[subj][ting]) return;
+            if(confirm(`Padam DSKP untuk ${subj} (${ting})?\n\nData PBD pelajar yang sedia ada untuk subjek/tingkatan ini TIDAK akan dipadam, tetapi anda perlu muat naik semula fail DSKP untuk merekod PBD baharu.`)){
+                delete dskpDatabase[subj][ting];
+                if(Object.keys(dskpDatabase[subj]).length === 0) delete dskpDatabase[subj];
+                saveAll();
+                refreshSettingsSelects();
+                if(typeof renderSettings === "function") renderSettings();
             }
         }
         function refreshMarkInputsForClass() {
@@ -5504,7 +5532,63 @@ function salinSenaraiPelajar() {
     refreshSettingsSelects();
 }
 
-                       function uploadDSKP(){
+                       // ==== UNIVERSAL DSKP NORMALIZER ====
+        // Menukar PELBAGAI format JSON DSKP (mengikut subjek) kepada 1 struktur seragam:
+        //   { code, name, spList: [{code, desc}] }
+        // Ini membolehkan sistem PBD menyokong subjek baharu tanpa perlu ubah logik lain,
+        // cukup tambah 1 "adapter" baharu dalam fungsi normalizeDSKPLevel() di bawah.
+        function toSpList(arr, codeKeys, descKeys){
+            if(!Array.isArray(arr)) return [];
+            let ck = Array.isArray(codeKeys) ? codeKeys : [codeKeys];
+            let dk = Array.isArray(descKeys) ? descKeys : [descKeys];
+            return arr.map(o => {
+                let code = ck.map(k => o[k]).find(v => v !== undefined) || "";
+                let desc = dk.map(k => o[k]).find(v => v !== undefined) || "";
+                return { code, desc };
+            }).filter(sp => sp.desc);
+        }
+
+        function normalizeDSKPLevel(levelData){
+            let skills = [];
+
+            // Adapter 1: format Bahasa Melayu/Bahasa Inggeris/BC dll.
+            // levels[ting].kemahiran { key: {code, name, spList:[{code,desc}]} }
+            if(levelData.kemahiran){
+                Object.keys(levelData.kemahiran).forEach(key => {
+                    let kem = levelData.kemahiran[key];
+                    if(kem.spList && Array.isArray(kem.spList)){
+                        skills.push({ code: kem.code || key, name: kem.name || key, spList: kem.spList });
+                    }
+                });
+            }
+
+            // Adapter 2: format Sejarah (dan subjek sains sosial lain yang serupa)
+            // levels[ting].topics[] { topic, standards:[{standard_code, standard_desc, learning_outcomes:[{code,desc}]}] }
+            else if(levelData.topics && Array.isArray(levelData.topics)){
+                levelData.topics.forEach(topicObj => {
+                    let topicName = topicObj.topic || "";
+                    (topicObj.standards || []).forEach(std => {
+                        let spList = toSpList(std.learning_outcomes, ["code"], ["desc"]);
+                        if(spList.length > 0){
+                            skills.push({
+                                code: std.standard_code || "",
+                                name: [topicName, std.standard_desc].filter(Boolean).join(" — "),
+                                spList: spList
+                            });
+                        }
+                    });
+                });
+            }
+
+            // Adapter 3: fallback generik — levels[ting].skills[] terus dalam format seragam
+            else if(levelData.skills && Array.isArray(levelData.skills)){
+                skills = levelData.skills.filter(s => s.spList && Array.isArray(s.spList));
+            }
+
+            return skills;
+        }
+
+        function uploadDSKP(){
             let subj = document.getElementById("dskpSubjectSelect").value;
             let fileInput = document.getElementById("dskpFileInput");
             let file = fileInput.files[0];
@@ -5517,38 +5601,30 @@ function salinSenaraiPelajar() {
                 try {
                     let json = JSON.parse(e.target.result);
                     let allSkills = {};
-                    
+
                     if(json.skills && Array.isArray(json.skills)){
                         allSkills["Tingkatan 5"] = json.skills;
                     }
                     else if(json.levels){
                         Object.keys(json.levels).forEach(tingKey => {
                             let levelData = json.levels[tingKey];
-                            if(levelData.kemahiran){
-                                let match = tingKey.match(/tingkatan[_\s]*(\d+)/i);
-                                let tingNum = match ? parseInt(match[1]) : 5;
-                                let tingFormatted = "Tingkatan " + tingNum;
-                                
-                                let skills = [];
-                                Object.keys(levelData.kemahiran).forEach(key => {
-                                    let kem = levelData.kemahiran[key];
-                                    if(kem.spList && Array.isArray(kem.spList)){
-                                        skills.push({ code: kem.code || key, name: kem.name || key, spList: kem.spList });
-                                    }
-                                });
-                                if(skills.length > 0) allSkills[tingFormatted] = skills;
-                            }
+                            let match = tingKey.match(/tingkatan[_\s]*(\d+)/i);
+                            let tingNum = match ? parseInt(match[1]) : (levelData.level || 5);
+                            let tingFormatted = "Tingkatan " + tingNum;
+
+                            let skills = normalizeDSKPLevel(levelData);
+                            if(skills.length > 0) allSkills[tingFormatted] = skills;
                         });
                     }
                     else { throw new Error("Format JSON tidak dikenali."); }
-                    
-                    if(Object.keys(allSkills).length === 0) throw new Error("Tiada kemahiran ditemui.");
-                    
+
+                    if(Object.keys(allSkills).length === 0) throw new Error("Tiada kemahiran/standard pembelajaran ditemui dalam fail ini.");
+
                     if(!dskpDatabase[subj]) dskpDatabase[subj] = {};
                     let savedTing = [];
                     Object.keys(allSkills).forEach(ting => {
                         dskpDatabase[subj][ting] = { skills: allSkills[ting] };
-                        savedTing.push(ting + " (" + allSkills[ting].length + " kemahiran)");
+                        savedTing.push(ting + " (" + allSkills[ting].length + " kemahiran/standard)");
                     });
                     saveAll();
                     alert(`✅ DSKP untuk ${subj} berjaya dimuat naik!\n\nTingkatan dikesan: ${savedTing.join(', ')}`);
@@ -5806,7 +5882,7 @@ let pelajarWithAvg = st.map(s => {
         window.tukarPenapis=tukarPenapis;window.eksportKeCSV=eksportKeCSV;window.eksportPBDExcel=eksportPBDExcel;
         window.cetakBorangTransitIndividu=cetakBorangTransitIndividu;window.cetakBorangTransitKelas=cetakBorangTransitKelas;
         window.uploadDSKP=uploadDSKP;window.tambahSubjek=tambahSubjek;window.tambahKelas=tambahKelas;
-        window.padamSubjek=padamSubjek;window.padamKelas=padamKelas;window.tambahPelajar=tambahPelajar;
+        window.padamSubjek=padamSubjek;window.padamKelas=padamKelas;window.padamDSKP=padamDSKP;window.tambahPelajar=tambahPelajar;
         window.tambahTahun=tambahTahun;window.padamTahun=padamTahun;window.setTahunAktif=setTahunAktif;window.tukarTahun=tukarTahun;
                 window.bukaModalEdit=bukaModalEdit;window.simpanEditPelajar=simpanEditPelajar;window.simpanAnalisisItem=simpanAnalisisItem;window.hitungCepat=hitungCepat;
         window.hitungPurataBM=hitungPurataBM;window.simpanMarkahBM=simpanMarkahBM;window.bukaAnalisisItemDariBM=bukaAnalisisItemDariBM;
@@ -6296,5 +6372,4 @@ ${reportHTML}
     </div>
 </body>
 </html>
-
 
