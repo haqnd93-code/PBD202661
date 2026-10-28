@@ -638,6 +638,145 @@
             padding: 40px;
             color: #ef4444;
         }
+
+        /* ===== BUKTI LATIHAN / LAMPIRAN GAMBAR ===== */
+        .bk-wrap{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;}
+        .bk-thumb{position:relative;display:inline-block;width:44px;height:44px;border-radius:8px;overflow:hidden;border:1.5px solid #c7d2fe;cursor:pointer;background:#f1f5f9;}
+        .bk-thumb.big{width:84px;height:84px;border-radius:12px;}
+        .bk-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+        .bk-x{position:absolute;top:1px;right:1px;width:18px;height:18px;line-height:18px;text-align:center;font-size:11px;font-weight:700;border-radius:50%;background:rgba(220,38,38,.92);color:#fff;cursor:pointer;}
+        .bk-up{font-size:0.65rem;padding:4px 8px;border-radius:8px;border:1.5px dashed #6366f1;background:#eef2ff;color:#4338ca;font-weight:700;cursor:pointer;}
+        .img-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:3000;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;}
+        .img-lb img{max-width:92vw;max-height:76vh;border-radius:10px;background:#fff;}
+        .img-lb-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;width:min(92vw,900px);color:#fff;font-size:0.85rem;font-weight:600;}
+        .img-lb-bar a,.img-lb-bar button{padding:8px 14px;border-radius:10px;border:none;background:#6366f1;color:#fff;font-weight:700;font-size:0.8rem;cursor:pointer;text-decoration:none;}
+        .img-lb-bar button{background:#475569;}
+        .img-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:none;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-size:2rem;cursor:pointer;}
+        .img-lb-nav.prev{left:10px;} .img-lb-nav.next{right:10px;}
+        /* ===== SEMAKAN BUKU v2 (UI baharu) ===== */
+        #bukuPage{--bk-ink:#0f172a;--bk-mute:#64748b;--bk-line:#e5e7f5;--bk-surface:#fff;--bk-soft:#f5f6ff;--bk-brand:#6366f1;--bk-brand2:#8b5cf6;--bk-ok:#059669;--bk-ok-bg:#d1fae5;--bk-wait:#d97706;--bk-wait-bg:#fef3c7;--bk-bad:#e11d48;--bk-bad-bg:#ffe4e6;}
+        body.dark-mode #bukuPage{--bk-ink:#e2e8f0;--bk-mute:#94a3b8;--bk-line:#334155;--bk-surface:#1e293b;--bk-soft:#0f172a;--bk-ok-bg:rgba(16,185,129,.18);--bk-wait-bg:rgba(245,158,11,.18);--bk-bad-bg:rgba(244,63,94,.18);}
+        .bkx{color:var(--bk-ink);}
+        .bkx-hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 24px;margin-bottom:16px;color:#fff;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#c026d3 120%);box-shadow:0 10px 30px -10px rgba(79,70,229,.55);}
+        .bkx-hero:after{content:"";position:absolute;right:-50px;top:-70px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12);}
+        .bkx-hero h3{font-size:1.25rem;font-weight:800;display:flex;align-items:center;gap:10px;position:relative;z-index:1;}
+        .bkx-hero p{font-size:.82rem;opacity:.85;margin-top:4px;position:relative;z-index:1;}
+        .bkx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px;position:relative;z-index:1;}
+        .bkx-stat{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:10px 14px;}
+        .bkx-stat b{display:block;font-size:1.5rem;font-weight:800;line-height:1.1;}
+        .bkx-stat span{font-size:.7rem;opacity:.9;font-weight:600;}
+        .bkx-stat.alert{background:#fff;color:#be123c;border-color:#fff;} .bkx-stat.alert span{opacity:1;}
+        .bkx-bar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:14px 16px;margin-bottom:16px;background:var(--bk-surface);border:1px solid var(--bk-line);border-radius:18px;box-shadow:0 1px 3px rgba(15,23,42,.04);}
+        .bkx-field label{display:block;font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--bk-mute);margin-bottom:6px;}
+        .bkx-field select,.bkx-field input[type=date]{padding:10px 14px;border:1.5px solid var(--bk-line);border-radius:12px;font-size:.85rem;font-family:inherit;background:var(--bk-soft);color:var(--bk-ink);min-width:150px;}
+        .bkx-field select:focus,.bkx-field input:focus,.bk-ta:focus{outline:none;border-color:var(--bk-brand);box-shadow:0 0 0 3px rgba(99,102,241,.18);}
+        .bkx-weeks{display:flex;gap:6px;flex-wrap:wrap;}
+        .bkx-week{position:relative;padding:9px 14px;border-radius:12px;border:1.5px solid var(--bk-line);background:var(--bk-soft);color:var(--bk-mute);font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;}
+        .bkx-week:hover{border-color:var(--bk-brand);color:var(--bk-brand);}
+        .bkx-week.on{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;box-shadow:0 6px 14px -6px rgba(99,102,241,.7);}
+        .bkx-week small{opacity:.8;font-weight:600;margin-left:4px;}
+        .bkx-dot{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#ef4444;color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bk-surface);}
+        .bkx-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto;padding:10px 12px;background:var(--bk-soft);border:1.5px dashed var(--bk-line);border-radius:14px;}
+        .bkx-add .bkx-field select,.bkx-add input[type=date]{min-width:0;}
+        .bkx-hari{font-weight:800;color:var(--bk-brand);min-width:56px;font-size:.85rem;}
+        /* amaran pelajar */
+        .bkx-alert{margin-bottom:16px;border-radius:20px;border:1.5px solid #fecdd3;background:linear-gradient(135deg,#fff1f2,#fff7ed);padding:16px;box-shadow:0 8px 24px -14px rgba(225,29,72,.5);}
+        body.dark-mode .bkx-alert{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.4);}
+        .bkx-alert-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+        .bkx-alert-ic{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#f43f5e,#fb923c);color:#fff;font-size:1.3rem;display:flex;align-items:center;justify-content:center;animation:bkxRing 2.4s ease-in-out infinite;}
+        @keyframes bkxRing{0%,88%,100%{transform:rotate(0)}91%{transform:rotate(-14deg)}94%{transform:rotate(12deg)}97%{transform:rotate(-8deg)}}
+        .bkx-alert-g{border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff7ed);box-shadow:0 8px 24px -14px rgba(217,119,6,.5);} body.dark-mode .bkx-alert-g{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);} body.dark-mode .bkx-alert-g strong{color:#fde68a!important;}
+        .bkx-alert-h strong{font-size:1rem;color:#9f1239;display:block;} body.dark-mode .bkx-alert-h strong{color:#fda4af;}
+        .bkx-alert-h small{color:var(--bk-mute);font-size:.78rem;}
+        .bkx-pend{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+        .bkx-pend-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bk-surface);border:1px solid var(--bk-line);border-radius:14px;}
+        .bkx-pend-row .meta{flex:1;min-width:0;font-size:.82rem;} .bkx-pend-row .meta b{display:block;} .bkx-pend-row .meta small{color:var(--bk-mute);}
+        .bkx-ok{margin-bottom:16px;padding:14px 16px;border-radius:16px;background:var(--bk-ok-bg);color:var(--bk-ok);font-weight:700;font-size:.88rem;display:flex;gap:10px;align-items:center;}
+        .bkx-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:800;white-space:nowrap;}
+        .bkx-pill.bad{background:var(--bk-bad-bg);color:var(--bk-bad);} .bkx-pill.wait{background:var(--bk-wait-bg);color:var(--bk-wait);} .bkx-pill.ok{background:var(--bk-ok-bg);color:var(--bk-ok);} .bkx-pill.mute{background:var(--bk-soft);color:var(--bk-mute);} .bkx-pill.new{background:#ef4444;color:#fff;} .bkx-pill.today{background:#e0e7ff;color:#4338ca;}
+        /* kad hari */
+        .bk-days{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;}
+        .bk-day{position:relative;border:1px solid var(--bk-line);border-radius:20px;padding:0;background:var(--bk-surface);overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05);transition:box-shadow .2s,transform .2s;}
+        .bk-day:hover{box-shadow:0 14px 30px -16px rgba(79,70,229,.4);}
+        .bk-day.is-today{border-color:#a5b4fc;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+        .bk-day.is-pend{border-color:#fda4af;}
+        .bkx-top{display:flex;gap:14px;align-items:center;padding:14px 16px;background:linear-gradient(135deg,var(--bk-soft),var(--bk-surface));border-bottom:1px solid var(--bk-line);}
+        .bkx-top.click{cursor:pointer;} .bkx-top.click:hover{background:linear-gradient(135deg,#eef2ff,#f5f3ff);} body.dark-mode .bkx-top.click:hover{background:#273449;}
+        .bkx-date{flex:0 0 auto;width:56px;border-radius:14px;overflow:hidden;text-align:center;background:var(--bk-surface);border:1px solid var(--bk-line);box-shadow:0 2px 6px rgba(15,23,42,.06);}
+        .bkx-date i{display:block;font-style:normal;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:.06em;padding:3px 0;text-transform:uppercase;}
+        .bkx-date b{display:block;font-size:1.35rem;font-weight:800;line-height:1.35;color:var(--bk-ink);}
+        .bkx-title{flex:1;min-width:0;} .bkx-title strong{font-size:.98rem;display:block;} .bkx-title small{color:var(--bk-mute);font-size:.75rem;}
+        .bkx-title .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+        .bkx-go{flex:0 0 auto;width:32px;height:32px;border-radius:10px;background:var(--bk-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;}
+        .bkx-body{padding:14px 16px 16px;}
+        .bkx-prog{margin:0 0 12px;} .bkx-prog-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--bk-line);} .bkx-prog-bar i{display:block;height:100%;transition:width .4s;}
+        .bkx-prog-leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:.72rem;font-weight:700;color:var(--bk-mute);} .bkx-prog-leg em{font-style:normal;display:inline-flex;align-items:center;gap:5px;} .bkx-prog-leg em:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c);}
+        .bk-lbl{display:block;font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--bk-mute);margin:12px 0 6px;}
+        .bk-ta{width:100%;border:1.5px solid var(--bk-line);border-radius:12px;padding:10px 12px;font-size:.82rem;font-family:inherit;resize:vertical;box-sizing:border-box;background:var(--bk-soft);color:var(--bk-ink);}
+        .bk-items{display:flex;flex-wrap:wrap;gap:8px;} .bk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+        .bk-thumb{border-color:var(--bk-line);} .bk-thumb.big{width:76px;height:76px;border-radius:14px;}
+        .bk-file{position:relative;display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:9px 28px 9px 12px;border:1.5px solid var(--bk-line);border-radius:12px;background:var(--bk-soft);font-size:.76rem;font-weight:700;cursor:pointer;color:var(--bk-ink);} .bk-file:hover{border-color:var(--bk-brand);}
+        .bk-file>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px;}
+        .bk-arahan{margin:0 0 4px;padding:12px 14px;background:linear-gradient(135deg,#fffbeb,#fff7ed);border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:12px;font-size:.84rem;white-space:pre-wrap;color:#78350f;}
+        body.dark-mode .bk-arahan{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#fde68a;}
+        .bk-del{position:absolute;top:12px;right:12px;border:none;background:rgba(255,255,255,.9);color:#e11d48;border-radius:10px;width:30px;height:30px;cursor:pointer;font-size:.8rem;box-shadow:0 2px 6px rgba(0,0,0,.08);z-index:2;} .bk-del:hover{background:#ffe4e6;}
+        .bk-empty{grid-column:1/-1;padding:36px 20px;border:2px dashed var(--bk-line);border-radius:20px;color:var(--bk-mute);font-size:.88rem;text-align:center;line-height:1.7;}
+        .bkx-view{width:100%;margin-top:14px;justify-content:center;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:12px;padding:11px;}
+        .bkx-view:hover{filter:brightness(1.08);}
+        .bkx-mine{margin-top:12px;padding:12px;border-radius:14px;background:var(--bk-soft);border:1px solid var(--bk-line);}
+        .bkx-mine.ok{background:var(--bk-ok-bg);border-color:transparent;}
+        /* ringkasan minggu */
+        .bkx-sum{margin-top:20px;border:1px solid var(--bk-line);border-radius:18px;overflow:hidden;background:var(--bk-surface);}
+        .bkx-sum>summary{cursor:pointer;padding:14px 16px;font-weight:800;font-size:.88rem;background:var(--bk-soft);} .bkx-sum th.clk{cursor:pointer;color:var(--bk-brand);} .bkx-sum th.clk:hover{text-decoration:underline;}
+        .bkx-dt{padding:10px 12px;border:1.5px solid var(--bk-line);border-radius:12px;font-size:.82rem;font-family:inherit;background:var(--bk-soft);color:var(--bk-ink);max-width:100%;}
+        .bkx-dt:focus{outline:none;border-color:var(--bk-brand);box-shadow:0 0 0 3px rgba(99,102,241,.18);}
+        .bkx-due{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .bkx-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;} .bkx-chips button{padding:5px 11px;border-radius:99px;border:1.5px solid var(--bk-line);background:var(--bk-soft);color:var(--bk-brand);font-size:.7rem;font-weight:800;cursor:pointer;font-family:inherit;} .bkx-chips button:hover{background:var(--bk-brand);color:#fff;border-color:var(--bk-brand);}
+        .bkx-due-box{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px 14px;border-radius:14px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;font-size:.82rem;} .bkx-due-box small{display:block;font-weight:700;opacity:.8;margin-top:2px;} .bkx-due-box>:first-child{font-size:1.2rem;}
+        .bkx-due-box.soon{background:var(--bk-wait-bg);border-color:#fcd34d;color:#92400e;} .bkx-due-box.late{background:var(--bk-bad-bg);border-color:#fda4af;color:#be123c;}
+        body.dark-mode .bkx-due-box{background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.4);color:#c7d2fe;}
+        .bk-del{width:auto;padding:0 10px;font-size:.72rem;font-weight:800;}
+        .bk-day .bkx-top.click{padding-right:88px;}
+        /* ===== ANALISIS & REKOD PENYIAPAN TUGASAN ===== */
+        .bkr{--bk-ink:#0f172a;--bk-mute:#64748b;--bk-line:#e5e7f5;--bk-surface:#fff;--bk-soft:#f5f6ff;--bk-brand:#6366f1;--bk-ok:#059669;--bk-ok-bg:#d1fae5;--bk-wait:#d97706;--bk-wait-bg:#fef3c7;--bk-bad:#e11d48;--bk-bad-bg:#ffe4e6;color:var(--bk-ink);}
+        body.dark-mode .bkr{--bk-ink:#e2e8f0;--bk-mute:#94a3b8;--bk-line:#334155;--bk-surface:#1e293b;--bk-soft:#0f172a;--bk-ok-bg:rgba(16,185,129,.18);--bk-wait-bg:rgba(245,158,11,.18);--bk-bad-bg:rgba(244,63,94,.18);}
+        .bkx-tabs{display:inline-flex;gap:4px;padding:4px;margin-bottom:16px;background:var(--bk-surface);border:1px solid var(--bk-line);border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.04);max-width:100%;flex-wrap:wrap;}
+        .bkx-tab{padding:10px 18px;border-radius:10px;border:none;background:transparent;font-weight:800;font-size:.82rem;color:var(--bk-mute);cursor:pointer;font-family:inherit;transition:all .18s;}
+        .bkx-tab:hover{color:var(--bk-brand);} .bkx-tab.on{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 6px 14px -6px rgba(99,102,241,.7);}
+        .bkx-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:12px 0;}
+        .bkx-tile{padding:12px 14px;border-radius:14px;background:var(--bk-soft);border:1px solid var(--bk-line);} .bkx-tile b{display:block;font-size:1.6rem;font-weight:800;line-height:1.1;} .bkx-tile span{font-size:.7rem;font-weight:700;color:var(--bk-mute);}
+        .bkx-tile.ok b{color:var(--bk-ok);} .bkx-tile.wait b{color:var(--bk-wait);} .bkx-tile.bad b{color:var(--bk-bad);}
+        .bkx-meter{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--bk-line);} .bkx-meter i{display:block;height:100%;transition:width .4s;}
+        .bkx-an{background:var(--bk-surface);border:1px solid var(--bk-line);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(15,23,42,.05);}
+        .bkx-an-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px;} .bkx-an-tools .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+        .bkx-an table th,.bkr table th{white-space:nowrap;} .bkx-an tr.clk{cursor:pointer;} .bkx-an tr.clk:hover td{background:var(--bk-soft);}
+        .bkx-pct{display:flex;align-items:center;gap:8px;min-width:140px;} .bkx-pct .bkx-meter{flex:1;height:8px;} .bkx-pct b{font-size:.8rem;width:40px;text-align:right;}
+        .bkr .bk-thumb.big{width:54px;height:54px;border-radius:10px;} .bkr td{vertical-align:top;}
+        .bkr .bk-items{gap:6px;}
+        /* modal hantaran guru */
+        .bkm{display:none;position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;padding:0;}
+        .bkm.show{display:flex;}
+        .bkm-box{width:min(860px,100%);max-height:92vh;display:flex;flex-direction:column;background:var(--bk-surface,#fff);color:var(--bk-ink,#0f172a);border-radius:26px 26px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.35);animation:bkmUp .28s ease;overflow:hidden;--bk-ink:#0f172a;--bk-mute:#64748b;--bk-line:#e5e7f5;--bk-surface:#fff;--bk-soft:#f5f6ff;--bk-brand:#6366f1;--bk-ok:#059669;--bk-ok-bg:#d1fae5;--bk-wait:#d97706;--bk-wait-bg:#fef3c7;--bk-bad:#e11d48;--bk-bad-bg:#ffe4e6;}
+        body.dark-mode .bkm-box{--bk-ink:#e2e8f0;--bk-mute:#94a3b8;--bk-line:#334155;--bk-surface:#1e293b;--bk-soft:#0f172a;--bk-ok-bg:rgba(16,185,129,.18);--bk-wait-bg:rgba(245,158,11,.18);--bk-bad-bg:rgba(244,63,94,.18);}
+        @keyframes bkmUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+        @media(min-width:700px){.bkm{align-items:center;padding:20px;}.bkm-box{border-radius:26px;max-height:88vh;}}
+        .bkm-h{padding:18px 20px;color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;gap:14px;}
+        .bkm-h .t{flex:1;min-width:0;} .bkm-h strong{font-size:1.05rem;display:block;} .bkm-h small{opacity:.85;font-size:.76rem;}
+        .bkm-x{width:36px;height:36px;border:none;border-radius:11px;background:rgba(255,255,255,.2);color:#fff;font-size:1rem;cursor:pointer;} .bkm-x:hover{background:rgba(255,255,255,.35);}
+        .bkm-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bk-line);}
+        .bkm-tab{padding:7px 13px;border-radius:99px;border:1.5px solid var(--bk-line);background:var(--bk-soft);font-size:.75rem;font-weight:800;color:var(--bk-mute);cursor:pointer;font-family:inherit;} .bkm-tab.on{background:var(--bk-brand);border-color:var(--bk-brand);color:#fff;}
+        .bkm-list{padding:14px 16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+        .bkm-row{display:flex;gap:14px;align-items:flex-start;padding:12px 14px;border:1px solid var(--bk-line);border-radius:16px;background:var(--bk-surface);}
+        .bkm-row.wait{border-color:#fcd34d;background:linear-gradient(135deg,rgba(254,243,199,.45),transparent);}
+        .bkm-av{flex:0 0 auto;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#e0e7ff,#ede9fe);color:#4338ca;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+        .bkm-main{flex:1;min-width:0;} .bkm-main strong{font-size:.88rem;display:block;margin-bottom:4px;}
+        .bkm-act{display:flex;flex-direction:column;gap:6px;flex:0 0 auto;}
+        @media(max-width:520px){.bkm-row{flex-wrap:wrap;}.bkm-act{flex-direction:row;width:100%;}.bkm-act .btn{flex:1;justify-content:center;}}
+        .bk-toast{position:fixed;right:16px;bottom:16px;z-index:3500;max-width:340px;background:linear-gradient(135deg,#1e293b,#312e81);color:#fff;padding:14px 18px;border-radius:16px;font-size:.85rem;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.35);cursor:pointer;display:none;border:1px solid rgba(255,255,255,.12);}
+        .bk-nav-badge{background:linear-gradient(135deg,#f43f5e,#ef4444);color:#fff;border-radius:999px;font-size:.65rem;font-weight:800;padding:2px 8px;margin-left:auto;box-shadow:0 0 0 3px rgba(239,68,68,.25);animation:bkxPulse 2s infinite;}
+        @keyframes bkxPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+        @media(max-width:600px){.bk-days{grid-template-columns:1fr;}.bkx-add{margin-left:0;width:100%;}.bkx-hero{padding:18px;}}
+        .img-lb iframe{width:min(92vw,900px);height:76vh;border:none;border-radius:10px;background:#fff;}
     </style>
 </head>
 <body>
@@ -686,7 +825,7 @@
         <ul class="nav-menu">
             <li class="nav-item active" data-page="dashboard"><a><i class="fas fa-th-large"></i> <span>Papan Pemuka</span></a></li>
             <li class="nav-item" data-page="prestasi"><a><i class="fas fa-chart-bar"></i> <span>Prestasi Pelajar</span></a></li>
-            <li class="nav-item" data-page="buku"><a><i class="fas fa-book-open"></i> <span>Semakan Buku</span></a></li>
+            <li class="nav-item" data-page="buku"><a><i class="fas fa-book-open"></i> <span>Semakan Buku</span><span id="bukuNavBadge" class="bk-nav-badge" style="display:none"></span></a></li>
             <li class="nav-item" data-page="token"><a><i class="fas fa-star"></i> <span>Rekod Token</span></a></li>
             <li class="nav-item" data-page="profil"><a><i class="fas fa-id-card"></i> <span>Profil Pelajar</span></a></li>
             <li class="nav-item" data-page="pbd"><a><i class="fas fa-clipboard-check"></i> <span>PBD (DSKP)</span></a></li>
@@ -717,7 +856,14 @@
 
         <div id="modalEditMarkah" class="modal"><div class="modal-content" id="modalEditMarkahContent"></div></div>
         <div id="modalKonfigurasiItem" class="modal"><div class="modal-content" id="modalKonfigurasiItemContent" style="width:650px;"></div></div>
-        <div id="modalEditBuku" class="modal"><div class="modal-content" id="modalEditBukuContent"></div></div>
+        <div id="imgLightbox" class="img-lb" onclick="if(event.target===this)tutupLB()">
+            <div class="img-lb-bar"><span id="lbTitle"></span><span style="display:flex;gap:8px;"><a id="lbNewTab" href="#" target="_blank" rel="noopener" style="display:none;">↗ Tab Baharu</a><a id="lbDownload" href="#" download>⬇ Muat Turun</a><button type="button" onclick="tutupLB()">✕ Tutup</button></span></div>
+            <button type="button" class="img-lb-nav prev" onclick="lbNav(-1)">‹</button>
+            <img id="lbImg" alt=""><iframe id="lbPdf" style="display:none;" title="PDF"></iframe>
+            <button type="button" class="img-lb-nav next" onclick="lbNav(1)">›</button>
+        </div>
+        <input type="file" id="imgUploadInput" accept="image/*,application/pdf" multiple style="display:none" onchange="prosesUpload(this)">
+        <div id="modalEditBuku" class="modal"><div class="modal-content" id="modalEditBukuContent"></div></div><div id="bkStuModal" class="bkm" onclick="if(event.target===this)bkTutupPelajar()"><div class="bkm-box" id="bkStuBox"></div></div><div id="bkSubModal" class="bkm" onclick="if(event.target===this)bkTutupHantaran()"><div class="bkm-box" id="bkSubBox"></div></div>
         <div id="modalTokenWindow" class="modal"><div class="modal-content"><h3 class="card-header">🪙 Tambah Token</h3><select id="tokenStudentSelect" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:12px;"></select><select id="tokenTypeSelect" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:12px;"><option value="positif">🌟 Positif</option><option value="negatif">⚠️ Negatif</option></select><input type="text" id="tokenDescInput" placeholder="Keterangan" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;"><div class="flex justify-end gap-3 mt-6"><button class="btn btn-ghost" onclick="tutupModal('modalTokenWindow')">Batal</button><button class="btn btn-primary" onclick="tambahToken()">Simpan</button></div></div></div>
                 <div id="modalPBDStudent" class="modal"><div class="modal-content" style="width:450px;"><h3 class="card-header">➕ Tambah Murid PBD</h3><input type="text" id="pbdModalName" placeholder="Nama penuh" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:10px;"><input type="text" id="pbdModalIC" placeholder="No KP" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:10px;"><div class="flex justify-end gap-3 mt-4"><button class="btn btn-ghost" onclick="tutupModal('modalPBDStudent')">Batal</button><button class="btn btn-primary" onclick="tambahPBDStudent()">Tambah</button></div></div></div>
                 <div id="modalPBDDetail" class="modal"><div class="modal-content" style="width:480px;" id="modalPBDDetailContent"></div></div>
@@ -2790,163 +2936,653 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         }
         function simpanEditPelajar(){if(currentEditIndex===null)return;let x=getActiveStudents()[currentEditIndex];for(let i=0;i<4;i++)x.marks[i]=parseInt(document.getElementById("editMarks_"+i)?.value)||0;x.ulasan=document.getElementById("editUlasan")?.value||'';saveAll();tutupModal("modalEditMarkah");currentEditIndex=null;renderCurrentPage();}
 
-                function renderBuku(){
+        // ==================== BUKTI LATIHAN & LAMPIRAN GAMBAR ====================
+        // Gambar disimpan dalam IndexedDB (bukan localStorage) supaya tidak penuhkan kuota 5MB.
+        // Data utama hanya simpan rujukan: bookMonths[..].lampiran (guru) & pelajar.bukti[key] (pelajar).
+        const _imgCache=new Map(); let _imgDBP=null;
+        function _imgDB(){
+            if(_imgDBP) return _imgDBP;
+            _imgDBP=new Promise((res,rej)=>{
+                try{
+                    let r=indexedDB.open('edutrack_images',1);
+                    r.onupgradeneeded=()=>r.result.createObjectStore('imgs',{keyPath:'id'});
+                    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+                }catch(e){rej(e);}
+            });
+            return _imgDBP;
+        }
+        async function imgPut(data){
+            let id='img_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+            _imgCache.set(id,data);
+            try{
+                let db=await _imgDB();
+                await new Promise((res,rej)=>{let t=db.transaction('imgs','readwrite');t.objectStore('imgs').put({id,data});t.oncomplete=res;t.onerror=()=>rej(t.error);});
+            }catch(e){console.warn('IndexedDB tidak tersedia, gambar hanya dalam memori sesi ini',e);}
+            return id;
+        }
+        async function imgGet(id){
+            if(_imgCache.has(id)) return _imgCache.get(id);
+            try{
+                let db=await _imgDB();
+                let rec=await new Promise((res,rej)=>{let q=db.transaction('imgs').objectStore('imgs').get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});
+                if(rec){_imgCache.set(id,rec.data);return rec.data;}
+            }catch(e){}
+            return null;
+        }
+        async function imgDel(id){
+            _imgCache.delete(id);
+            try{let db=await _imgDB();db.transaction('imgs','readwrite').objectStore('imgs').delete(id);}catch(e){}
+        }
+        function imgCompress(file,max,q){
+            return new Promise((res,rej)=>{
+                let fr=new FileReader(); fr.onerror=rej;
+                fr.onload=()=>{
+                    let im=new Image(); im.onerror=rej;
+                    im.onload=()=>{
+                        let s=Math.min(1,max/Math.max(im.width,im.height));
+                        let c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+                        let g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height);
+                        res(c.toDataURL('image/jpeg',q));
+                    };
+                    im.src=fr.result;
+                };
+                fr.readAsDataURL(file);
+            });
+        }
+        function hydrateImgs(root){
+            (root||document).querySelectorAll('img[data-img-id]').forEach(async el=>{
+                let d=await imgGet(el.dataset.imgId);
+                if(d) el.src=d; else el.alt='⚠';
+            });
+        }
+        // ==================== SEMAKAN BUKU (Bulan > Minggu > Tarikh/Hari) ====================
+        const BK_BULAN=["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+        const BK_HARI=["Ahad","Isnin","Selasa","Rabu","Khamis","Jumaat","Sabtu"];
+        const BK_BLN_S=["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"];
+        let _bkLists=[], _bkOpen=new Set(), _bkInit=false, _pend=null;
+        function _isP(){return !!(currentUser && currentUser.role==='pelajar');}
+        function bkISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+        function bkParse(iso){let [y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d);}
+        function bkFmt(d){return d.getDate()+' '+BK_BLN_S[d.getMonth()]+' '+d.getFullYear();}
+        function bkHariDari(iso){return iso?BK_HARI[bkParse(iso).getDay()]:'';}
+        function bkEnsure(){
+            BK_BULAN.forEach(b=>{ if(!bookMonths[b])bookMonths[b]={}; for(let i=1;i<=5;i++) if(!bookMonths[b]['Minggu '+i]) bookMonths[b]['Minggu '+i]={hari:[],tugas:''}; });
+            Object.values(bookMonths).forEach(wk=>Object.values(wk).forEach(w=>{
+                if(!w.hari)w.hari=[]; if(!w.batal)w.batal=[];
+                w.hari.forEach(h=>{ if(!h.id)h.id=h.hari; if(!h.lampiran)h.lampiran=[]; if(h.arahan===undefined)h.arahan=''; });
+                if(w.lampiran&&w.lampiran.length&&w.hari.length){w.hari[0].lampiran.push(...w.lampiran);} delete w.lampiran;
+            }));
+        }
+        function bkWeek(){return bookMonths[currentBookBulan]?.[currentBookMinggu];}
+        function bkKey(h){return currentBookBulan+'_'+currentBookMinggu+'_'+h.id;}
+        function bkMe(){return getActiveStudents().find(s=>s.name.toLowerCase()===currentUser.name.toLowerCase());}
+        function bkStatus(x,key){
+            let s=x.bukiSt&&x.bukiSt[key]; if(s) return s;
+            if(x.buku&&x.buku[key]==='hantar') return 'diterima';
+            return (x.bukti&&x.bukti[key]&&x.bukti[key].length)?'dihantar':'belum';
+        }
+        function bkBadge(s){return s==='diterima'?'<span class="badge badge-success">✓ Diterima</span>':s==='dihantar'?'<span class="badge" style="background:#fef3c7;color:#b45309;">⏳ Dihantar</span>':'<span class="badge badge-danger">✗ Belum hantar</span>';}
+        function bkUnseen(){
+            if(!_isP()) return []; let me=bkMe(); if(!me) return []; let out=[];
+            Object.entries(bookMonths).forEach(([b,wk])=>Object.entries(wk).forEach(([m,w])=>(w.hari||[]).forEach(h=>{
+                if(!h.postedAt||!(h.arahan||(h.lampiran||[]).length)) return;
+                if((me.bukuSeen||{})[b+'_'+m+'_'+(h.id||h.hari)]!==h.postedAt) out.push({b,m,h});
+            })));
+            return out;
+        }
+        function bkMark(b,m,h){let me=bkMe(); if(!me||!h.postedAt) return; (me.bukuSeen=me.bukuSeen||{})[b+'_'+m+'_'+h.id]=h.postedAt; saveAll();}
+        function bkToast(msg){
+            let t=document.getElementById('bkToast');
+            if(!t){t=document.createElement('div');t.id='bkToast';t.className='bk-toast';t.onclick=()=>{t.style.display='none';let n=document.querySelector('.nav-item[data-page="buku"]');if(n)n.click();};document.body.appendChild(t);}
+            t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',9000);
+        }
+        function bkHasTask(h){return !!(h&&(h.arahan||(h.lampiran||[]).length));}
+        function bkDueMs(h){if(!h||!h.due) return null; let t=new Date(h.due).getTime(); return isNaN(t)?null:t;}
+        function bkIsLate(h){let d=bkDueMs(h); if(d!==null) return Date.now()>d; return !!(h&&h.iso&&h.iso<bkISO(new Date()));}
+        function bkFmtMasa(ms){let d=new Date(ms); return BK_HARI[d.getDay()].slice(0,3)+', '+d.getDate()+' '+BK_BLN_S[d.getMonth()]+' '+d.getFullYear()+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+        function bkDueTxt(h){let d=bkDueMs(h); return d===null?'':bkFmtMasa(d);}
+        function bkLeft(h){
+            let d=bkDueMs(h); if(d===null) return ''; let diff=d-Date.now(); if(diff<=0) return 'Tamat tempoh';
+            let m=Math.floor(diff/60000), hr=Math.floor(m/60), dy=Math.floor(hr/24);
+            if(dy>=1) return 'Berbaki '+dy+' hari'+(hr%24?' '+(hr%24)+' jam':'');
+            if(hr>=1) return 'Berbaki '+hr+' jam'+(m%60?' '+(m%60)+' min':'');
+            return 'Berbaki '+Math.max(m,1)+' minit';
+        }
+        function bkSoon(h){let d=bkDueMs(h); return d!==null&&d>Date.now()&&d-Date.now()<86400000;}
+        function bkMasaHantar(x,key,h){
+            let t=x.bukiTime&&x.bukiTime[key]; if(!t||!((x.bukti&&x.bukti[key]||[]).length)) return '';
+            let d=bkDueMs(h), lt=d!==null&&t>d;
+            return `<div style="margin-top:6px;font-size:.72rem;color:var(--bk-mute);font-weight:600;">🕒 Dihantar ${bkFmtMasa(t)}${lt?' <span class="bkx-pill bad">Lewat hantar</span>':''}</div>`;
+        }
+        function bkTempoh(hi,v){
+            if(_isP()) return; let h=bkWeek().hari[hi]; if(!h) return;
+            if(v&&isNaN(new Date(v).getTime())){alert('Tarikh/masa tidak sah.');return;}
+            h.due=v||''; if(bkHasTask(h)) h.postedAt=Date.now(); saveAll(); renderBuku();
+        }
+        function bkTempohPantas(hi,days){
+            if(_isP()) return; let h=bkWeek().hari[hi]; if(!h||!h.iso) return;
+            let d=bkParse(h.iso); d.setDate(d.getDate()+days);
+            bkTempoh(hi,bkISO(d)+'T23:59');
+        }
+        // tugasan yang telah diberi guru tetapi pelajar belum hantar (semua bulan / minggu)
+        function bkPending(){
+            if(!_isP()) return []; let me=bkMe(); if(!me) return []; let out=[];
+            Object.entries(bookMonths).forEach(([b,wk])=>Object.entries(wk).forEach(([m,w])=>(w.hari||[]).forEach(h=>{
+                if(!(h.arahan||(h.lampiran||[]).length)) return;
+                if(bkStatus(me,b+'_'+m+'_'+(h.id||h.hari))==='belum') out.push({b,m,h});
+            })));
+            return out.sort((x,y)=>(x.h.iso||'').localeCompare(y.h.iso||''));
+        }
+        // (guru) hantaran pelajar yang menunggu semakan, bagi kelas aktif - semua bulan / minggu
+        function bkWaiting(){
+            if(_isP()||!currentUser) return [];
+            let st=[]; try{ if(!document.getElementById('selectSubject').value||!document.getElementById('selectClass').value) return []; st=getActiveStudents()||[]; }catch(e){return [];}
+            let out=[];
+            Object.entries(bookMonths).forEach(([b,wk])=>Object.entries(wk).forEach(([m,w])=>(w.hari||[]).forEach(h=>{
+                if(!bkHasTask(h)) return; let key=b+'_'+m+'_'+(h.id||h.hari), n=0;
+                st.forEach(x=>{if(bkStatus(x,key)==='dihantar') n++;});
+                if(n) out.push({b,m,h,n});
+            })));
+            return out.sort((x,y)=>(x.h.iso||'').localeCompare(y.h.iso||''));
+        }
+        function bkUpdateBadge(toast){
+            let el=document.getElementById('bukuNavBadge'); if(!el) return;
+            if(!_isP()){
+                let wl=bkWaiting(), t=wl.reduce((a,x)=>a+x.n,0);
+                el.style.display=t?'inline-block':'none'; el.textContent=t; el.title=t+' hantaran menunggu semakan';
+                let sig='g'+t;
+                if(toast&&t&&sessionStorage.getItem('bkToastN')!==sig){sessionStorage.setItem('bkToastN',sig);
+                    bkToast('📥 '+t+' hantaran pelajar menunggu semakan buku. Klik untuk semak.');}
+                if(!t) sessionStorage.removeItem('bkToastN');
+                return;
+            }
+            let p=bkPending().length, u=bkUnseen().length;
+            el.style.display=(_isP()&&p)?'inline-block':'none'; el.textContent=p; el.title=p+' tugasan belum dihantar';
+            let sig=p+'/'+u;
+            if(toast&&(p||u)&&sessionStorage.getItem('bkToastN')!==sig){sessionStorage.setItem('bkToastN',sig);
+                bkToast('🔔 '+(p?('Anda ada '+p+' tugasan belum dihantar'):'')+(p&&u?' · ':'')+(u?(u+' arahan baharu'):'')+'. Klik untuk lihat.');}
+        }
+        // (guru) lompat ke hari tertentu dan buka senarai hantaran
+        function bkSemak(b,m,id){
+            if(_isP()) return; currentBookBulan=b; currentBookMinggu=m; renderBuku();
+            let w=bkWeek(), i=w?w.hari.findIndex(x=>x.id===id):-1; if(i>=0) bkBukaHantaran(i);
+        }
+        function bkInitSel(){
+            _bkInit=true; bkEnsure();
+            let now=new Date(); currentBookBulan=BK_BULAN[now.getMonth()]; currentBookMinggu='Minggu 1';
+            let iso=bkISO(now), found=false;
+            Object.keys(bookMonths[currentBookBulan]).forEach(m=>{ if(!found&&bookMonths[currentBookBulan][m].hari.some(h=>h.iso===iso)){currentBookMinggu=m;found=true;} });
+            let u=bkUnseen(); if(u.length){currentBookBulan=u[0].b;currentBookMinggu=u[0].m;}
+            else if(_isP()){let pd=bkPending(); if(pd.length){currentBookBulan=pd[0].b;currentBookMinggu=pd[0].m;}}
+        }
+        function bkChips(arr,hi,mode){
+            let li=_bkLists.push(arr)-1;
+            return arr.map((it,n)=>{
+                let t=it.type||'img', del=(mode==='t'||mode==='s')?`<b class="bk-x" onclick="bkPadam('${mode}',${hi},${n},event)">✕</b>`:'';
+                let click=`onclick="bkBuka(${li},${n},${hi})"`;
+                if(t==='img') return `<span class="bk-thumb big" ${click} title="${escapeHtml(it.name||'')}"><img data-img-id="${it.id}" alt="">${del}</span>`;
+                return `<span class="bk-file" ${click}>${t==='pdf'?'📄':'🔗'} <span>${escapeHtml(it.name||'Fail')}</span>${del}</span>`;
+            }).join('');
+        }
+        function bkInisial(n){let p=(n||'?').trim().split(/\s+/);return ((p[0]||'')[0]||'')+((p[1]||'')[0]||'');}
+        function bkTarikhPendek(h){return h.tarikh?h.tarikh.split(' ').slice(0,2).join(' '):'';}
+        function bkCnt(st,key){let c={belum:0,dihantar:0,diterima:0}; st.forEach(x=>c[bkStatus(x,key)]++); return c;}
+        function renderBuku(){
             let c=document.getElementById("bukuContent"), s=document.getElementById("selectSubject").value, cls=document.getElementById("selectClass").value;
             if(!s||!cls||getActiveStudents().length===0){c.innerHTML='<div class="card" style="text-align:center;padding:40px;">Pilih Subjek dan Kelas.</div>';return;}
-            let st=getActiveStudents();
-            
-            let bulanTabs = Object.keys(bookMonths).map(b => {
-                return `<button class="btn btn-${currentBookBulan===b?'primary':'ghost'} btn-sm" onclick="pilihBulan('${b}')">${b}</button>`;
+            if(!_bkInit) bkInitSel(); else bkEnsure();
+            _bkLists=[]; let isP=_isP(), st=getActiveStudents(), me=isP?bkMe():null;
+            let bulanOpt=[...BK_BULAN,...Object.keys(bookMonths).filter(b=>!BK_BULAN.includes(b))].map(b=>`<option ${b===currentBookBulan?'selected':''}>${b}</option>`).join('');
+            let weeks=Object.keys(bookMonths[currentBookBulan]||{}).sort((a,b)=>(parseInt(a.replace(/\D/g,''))||99)-(parseInt(b.replace(/\D/g,''))||99));
+            if(!weeks.includes(currentBookMinggu)) currentBookMinggu=weeks[0];
+            let pendAll=isP?bkPending():[];
+            let weekChips=weeks.map(m=>{
+                let wk=bookMonths[currentBookBulan][m], n=isP?wk.hari.filter(bkHasTask).length:wk.hari.length, dot='';
+                if(isP){let np=pendAll.filter(x=>x.b===currentBookBulan&&x.m===m).length; if(np) dot=`<span class="bkx-dot">${np}</span>`;}
+                else {let nw=0; wk.hari.forEach(h=>{nw+=bkCnt(st,currentBookBulan+'_'+m+'_'+h.id).dihantar;}); if(nw) dot=`<span class="bkx-dot" style="background:#f59e0b" title="Menunggu semakan">${nw}</span>`;}
+                return `<button class="bkx-week ${m===currentBookMinggu?'on':''}" onclick="pilihMinggu('${m}')">${m}${n?`<small>${n} hari</small>`:''}${dot}</button>`;
             }).join('');
-            
-            let mingguTabs = Object.keys(bookMonths[currentBookBulan] || {}).map(m => {
-                return `<button class="btn btn-${currentBookMinggu===m?'primary':'ghost'} btn-sm" onclick="pilihMinggu('${m}')">${m}</button>`;
-            }).join('');
-            
-            let mingguData = bookMonths[currentBookBulan]?.[currentBookMinggu] || { hari: [], tugas: "" };
-            
-            c.innerHTML=`<div class="card">
-              <div class="card-header">📚 Semakan Buku · ${s} · ${cls}</div>
-              <div style="margin-bottom:12px;"><strong style="font-size:0.8rem;">📅 Bulan:</strong>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${bulanTabs}
-                  <button class="btn btn-ghost btn-sm" onclick="tambahBulan()">+ Bulan</button>
-                </div>
-              </div>
-              <div style="margin-bottom:12px;"><strong style="font-size:0.8rem;">📆 Minggu:</strong>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${mingguTabs}
-                  <button class="btn btn-ghost btn-sm" onclick="tambahMingguBuku()">+ Minggu</button>
-                </div>
-              </div>
-              <div style="margin-bottom:12px;">
-                <strong style="font-size:0.8rem;">📝 ${currentBookBulan} - ${currentBookMinggu}</strong>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                  <span style="font-size:0.75rem;">Jenis Tugasan:</span>
-                  <input type="text" id="tugasInput" value="${mingguData.tugas||''}" style="flex:1;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;font-size:0.8rem;">
-                  <button class="btn btn-primary" style="padding:6px 12px;font-size:0.75rem;" onclick="simpanTugas('${currentBookBulan}','${currentBookMinggu}',document.getElementById('tugasInput').value)">💾 Simpan</button>
-                </div>
-              </div>
-              <div class="table-wrapper">
-                <table>
-                  <thead><tr><th>No</th><th>Nama Pelajar</th>${mingguData.hari.map(h=>`<th style="text-align:center;font-size:0.65rem;">${h.hari}<br><small>${h.tarikh}</small></th>`).join('')}<th style="text-align:center;">Hantar</th></tr></thead>
-                  <tbody>${st.map((x,i)=>{
-                    let hantar = mingguData.hari.filter(h => {
-                      let key = `${currentBookBulan}_${currentBookMinggu}_${h.hari}`;
-                      return x.buku?.[key] === "hantar";
-                    }).length;
-                    let total = mingguData.hari.length || 1;
-                    return `<tr>
-                      <td>${i+1}</td>
-                      <td style="font-weight:600;color:#6366f1;cursor:pointer;" onclick="bukaModalEditBuku(${i})">${x.name}</td>
-                      ${mingguData.hari.map(h=>{
-                        let key = `${currentBookBulan}_${currentBookMinggu}_${h.hari}`;
-                        let status = x.buku?.[key] || "kosong";
-                        return `<td style="text-align:center;"><span class="badge ${status==='hantar'?'badge-success':'badge-danger'}">${status==='hantar'?'✓':'✗'}</span></td>`;
-                      }).join('')}
-                      <td style="text-align:center;"><strong>${hantar}/${total}</strong></td>
-                    </tr>`;
-                  }).join('')}</tbody>
-                </table>
-              </div>
-              <div style="margin-top:8px;display:flex;gap:4px;">
-                <button class="btn btn-ghost btn-sm" onclick="tambahHari()">+ Hari</button>
-              </div>
+            let w=bkWeek(); w.hari.sort((a,b)=>(a.iso||'').localeCompare(b.iso||''));
+            let todayISO=bkISO(new Date());
+            let vis=w.hari.map((h,hi)=>({h,hi})).filter(o=>!isP||bkHasTask(o.h));
+
+            // ---- hero + statistik ----
+            let stats='';
+            if(isP){
+                let tot=0,dh=0,dt=0; Object.entries(bookMonths).forEach(([b,wk])=>Object.entries(wk).forEach(([m,ww])=>(ww.hari||[]).forEach(h=>{
+                    if(!(h.arahan||h.lampiran.length)||!me) return; tot++; let k=bkStatus(me,b+'_'+m+'_'+h.id); if(k==='dihantar')dh++; else if(k==='diterima')dt++; })));
+                stats=`<div class="bkx-stats">
+                    <div class="bkx-stat ${pendAll.length?'alert':''}"><b>${pendAll.length}</b><span>Belum dihantar</span></div>
+                    <div class="bkx-stat"><b>${dh}</b><span>Menunggu semakan</span></div>
+                    <div class="bkx-stat"><b>${dt}</b><span>Diterima</span></div>
+                    <div class="bkx-stat"><b>${tot}</b><span>Jumlah tugasan</span></div></div>`;
+            } else {
+                let wait=0,acc=0; w.hari.forEach(h=>{let k=bkCnt(st,bkKey(h)); wait+=k.dihantar; acc+=k.diterima;});
+                stats=`<div class="bkx-stats">
+                    <div class="bkx-stat ${wait?'alert':''}"><b>${wait}</b><span>Menunggu semakan</span></div>
+                    <div class="bkx-stat"><b>${acc}</b><span>Diterima (minggu ini)</span></div>
+                    <div class="bkx-stat"><b>${w.hari.length}</b><span>Hari tugasan</span></div>
+                    <div class="bkx-stat"><b>${st.length}</b><span>Pelajar</span></div></div>`;
+            }
+            let hero=`<div class="bkx-hero"><h3>📖 Semakan Buku</h3><p>${isP?'Lihat tugasan guru, hantar kerja anda dan semak status penerimaan.':'Beri tugasan harian, kemas kini hantaran dan semak buku pelajar dengan pantas.'}</p>${stats}</div>`;
+
+            // ---- bar pilihan ----
+            let bar=`<div class="bkx-bar">
+                <div class="bkx-field"><label>① Bulan</label><select onchange="pilihBulan(this.value)">${bulanOpt}</select></div>
+                <div class="bkx-field"><label>② Minggu</label><div class="bkx-weeks">${weekChips}</div></div>
+                ${isP?'':`<div class="bkx-add"><div class="bkx-field"><label>③ Tarikh &amp; Hari</label>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <input type="date" id="bkTarikh" value="${todayISO}" oninput="document.getElementById('bkHariLabel').textContent=bkHariDari(this.value)">
+                    <b id="bkHariLabel" class="bkx-hari">${bkHariDari(todayISO)}</b></div></div>
+                    <button class="btn btn-primary btn-sm" onclick="bkTambahHari()">＋ Tambah Hari</button>
+                    <button class="btn btn-ghost btn-sm" onclick="bkIsiMingguan()" title="Isi Isnin hingga Jumaat bagi minggu tarikh yang dipilih">📅 Isnin–Jumaat</button></div>`}
             </div>`;
-        }
-        function pilihBulan(bulan){
-            currentBookBulan = bulan;
-            currentBookMinggu = Object.keys(bookMonths[bulan] || {})[0] || "Minggu 1";
-            renderBuku();
-        }
-        
-        function pilihMinggu(minggu){
-            currentBookMinggu = minggu;
-            renderBuku();
-        }
-        
-        function tambahBulan(){
-            let nama = prompt("Nama bulan:");
-            if(nama && !bookMonths[nama]){
-                bookMonths[nama] = {};
-                for(let i=1; i<=4; i++){
-                    bookMonths[nama]["Minggu "+i] = { hari: [], tugas: "Tugasan " + i };
+
+            // ---- notifikasi pelajar: tugasan belum dihantar ----
+            let banner='';
+            if(isP){
+                let u=bkUnseen();
+                if(pendAll.length){
+                    banner=`<div class="bkx-alert"><div class="bkx-alert-h"><div class="bkx-alert-ic">🔔</div>
+                        <div style="flex:1;min-width:180px;"><strong>${pendAll.length} tugasan belum dihantar</strong><small>Sila hantar gambar / PDF buku anda sebelum guru menyemak.</small></div>
+                        ${u.length?`<button class="btn btn-ghost btn-sm" onclick="bkTandaSemua()">Tandakan baharu dibaca</button>`:''}</div>
+                        <div class="bkx-pend">${pendAll.slice(0,6).map(x=>{
+                            let late=bkIsLate(x.h), tod=x.h.iso===todayISO, isNew=x.h.postedAt&&(me&&(me.bukuSeen||{})[x.b+'_'+x.m+'_'+x.h.id]!==x.h.postedAt);
+                            return `<div class="bkx-pend-row"><div class="bkx-date" style="width:46px;"><i>${(x.h.hari||'').slice(0,3)}</i><b style="font-size:1.05rem;">${(x.h.tarikh||'').split(' ')[0]}</b></div>
+                            <div class="meta"><b>${x.h.hari} · ${x.h.tarikh}</b><small>${x.b} · ${x.m}${x.h.due?' · ⏰ '+bkDueTxt(x.h):''}</small></div>
+                            ${isNew?'<span class="bkx-pill new">BARU</span>':''}${late?'<span class="bkx-pill bad">Lewat</span>':tod?'<span class="bkx-pill today">Hari ini</span>':''}
+                            <button class="btn btn-primary btn-sm" onclick="bkLihat('${x.b}','${x.m}','${x.h.id}')">Hantar</button></div>`;}).join('')}
+                            ${pendAll.length>6?`<small style="color:var(--bk-mute);text-align:center;">+ ${pendAll.length-6} lagi tugasan belum dihantar</small>`:''}</div></div>`;
+                } else if(me && Object.values(bookMonths).some(wk=>Object.values(wk).some(ww=>ww.hari.some(h=>h.arahan||h.lampiran.length)))){
+                    banner=`<div class="bkx-ok">🎉 Hebat! Semua tugasan sudah dihantar.</div>`;
                 }
-                saveAll();
-                currentBookBulan = nama;
-                renderBuku();
             }
-        }
-        
-        function tambahHari(){
-            let hari = prompt("Nama hari (contoh: Isnin):");
-            let tarikh = prompt("Tarikh (contoh: 15 Jan 2025):");
-            if(hari && tarikh && bookMonths[currentBookBulan]?.[currentBookMinggu]){
-                bookMonths[currentBookBulan][currentBookMinggu].hari.push({ hari, tarikh });
-                saveAll();
-                renderBuku();
+
+            if(!isP){
+                let wl=bkWaiting(), tot=wl.reduce((a,x)=>a+x.n,0);
+                if(wl.length){
+                    banner=`<div class="bkx-alert bkx-alert-g"><div class="bkx-alert-h"><div class="bkx-alert-ic" style="background:linear-gradient(135deg,#f59e0b,#f97316);">📥</div>
+                        <div style="flex:1;min-width:180px;"><strong style="color:#92400e;">${tot} hantaran menunggu semakan buku</strong><small>Daripada ${wl.length} hari tugasan. Klik "Semak" untuk lihat dan terima hantaran pelajar.</small></div></div>
+                        <div class="bkx-pend">${wl.slice(0,6).map(x=>`<div class="bkx-pend-row"><div class="bkx-date" style="width:46px;"><i>${(x.h.hari||'').slice(0,3)}</i><b style="font-size:1.05rem;">${(x.h.tarikh||'').split(' ')[0]}</b></div>
+                            <div class="meta"><b>${x.h.hari} · ${x.h.tarikh}</b><small>${x.b} · ${x.m}</small></div>
+                            <span class="bkx-pill wait">⏳ ${x.n} pelajar</span>
+                            <button class="btn btn-primary btn-sm" onclick="bkSemak('${x.b}','${x.m}','${x.h.id}')">Semak</button></div>`).join('')}
+                            ${wl.length>6?`<small style="color:var(--bk-mute);text-align:center;">+ ${wl.length-6} lagi hari menunggu semakan</small>`:''}</div></div>`;
+                } else if(vis.length){
+                    banner=`<div class="bkx-ok">✅ Tiada hantaran menunggu semakan. Semua buku telah disemak.</div>`;
+                }
             }
+
+            // ---- kad hari ----
+            let body='';
+            if(!vis.length){
+                body=`<div class="bk-empty"><div style="font-size:2.2rem;">🗓️</div>${isP?'Tiada tugasan untuk dihantar pada minggu ini.':'Belum ada hari bagi minggu ini.<br>Pilih <b>tarikh</b> di atas, kemudian tekan <b>＋ Tambah Hari</b><br>(atau <b>📅 Isnin–Jumaat</b> untuk 5 hari sekali gus).'}</div>`;
+            } else body=vis.map(({h,hi})=>{
+                let key=bkKey(h), isToday=h.iso===todayISO, hasTask=!!(h.arahan||h.lampiran.length);
+                let dateBox=`<div class="bkx-date"><i>${(h.hari||'').slice(0,3)}</i><b>${(h.tarikh||'').split(' ')[0]}</b></div>`;
+                if(!isP){
+                    let cnt=bkCnt(st,key), n=st.length||1, sent=cnt.dihantar+cnt.diterima;
+                    let pw=cnt.dihantar/n*100, pa=cnt.diterima/n*100;
+                    return `<div class="bk-day ${isToday?'is-today':''}">
+                        <button class="bk-del" onclick="bkHapusHari(${hi})" title="Batalkan tugasan (tidak akan muncul semula)">🗑 Batal</button>
+                        <div class="bkx-top click" onclick="bkBukaHantaran(${hi})" title="Klik untuk lihat tugasan yang dihantar pelajar">
+                            ${dateBox}
+                            <div class="bkx-title"><strong>${h.hari}</strong><small>${h.tarikh}</small>
+                                <div class="pills">${isToday?'<span class="bkx-pill today">Hari ini</span>':''}${h.due?`<span class="bkx-pill ${bkIsLate(h)?'bad':'mute'}">⏰ ${bkDueTxt(h)}</span>`:''}${cnt.dihantar?`<span class="bkx-pill wait">⏳ ${cnt.dihantar} menunggu semakan</span>`:''}<span class="bkx-pill ${sent?'ok':'mute'}">📥 ${sent}/${st.length} hantar</span></div></div>
+                            <div class="bkx-go">❯</div></div>
+                        <div class="bkx-body">
+                            <div class="bkx-prog"><div class="bkx-prog-bar"><i style="width:${pa}%;background:#10b981"></i><i style="width:${pw}%;background:#f59e0b"></i></div>
+                                <div class="bkx-prog-leg"><em style="--c:#10b981">${cnt.diterima} diterima</em><em style="--c:#f59e0b">${cnt.dihantar} menunggu</em><em style="--c:#cbd5e1">${cnt.belum} belum</em></div></div>
+                            <label class="bk-lbl" style="margin-top:0;">Arahan tugasan (pilihan)</label>
+                            <textarea class="bk-ta" rows="2" placeholder="Contoh: Siapkan latihan muka surat 45." onchange="bkArahan(${hi},this.value)">${escapeHtml(h.arahan||'')}</textarea>
+                            <label class="bk-lbl">Bahan tugasan (gambar / PDF / link)</label>
+                            <div class="bk-items">${bkChips(h.lampiran,hi,'t')||'<small style="color:#94a3b8;">Belum ada bahan.</small>'}</div>
+                            <div class="bk-actions"><button class="btn btn-ghost btn-sm" onclick="bkMulaUpload('t',${hi})">📎 Upload Gambar / PDF</button><button class="btn btn-ghost btn-sm" onclick="bkTambahLink(${hi})">🔗 Tambah Link</button></div>
+                            <label class="bk-lbl">⏰ Tempoh penghantaran (tarikh akhir)</label>
+                            <div class="bkx-due"><input type="datetime-local" class="bkx-dt" value="${h.due||''}" onchange="bkTempoh(${hi},this.value)">
+                                ${h.due?`<button class="btn btn-ghost btn-sm" onclick="bkTempoh(${hi},'')">✕ Kosongkan</button>`:''}</div>
+                            <div class="bkx-chips"><button onclick="bkTempohPantas(${hi},0)">Hari yang sama</button><button onclick="bkTempohPantas(${hi},3)">+3 hari</button><button onclick="bkTempohPantas(${hi},7)">+1 minggu</button></div>
+                            <small style="display:block;margin-top:6px;color:var(--bk-mute);">${h.due?(bkLeft(h)):'Tiada tarikh akhir — pelajar boleh hantar bila-bila masa.'}</small>
+                            <button class="btn bkx-view" onclick="bkBukaHantaran(${hi})">👥 Lihat Hantaran Pelajar${cnt.dihantar?` <span class="bkx-pill new" style="background:#fff;color:#b45309;">${cnt.dihantar} baharu</span>`:''}</button>
+                        </div></div>`;
+                }
+                // ---- paparan pelajar ----
+                if(!me) return '';
+                let s2=bkStatus(me,key), mine=(me.bukti&&me.bukti[key])||[], isNew=h.postedAt&&(me.bukuSeen||{})[key]!==h.postedAt&&hasTask, late=hasTask&&s2==='belum'&&bkIsLate(h), soon=hasTask&&s2==='belum'&&bkSoon(h);
+                let pill=!hasTask&&s2==='belum'?'<span class="bkx-pill mute">Tiada tugasan</span>':s2==='diterima'?'<span class="bkx-pill ok">✓ Diterima</span>':s2==='dihantar'?'<span class="bkx-pill wait">⏳ Menunggu semakan</span>':'<span class="bkx-pill bad">✗ Belum hantar</span>';
+                return `<div class="bk-day ${isToday?'is-today':''} ${hasTask&&s2==='belum'?'is-pend':''}" id="bkd_${hi}">
+                    <div class="bkx-top">${dateBox}<div class="bkx-title"><strong>${h.hari}</strong><small>${h.tarikh}</small>
+                        <div class="pills">${isToday?'<span class="bkx-pill today">Hari ini</span>':''}${isNew?'<span class="bkx-pill new">🆕 BARU</span>':''}${late?'<span class="bkx-pill bad">Lewat</span>':soon?'<span class="bkx-pill wait">⚡ Hampir tamat</span>':''}${pill}</div></div></div>
+                    <div class="bkx-body">
+                    ${h.due?`<div class="bkx-due-box ${late?'late':soon?'soon':''}">⏰ <div><b>Tarikh akhir: ${bkDueTxt(h)}</b><small>${s2==='belum'?bkLeft(h):'Hantaran direkodkan'}</small></div></div>`:''}
+                    ${h.arahan?`<div class="bk-arahan">${escapeHtml(h.arahan)}</div>`:''}
+                    <label class="bk-lbl" ${h.arahan||h.due?'':'style="margin-top:0"'}>📌 Tugasan guru</label>
+                    <div class="bk-items">${bkChips(h.lampiran,hi,'tv')||'<small style="color:#94a3b8;">Tiada bahan tugasan.</small>'}</div>
+                    ${isNew?`<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="bkTanda(${hi})">✓ Tandakan dibaca</button>`:''}
+                    <div class="bkx-mine ${s2==='diterima'?'ok':''}"><label class="bk-lbl" style="margin-top:0;">✍️ Hantaran anda</label>
+                    <div class="bk-items">${bkChips(mine,hi,s2==='diterima'?'sv':'s')||'<small style="color:#94a3b8;">Belum ada hantaran.</small>'}</div>
+                    ${s2==='diterima'?'<div style="margin-top:8px;font-size:.78rem;color:var(--bk-ok);font-weight:800;">✓ Hantaran anda telah diterima guru.</div>':`<div class="bk-actions"><button class="btn btn-primary btn-sm" onclick="bkMulaUpload('s',${hi})">📷 Upload Gambar / PDF</button></div>`}</div>
+                    </div></div>`;
+            }).join('');
+
+            // ---- ringkasan minggu (guru) ----
+            let overview='';
+            if(!isP&&w.hari.length){
+                overview=`<details class="bkx-sum"><summary>📊 Ringkasan Minggu <small style="font-weight:600;color:var(--bk-mute);">— klik nama hari untuk lihat hantaran</small></summary><div class="table-wrapper"><table><thead><tr><th>Nama</th>${w.hari.map((h,hi)=>`<th class="clk" style="text-align:center;" onclick="bkBukaHantaran(${hi})">${h.hari.slice(0,3)}<br><small>${bkTarikhPendek(h)}</small></th>`).join('')}<th style="text-align:center;">Diterima</th></tr></thead><tbody>${st.map(x=>{let n=0;return `<tr><td style="font-weight:600;">${escapeHtml(x.name)}</td>${w.hari.map(h=>{let s3=bkStatus(x,bkKey(h));if(s3==='diterima')n++;return `<td style="text-align:center;">${s3==='diterima'?'✅':s3==='dihantar'?'⏳':'<span style="opacity:.35">✗</span>'}</td>`;}).join('')}<td style="text-align:center;font-weight:800;">${n}/${w.hari.length}</td></tr>`;}).join('')}</tbody></table></div></details>`;
+            }
+            let tabs=isP?'':`<div class="bkx-tabs"><button class="bkx-tab ${_bkTab==='tugasan'?'on':''}" onclick="bkTab('tugasan')">📅 Tugasan Harian</button><button class="bkx-tab ${_bkTab==='analisis'?'on':''}" onclick="bkTab('analisis')">📊 Analisis &amp; Bukti Pelajar</button></div>`;
+            if(!isP&&_bkTab==='analisis'){
+                let heroA=`<div class="bkx-hero"><h3>📊 Analisis &amp; Bukti Penyiapan Tugasan</h3><p>Rekod jumlah tugasan diberi dan disiapkan setiap pelajar — sesuai dijadikan bukti untuk pihak pentadbir.</p></div>`;
+                c.innerHTML=`<div class="bkx">${heroA}${tabs}${bkAnalisisHtml()}</div>`;
+            } else c.innerHTML=`<div class="bkx">${hero}${tabs}${bar}${banner}<div class="bk-days">${body}</div>${overview}</div>`;
+            hydrateImgs(c); bkUpdateBadge(false);
+            if(_bkSub!==null) bkRenderHantaran();
+            if(_bkStu!==null) bkRenderPelajar();
         }
-        
-        function simpanTugas(bulan, minggu, tugas){
-            if(bookMonths[bulan]?.[minggu]){
-                bookMonths[bulan][minggu].tugas = tugas;
+        // ---- modal: hantaran pelajar bagi satu hari (guru) ----
+        let _bkSub=null, _bkSubF='semua';
+        function bkBukaHantaran(hi){if(_isP())return; _bkSub=hi; _bkSubF='semua'; let w=bkWeek(), h=w&&w.hari[hi]; if(!h){_bkSub=null;return;}
+            if(bkCnt(getActiveStudents(),bkKey(h)).dihantar) _bkSubF='dihantar';
+            document.getElementById('bkSubModal').classList.add('show'); document.body.style.overflow='hidden'; bkRenderHantaran();}
+        function bkTutupHantaran(){_bkSub=null; document.getElementById('bkSubModal').classList.remove('show'); document.body.style.overflow='';}
+        function bkFilterHantaran(f){_bkSubF=f; bkRenderHantaran();}
+        function bkRenderHantaran(){
+            let box=document.getElementById('bkSubBox'), w=bkWeek(), h=w&&w.hari[_bkSub]; if(!h){bkTutupHantaran();return;}
+            let st=getActiveStudents(), key=bkKey(h), cnt=bkCnt(st,key), li0=_bkLists.length;
+            let tabs=[['semua','Semua',st.length],['dihantar','⏳ Menunggu',cnt.dihantar],['diterima','✓ Diterima',cnt.diterima],['belum','✗ Belum hantar',cnt.belum]]
+                .map(t=>`<button class="bkm-tab ${_bkSubF===t[0]?'on':''}" onclick="bkFilterHantaran('${t[0]}')">${t[1]} (${t[2]})</button>`).join('');
+            let rows=st.map((x,si)=>({x,si,s:bkStatus(x,key)})).filter(r=>_bkSubF==='semua'||r.s===_bkSubF).map(r=>{
+                let files=(r.x.bukti&&r.x.bukti[key])||[];
+                return `<div class="bkm-row ${r.s==='dihantar'?'wait':''}"><div class="bkm-av">${escapeHtml(bkInisial(r.x.name)).toUpperCase()}</div>
+                    <div class="bkm-main"><strong>${escapeHtml(r.x.name)}</strong>${bkBadge(r.s)}${bkMasaHantar(r.x,key,h)}
+                    <div class="bk-items" style="margin-top:10px;">${files.length?bkChips(files,_bkSub,'sv'):'<small style="color:#94a3b8;">Belum ada hantaran.</small>'}</div></div>
+                    <div class="bkm-act">${r.s==='dihantar'?`<button class="btn btn-success btn-sm" onclick="bkSet(${_bkSub},${r.si},'diterima')">✓ Terima</button>`:r.s==='diterima'?`<button class="btn btn-ghost btn-sm" onclick="bkSet(${_bkSub},${r.si},'dihantar')">↩ Batal</button>`:''}</div></div>`;}).join('')
+                ||'<div class="bk-empty" style="padding:28px;">Tiada pelajar dalam kategori ini.</div>';
+            box.innerHTML=`<div class="bkm-h"><div class="t"><strong>📥 Hantaran Pelajar</strong><small>${h.hari} · ${h.tarikh} · ${st.length} pelajar${h.due?' · ⏰ '+bkDueTxt(h):''}</small></div>
+                <button class="bkm-x" onclick="bkTutupHantaran()" aria-label="Tutup">✕</button></div>
+                ${h.arahan?`<div style="padding:12px 16px 0;"><div class="bk-arahan">${escapeHtml(h.arahan)}</div></div>`:''}
+                <div class="bkm-tools">${tabs}${cnt.dihantar?`<button class="btn btn-success btn-sm" style="margin-left:auto;" onclick="bkTerimaSemua(${_bkSub})">✓ Terima Semua (${cnt.dihantar})</button>`:''}</div>
+                <div class="bkm-list">${rows}</div>`;
+            hydrateImgs(box);
+        }
+        function pilihBulan(v){bkTutupHantaran();currentBookBulan=v;currentBookMinggu='Minggu 1';renderBuku();}
+        function pilihMinggu(v){bkTutupHantaran();currentBookMinggu=v;renderBuku();}
+        function bkToggleDet(key,open){open?_bkOpen.add(key):_bkOpen.delete(key);}
+        function bkTambahHari(){
+            if(_isP()) return; let iso=document.getElementById('bkTarikh').value; if(!iso){alert('Sila pilih tarikh dahulu.');return;}
+            let d=bkParse(iso), w=bkWeek();
+            if(BK_BULAN[d.getMonth()]!==currentBookBulan && !confirm('Tarikh ini bukan dalam bulan '+currentBookBulan+'. Teruskan?')) return;
+            if(w.hari.some(h=>h.id===iso)){alert('Tarikh ini sudah ada dalam minggu ini.');return;}
+            if((w.batal||[]).includes(iso)){ if(!confirm('Tugasan pada tarikh ini pernah dibatalkan. Tambah semula tarikh ini?')) return; w.batal=w.batal.filter(x=>x!==iso); }
+            w.hari.push({id:iso,iso,hari:BK_HARI[d.getDay()],tarikh:bkFmt(d),arahan:'',lampiran:[]}); saveAll(); renderBuku();
+        }
+        function bkIsiMingguan(){
+            if(_isP()) return; let iso=document.getElementById('bkTarikh').value||bkISO(new Date()), d=bkParse(iso), w=bkWeek();
+            d.setDate(d.getDate()-((d.getDay()+6)%7)); let added=0;
+            for(let i=0;i<5;i++){let x=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i), id=bkISO(x); if(!w.hari.some(h=>h.id===id)&&!(w.batal||[]).includes(id)){w.hari.push({id,iso:id,hari:BK_HARI[x.getDay()],tarikh:bkFmt(x),arahan:'',lampiran:[]});added++;}}
+            if(!added) alert('Tiada hari baharu ditambah. Hari Isnin–Jumaat sudah ada atau pernah dibatalkan (tidak dimunculkan semula).'); saveAll(); renderBuku();
+        }
+        function bkHapusHari(hi){
+            if(_isP()) return; let w=bkWeek(), h=w.hari[hi]; if(!h) return;
+            if(!confirm('Batalkan tugasan '+h.hari+' ('+h.tarikh+')?\n\n• Arahan, bahan & tempoh penghantaran dipadam\n• Semua hantaran pelajar bagi hari ini dipadam\n• Tarikh ini TIDAK akan dimunculkan semula pada minggu ini')) return;
+            let key=bkKey(h);
+            (h.lampiran||[]).forEach(it=>{if(it.type!=='link')imgDel(it.id);});
+            Object.values(allData||{}).forEach(d=>(d.students||[]).forEach(x=>{
+                (x.bukti&&x.bukti[key]||[]).forEach(it=>{if(it.type!=='link')imgDel(it.id);});
+                ['bukti','bukiSt','buku','bukuSeen','bukiTime'].forEach(f=>{if(x[f]&&key in x[f]) delete x[f][key];});
+            }));
+            if(!w.batal)w.batal=[]; if(h.iso&&!w.batal.includes(h.iso)) w.batal.push(h.iso);
+            w.hari.splice(hi,1); _bkOpen.delete(key); bkTutupHantaran(); saveAll(); renderBuku();
+        }
+        function bkArahan(hi,v){if(_isP())return; let h=bkWeek().hari[hi]; if(!h||(h.arahan||'')===v.trim())return; h.arahan=v.trim(); h.postedAt=Date.now(); saveAll();}
+        function bkTambahLink(hi){
+            if(_isP()) return; let h=bkWeek().hari[hi]; if(!h) return;
+            let u=(prompt('Tampal link (contoh: https://youtube.com/...):')||'').trim(); if(!u) return;
+            if(!/^https?:\/\//i.test(u)) u='https://'+u;
+            let url; try{url=new URL(u); if(!/^https?:$/.test(url.protocol)) throw 0;}catch(e){alert('Link tidak sah.');return;}
+            let nama=(prompt('Nama paparan (pilihan):',url.hostname.replace(/^www\./,''))||'').trim()||url.hostname;
+            h.lampiran.push({id:'lnk_'+Date.now().toString(36),type:'link',url:url.href,name:nama.slice(0,60)}); h.postedAt=Date.now(); saveAll(); renderBuku();
+        }
+        function bkMulaUpload(kind,hi){
+            let h=bkWeek().hari[hi]; if(!h) return;
+            if(kind==='t'&&_isP()) return;
+            if(kind==='s'){ let me=bkMe(); if(!me||bkStatus(me,bkKey(h))==='diterima') return; }
+            _pend={kind,hi}; let inp=document.getElementById('imgUploadInput'); inp.value=''; inp.click();
+        }
+        async function prosesUpload(inp){
+            let files=[...inp.files], p=_pend; if(!files.length||!p) return;
+            let h=bkWeek().hari[p.hi]; if(!h) return; let me=p.kind==='s'?bkMe():null, key=bkKey(h), ok=0, bad=0;
+            for(let f of files){
+                try{
+                    let isImg=f.type.startsWith('image/'), isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
+                    if(!isImg&&!isPdf||(isPdf&&f.size>8*1024*1024)){bad++;continue;}
+                    let data=isImg?await imgCompress(f,p.kind==='t'?1600:1280,p.kind==='t'?0.8:0.72):await new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+                    let id=await imgPut(data), item={id,type:isImg?'img':'pdf',name:f.name.replace(/\.[^.]+$/,'').slice(0,60)};
+                    if(p.kind==='t') h.lampiran.push(item); else {if(!me.bukti)me.bukti={}; (me.bukti[key]=me.bukti[key]||[]).push(item);}
+                    ok++;
+                }catch(e){console.error(e);bad++;}
+            }
+            if(ok){
+                if(p.kind==='t') h.postedAt=Date.now();
+                else {(me.bukiSt=me.bukiSt||{})[key]='dihantar'; (me.bukiTime=me.bukiTime||{})[key]=Date.now(); if(me.buku&&me.buku[key]==='hantar')me.buku[key]='tidakhantar';}
                 saveAll();
             }
+            if(bad) alert(bad+' fail tidak dimuat naik. Hanya gambar atau PDF (maksimum 8MB) dibenarkan.');
+            inp.value=''; _pend=null; renderBuku();
         }
-        
-        function tambahMingguBuku(){
-            let nama = prompt("Nama minggu (contoh: Minggu 5):");
-            if(nama && bookMonths[currentBookBulan] && !bookMonths[currentBookBulan][nama]){
-                bookMonths[currentBookBulan][nama] = { hari: [], tugas: "" };
-                saveAll();
-                currentBookMinggu = nama;
-                renderBuku();
+        function bkPadam(mode,hi,n,ev){
+            if(ev) ev.stopPropagation(); let h=bkWeek().hari[hi]; if(!h) return;
+            if(mode==='t'){
+                if(_isP()||!confirm('Padam fail ini?')) return;
+                let it=h.lampiran.splice(n,1)[0]; if(it&&it.type!=='link') imgDel(it.id); h.postedAt=Date.now();
+            } else {
+                let me=bkMe(), key=bkKey(h); if(!me||bkStatus(me,key)==='diterima'||!confirm('Padam fail ini?')) return;
+                let arr=me.bukti[key], it=arr.splice(n,1)[0]; if(it) imgDel(it.id);
+                if(!arr.length){delete me.bukti[key]; if(me.bukiSt)delete me.bukiSt[key]; if(me.bukiTime)delete me.bukiTime[key];}
             }
+            saveAll(); renderBuku();
         }
-                function bukaModalEditBuku(idx){
-            let x=getActiveStudents()[idx]; if(!x)return;
-            currentEditBukuIndex=idx;
-            let mingguData = bookMonths[currentBookBulan]?.[currentBookMinggu] || { hari: [] };
-            
-            let html=`<h3 class="card-header">📖 Edit Buku · ${x.name}</h3>
-            <p style="font-size:0.8rem;color:#64748b;margin-bottom:12px;">${currentBookBulan} - ${currentBookMinggu}</p>
-            <div style="margin-bottom:12px;">`;
-            
-            mingguData.hari.forEach((h, i) => {
-                let key = `${currentBookBulan}_${currentBookMinggu}_${h.hari}`;
-                let st = x.buku?.[key] || "kosong";
-                html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:4px;">
-                  <div><strong>${h.hari}</strong><br><small style="color:#64748b;">${h.tarikh}</small></div>
-                  <button class="btn btn-${st==='hantar'?'success':'danger'} btn-sm" onclick="toggleHariBuku('${h.hari}')">${st==='hantar'?'✓ Hantar':'✗ Tidak'}</button>
-                </div>`;
+        function _bkSet(h,x,val){
+            let key=bkKey(h); x.bukiSt=x.bukiSt||{}; x.buku=x.buku||{};
+            if(val==='diterima'){x.bukiSt[key]='diterima';x.buku[key]='hantar';} else {x.bukiSt[key]='dihantar';x.buku[key]='tidakhantar';}
+        }
+        function bkSet(hi,si,val){if(_isP())return; let h=bkWeek().hari[hi],x=getActiveStudents()[si]; if(!h||!x)return; _bkSet(h,x,val); saveAll(); renderBuku();}
+        function bkTerimaSemua(hi){
+            if(_isP()) return; let h=bkWeek().hari[hi]; if(!h) return; let key=bkKey(h), n=0;
+            getActiveStudents().forEach(x=>{if(bkStatus(x,key)==='dihantar'){_bkSet(h,x,'diterima');n++;}});
+            if(n){saveAll();renderBuku();}
+        }
+        function bkTanda(hi){let h=bkWeek().hari[hi]; if(h){bkMark(currentBookBulan,currentBookMinggu,h);renderBuku();}}
+        function bkTandaSemua(){bkUnseen().forEach(u=>bkMark(u.b,u.m,u.h)); renderBuku();}
+        function bkLihat(b,m,id){
+            currentBookBulan=b; currentBookMinggu=m; let w=bkWeek(); let h=w&&w.hari.find(x=>x.id===id); if(h) bkMark(b,m,h);
+            renderBuku(); let i=w?w.hari.findIndex(x=>x.id===id):-1; let el=document.getElementById('bkd_'+i); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        // ---- paparan fail (gambar / PDF / link) ----
+        let _lb={items:[],n:0,url:null};
+        function _bkBlobUrl(dataUrl){let [h,b]=dataUrl.split(','),mime=(h.match(/:(.*?);/)||[])[1]||'application/pdf',bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return URL.createObjectURL(new Blob([u],{type:mime}));}
+        function bkBuka(li,n,hi){
+            let arr=_bkLists[li]||[], it=arr[n]; if(!it) return;
+            if(_isP()){let h=bkWeek().hari[hi]; if(h&&h.postedAt&&bkMe()&&((bkMe().bukuSeen||{})[bkKey(h)]!==h.postedAt)){bkMark(currentBookBulan,currentBookMinggu,h);bkUpdateBadge(false);}}
+            if(it.type==='link'){window.open(it.url,'_blank','noopener');return;}
+            _lb.items=arr.filter(x=>x.type!=='link'); _lb.n=_lb.items.indexOf(it);
+            document.getElementById('imgLightbox').style.display='flex'; _lbShow();
+        }
+        async function _lbShow(){
+            let it=_lb.items[_lb.n]; if(!it) return; let d=await imgGet(it.id), isPdf=it.type==='pdf';
+            if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}
+            let url=d||''; if(isPdf&&d){url=_bkBlobUrl(d);_lb.url=url;}
+            let im=document.getElementById('lbImg'), fr=document.getElementById('lbPdf'), a=document.getElementById('lbDownload'), nt=document.getElementById('lbNewTab');
+            im.style.display=isPdf?'none':'block'; fr.style.display=isPdf?'block':'none';
+            if(isPdf){fr.src=url;} else {im.src=url;fr.removeAttribute('src');}
+            a.href=url||'#'; a.download=(it.name||'fail').replace(/[\\/:*?"<>|]/g,'-')+(isPdf?'.pdf':'.jpg'); nt.href=url||'#'; nt.style.display=isPdf?'':'none';
+            document.getElementById('lbTitle').textContent=(it.name||'Fail')+'  ('+(_lb.n+1)+'/'+_lb.items.length+')';
+        }
+        function lbNav(d){let l=_lb.items.length; if(!l) return; _lb.n=(_lb.n+d+l)%l; _lbShow();}
+        function tutupLB(){document.getElementById('imgLightbox').style.display='none'; document.getElementById('lbPdf').removeAttribute('src'); if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}}
+        document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('imgLightbox').style.display!=='flex'&&_bkSub!==null) bkTutupHantaran(); else if(e.key==='Escape'&&document.getElementById('imgLightbox').style.display!=='flex'&&_bkStu!==null) bkTutupPelajar(); });
+        document.addEventListener('keydown',e=>{
+            if(document.getElementById('imgLightbox').style.display!=='flex') return;
+            if(e.key==='Escape') tutupLB(); else if(e.key==='ArrowRight') lbNav(1); else if(e.key==='ArrowLeft') lbNav(-1);
+        });
+        // ==================== ANALISIS & BUKTI PENYIAPAN TUGASAN ====================
+        let _bkTab='tugasan', _bkAnBulan='', _bkAnSort='nama', _bkStu=null, _bkRO=[];
+        function bkSemuaBulan(){return [...BK_BULAN,...Object.keys(bookMonths).filter(b=>!BK_BULAN.includes(b))];}
+        function bkTier(p){return p>=80?'ok':p>=50?'wait':'bad';}
+        function bkTierColor(p){return p>=80?'#10b981':p>=50?'#f59e0b':'#ef4444';}
+        // kira rekod tugasan seorang pelajar (bulan '' = semua)
+        function bkAnalisis(x,bulan){
+            let items=[];
+            bkSemuaBulan().forEach(b=>{
+                if(bulan&&b!==bulan) return; let wk=bookMonths[b]; if(!wk) return;
+                Object.keys(wk).sort((p,q)=>(parseInt(p.replace(/\D/g,''))||99)-(parseInt(q.replace(/\D/g,''))||99)).forEach(m=>{
+                    (wk[m].hari||[]).slice().sort((p,q)=>(p.iso||'').localeCompare(q.iso||'')).forEach(h=>{
+                        if(!bkHasTask(h)) return;
+                        let key=b+'_'+m+'_'+(h.id||h.hari), st=bkStatus(x,key), files=(x.bukti&&x.bukti[key])||[], t=(x.bukiTime&&x.bukiTime[key])||null, d=bkDueMs(h);
+                        items.push({b,m,h,key,s:st,files,t,lateSubmit:st!=='belum'&&d!==null&&t!==null&&t>d,overdue:st==='belum'&&bkIsLate(h)});
+                    });
+                });
             });
-            
-            html+=`</div>
-            <div class="flex justify-end gap-3 mt-4">
-              <button class="btn btn-ghost" onclick="tutupModal('modalEditBuku')">Tutup</button>
-              <button class="btn btn-primary" onclick="simpanEditBuku()">Simpan</button>
-            </div>`;
-            
-            document.getElementById("modalEditBukuContent").innerHTML=html;
-            document.getElementById("modalEditBuku").style.display="flex";
+            let total=items.length, terima=items.filter(i=>i.s==='diterima').length, hantar=items.filter(i=>i.s!=='belum').length;
+            return {items,total,hantar,terima,belum:total-hantar,lewat:items.filter(i=>i.lateSubmit||i.overdue).length,pct:total?Math.round(hantar/total*100):0,pctTerima:total?Math.round(terima/total*100):0};
         }
-        
-        function toggleHariBuku(hari){
-            let x=getActiveStudents()[currentEditBukuIndex]; if(!x)return;
-            let key = `${currentBookBulan}_${currentBookMinggu}_${hari}`;
-            if(!x.buku)x.buku={};
-            x.buku[key] = x.buku[key]==="hantar"?"tidakhantar":"hantar";
-            saveAll();
-            bukaModalEditBuku(currentEditBukuIndex);
+        function bkRowsAnalisis(bulan){return getActiveStudents().map((x,si)=>({x,si,a:bkAnalisis(x,bulan)}));}
+        function bkBukaRO(li,n){
+            let arr=_bkRO[li]||[], it=arr[n]; if(!it) return;
+            if(it.type==='link'){window.open(it.url,'_blank','noopener');return;}
+            _lb.items=arr.filter(x=>x.type!=='link'); _lb.n=_lb.items.indexOf(it);
+            document.getElementById('imgLightbox').style.display='flex'; _lbShow();
         }
-        
-        function simpanEditBuku(){
-            tutupModal("modalEditBuku");
-            renderCurrentPage();
+        function bkChipsRO(arr){
+            let li=_bkRO.push(arr)-1;
+            return arr.map((it,n)=>{let t=it.type||'img', c=`onclick="bkBukaRO(${li},${n})"`;
+                if(t==='img') return `<span class="bk-thumb big" ${c} title="${escapeHtml(it.name||'')}"><img data-img-id="${it.id}" alt=""></span>`;
+                return `<span class="bk-file" ${c}>${t==='pdf'?'📄':'🔗'} <span>${escapeHtml(it.name||'Fail')}</span></span>`;}).join('');
         }
-        function toggleStatusBuku(idx){let x=getActiveStudents()[currentEditBukuIndex];if(!x)return;let w=masterWeeks[idx];if(!x.buku)x.buku={};x.buku[w]=x.buku[w]==="hantar"?"tidakhantar":"hantar";bukaModalEditBuku(currentEditBukuIndex);}
-        function tambahMingguDariModal(){let w=document.getElementById("newWeekInput").value.trim();if(w){masterWeeks.push(w);saveAll();bukaModalEditBuku(currentEditBukuIndex);}}
-        function simpanEditBuku(){tutupModal("modalEditBuku");renderCurrentPage();}
-        function tambahMingguBuku(){let w=prompt("Nama minggu baru:");if(w){masterWeeks.push(w);saveAll();renderBuku();}}
+        // paparan rekod seorang pelajar (ringkasan + jadual bukti)
+        function bkRekodHtml(x,a){
+            if(!a.total) return '<div class="bk-empty" style="padding:26px;">Belum ada tugasan semakan buku yang diberikan guru.</div>';
+            let col=bkTierColor(a.pct), pa=a.total?a.terima/a.total*100:0, pw=a.total?(a.hantar-a.terima)/a.total*100:0;
+            let tiles=`<div class="bkx-tiles"><div class="bkx-tile"><b>${a.total}</b><span>Tugasan diberi</span></div>
+                <div class="bkx-tile ok"><b>${a.hantar}</b><span>Disiapkan (${a.pct}%)</span></div>
+                <div class="bkx-tile ok"><b>${a.terima}</b><span>Disahkan guru</span></div>
+                <div class="bkx-tile bad"><b>${a.belum}</b><span>Belum hantar</span></div>
+                <div class="bkx-tile wait"><b>${a.lewat}</b><span>Lewat</span></div></div>
+                <div class="bkx-meter"><i style="width:${pa}%;background:#10b981"></i><i style="width:${pw}%;background:#f59e0b"></i></div>
+                <div style="font-size:.74rem;font-weight:700;color:var(--bk-mute);margin:6px 0 14px;">Kadar penyiapan: <b style="color:${col};">${a.pct}%</b> · Disahkan guru: <b>${a.pctTerima}%</b></div>`;
+            let rows=a.items.map((i,n)=>`<tr><td>${n+1}</td>
+                <td style="white-space:nowrap;"><b>${i.h.hari}</b><br><small style="color:var(--bk-mute);">${i.h.tarikh}</small><br><small style="color:var(--bk-mute);">${i.b} · ${i.m}</small></td>
+                <td style="min-width:150px;max-width:260px;font-size:.78rem;">${i.h.arahan?escapeHtml(i.h.arahan.length>110?i.h.arahan.slice(0,110)+'…':i.h.arahan):'<small style="color:#94a3b8;">(bahan sahaja)</small>'}${(i.h.lampiran||[]).length?`<br><small style="color:var(--bk-mute);">📎 ${(i.h.lampiran||[]).length} bahan</small>`:''}</td>
+                <td style="white-space:nowrap;font-size:.76rem;">${i.h.due?bkDueTxt(i.h):'<small style="color:#94a3b8;">—</small>'}</td>
+                <td>${bkBadge(i.s)}${i.lateSubmit?'<br><span class="bkx-pill bad" style="margin-top:4px;">Lewat hantar</span>':i.overdue?'<br><span class="bkx-pill bad" style="margin-top:4px;">Lewat</span>':''}</td>
+                <td style="white-space:nowrap;font-size:.76rem;">${i.t&&i.s!=='belum'?bkFmtMasa(i.t):'<small style="color:#94a3b8;">—</small>'}</td>
+                <td><div class="bk-items">${i.files.length?bkChipsRO(i.files):'<small style="color:#94a3b8;">—</small>'}</div></td></tr>`).join('');
+            return tiles+`<div class="table-wrapper"><table><thead><tr><th>Bil</th><th>Tarikh</th><th>Tugasan</th><th>Tarikh akhir</th><th>Status</th><th>Masa hantar</th><th>Bukti</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        }
+        // ---- tab analisis (guru) ----
+        function bkTab(t){_bkTab=t; renderBuku();}
+        function bkAnBulan(v){_bkAnBulan=v; renderBuku();}
+        function bkAnSort(v){_bkAnSort=v; renderBuku();}
+        function bkAnalisisHtml(){
+            let rows=bkRowsAnalisis(_bkAnBulan), tot=rows.length?rows[0].a.total:0;
+            let bulanOpt='<option value="">Semua bulan</option>'+bkSemuaBulan().filter(b=>Object.values(bookMonths[b]||{}).some(w=>(w.hari||[]).some(bkHasTask))).map(b=>`<option ${b===_bkAnBulan?'selected':''}>${b}</option>`).join('');
+            let tools=`<div class="bkx-an-tools"><div class="bkx-field"><label>Tempoh</label><select onchange="bkAnBulan(this.value)">${bulanOpt}</select></div>
+                <div class="bkx-field"><label>Susun</label><select onchange="bkAnSort(this.value)"><option value="nama" ${_bkAnSort==='nama'?'selected':''}>Mengikut nama</option><option value="rendah" ${_bkAnSort==='rendah'?'selected':''}>Penyiapan terendah dahulu</option><option value="tinggi" ${_bkAnSort==='tinggi'?'selected':''}>Penyiapan tertinggi dahulu</option></select></div>
+                <div class="sp"><button class="btn btn-ghost btn-sm" onclick="bkCSV()">⬇️ CSV</button><button class="btn btn-ghost btn-sm" onclick="bkCetakKelas('ringkas')">🖨️ Cetak Ringkasan Kelas</button><button class="btn btn-primary btn-sm" onclick="bkCetakKelas('bukti')">🖨️ Cetak Bukti Semua Pelajar</button></div></div>`;
+            if(!tot) return `<div class="bkx-an">${tools}<div class="bk-empty" style="margin-top:12px;">Belum ada tugasan semakan buku${_bkAnBulan?' bagi '+_bkAnBulan:''} untuk dianalisis.</div></div>`;
+            let avg=Math.round(rows.reduce((q,r)=>q+r.a.pct,0)/rows.length), hi=rows.filter(r=>r.a.pct>=80).length, lo=rows.filter(r=>r.a.pct<50).length;
+            let tiles=`<div class="bkx-tiles"><div class="bkx-tile"><b>${tot}</b><span>Tugasan diberi</span></div><div class="bkx-tile ${bkTier(avg)}"><b>${avg}%</b><span>Purata penyiapan kelas</span></div><div class="bkx-tile ok"><b>${hi}</b><span>Pelajar ≥ 80%</span></div><div class="bkx-tile bad"><b>${lo}</b><span>Pelajar &lt; 50%</span></div></div>`;
+            let sorted=rows.slice(); if(_bkAnSort==='rendah') sorted.sort((p,q)=>p.a.pct-q.a.pct); else if(_bkAnSort==='tinggi') sorted.sort((p,q)=>q.a.pct-p.a.pct);
+            let trs=sorted.map((r,i)=>`<tr class="clk" onclick="bkBukaPelajar(${r.si})"><td>${i+1}</td><td style="font-weight:700;">${escapeHtml(r.x.name)}</td>
+                <td style="text-align:center;">${r.a.total}</td><td style="text-align:center;font-weight:800;">${r.a.hantar}</td><td style="text-align:center;">${r.a.terima}</td><td style="text-align:center;color:${r.a.belum?'#e11d48':'inherit'};font-weight:${r.a.belum?800:400};">${r.a.belum}</td><td style="text-align:center;">${r.a.lewat}</td>
+                <td><div class="bkx-pct"><div class="bkx-meter"><i style="width:${r.a.pct}%;background:${bkTierColor(r.a.pct)}"></i></div><b style="color:${bkTierColor(r.a.pct)}">${r.a.pct}%</b></div></td>
+                <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();bkBukaPelajar(${r.si})">🔍 Bukti</button></td></tr>`).join('');
+            return `<div class="bkx-an">${tools}${tiles}<div class="table-wrapper"><table><thead><tr><th>Bil</th><th>Nama Pelajar</th><th style="text-align:center;">Diberi</th><th style="text-align:center;">Disiapkan</th><th style="text-align:center;">Disahkan</th><th style="text-align:center;">Belum</th><th style="text-align:center;">Lewat</th><th>Peratus</th><th></th></tr></thead><tbody>${trs}</tbody></table></div>
+                <small style="display:block;margin-top:10px;color:var(--bk-mute);">Disiapkan = pelajar telah memuat naik bukti. Disahkan = diterima oleh guru. Klik baris pelajar untuk melihat bukti hantaran.</small></div>`;
+        }
+        // ---- modal bukti seorang pelajar ----
+        function bkBukaPelajar(si){_bkStu=si; document.getElementById('bkStuModal').classList.add('show'); document.body.style.overflow='hidden'; bkRenderPelajar();}
+        function bkTutupPelajar(){_bkStu=null; document.getElementById('bkStuModal').classList.remove('show'); if(_bkSub===null) document.body.style.overflow='';}
+        function bkRenderPelajar(){
+            let x=getActiveStudents()[_bkStu]; if(!x){bkTutupPelajar();return;}
+            let a=bkAnalisis(x,_bkAnBulan), box=document.getElementById('bkStuBox');
+            box.innerHTML=`<div class="bkm-h"><div class="bkm-av" style="background:rgba(255,255,255,.2);color:#fff;">${escapeHtml(bkInisial(x.name)).toUpperCase()}</div><div class="t"><strong>${escapeHtml(x.name)}</strong><small>Rekod penyiapan tugasan · ${_bkAnBulan||'Semua bulan'}</small></div>
+                <button class="bkm-x" onclick="bkTutupPelajar()" aria-label="Tutup">✕</button></div>
+                <div class="bkm-tools"><button class="btn btn-primary btn-sm" data-n="${escapeHtml(x.name)}" onclick="bkCetakNama(this.dataset.n)">🖨️ Cetak Bukti Pelajar Ini</button></div>
+                <div class="bkm-list"><div class="bkr">${bkRekodHtml(x,a)}</div></div>`;
+            hydrateImgs(box);
+        }
+        // ---- bahagian dalam Profil Pelajar ----
+        function bkProfilRender(x){
+            let box=document.getElementById('studentProfileDetail'); if(!box||!x) return; bkEnsure();
+            let old=document.getElementById('bkProfilBox'); if(old) old.remove();
+            let a=bkAnalisis(x,''), d=document.createElement('div'); d.className='card'; d.id='bkProfilBox'; d.style.marginTop='20px';
+            d.innerHTML=`<div class="card-header" style="flex-wrap:wrap;">📖 Rekod Semakan Buku <span class="badge ${a.total?(a.pct>=80?'badge-success':a.pct>=50?'badge-warning':'badge-danger'):'badge-info'}">${a.total?a.hantar+' / '+a.total+' tugasan disiapkan ('+a.pct+'%)':'Tiada tugasan'}</span>
+                ${(!_isP()&&a.total)?`<button class="btn btn-ghost btn-sm" style="margin-left:auto;" data-n="${escapeHtml(x.name)}" onclick="bkCetakNama(this.dataset.n)">🖨️ Cetak Bukti</button>`:''}</div><div class="bkr">${bkRekodHtml(x,a)}</div>`;
+            box.appendChild(d); hydrateImgs(d);
+        }
+        // ---- CSV ----
+        function bkCSV(){
+            let rows=bkRowsAnalisis(_bkAnBulan), q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+            let out=[['Bil','Nama','Tugasan Diberi','Disiapkan','Disahkan Guru','Belum Hantar','Lewat','Peratus Penyiapan'].map(q).join(',')];
+            rows.forEach((r,i)=>out.push([i+1,r.x.name,r.a.total,r.a.hantar,r.a.terima,r.a.belum,r.a.lewat,r.a.pct+'%'].map(q).join(',')));
+            let blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+            a.href=URL.createObjectURL(blob); a.download='Semakan_Buku_'+(document.getElementById('selectClass').value||'kelas').replace(/\s+/g,'_')+'.csv'; document.body.appendChild(a); a.click(); a.remove();
+        }
+        // ---- cetak laporan ----
+        function bkCetakNama(n){let x=getActiveStudents().find(s=>s.name===n); if(x) bkBinaLaporan([x],'bukti','');}
+        function bkCetakKelas(mode){bkBinaLaporan(getActiveStudents(),mode,_bkAnBulan);}
+        async function bkBinaLaporan(list,mode,bulan){
+            if(!list.length) return;
+            let w=window.open('','_blank'); if(!w){alert('Sila benarkan popup untuk mencetak.');return;}
+            w.document.write('<p style="font-family:sans-serif;padding:24px;">Menyediakan laporan, sila tunggu…</p>');
+            let subj=document.getElementById('selectSubject').value, kls=document.getElementById('selectClass').value;
+            let tarikh=new Date().toLocaleDateString('ms-MY',{day:'numeric',month:'long',year:'numeric'});
+            let head=`<div class="hd"><h1>LAPORAN SEMAKAN BUKU</h1><p><b>Subjek:</b> ${escapeHtml(subj)} &nbsp;|&nbsp; <b>Kelas:</b> ${escapeHtml(kls)} &nbsp;|&nbsp; <b>Tahun:</b> ${escapeHtml(String(currentYear||''))} &nbsp;|&nbsp; <b>Tempoh:</b> ${bulan||'Semua bulan'}</p><p><b>Disediakan oleh:</b> ${escapeHtml((currentUser&&currentUser.name)||'')} &nbsp;|&nbsp; <b>Tarikh cetak:</b> ${tarikh}</p></div>`;
+            let all=getActiveStudents(); let sum=list.map(x=>({x,a:bkAnalisis(x,bulan)}));
+            let tot=sum.length?sum[0].a.total:0, avg=sum.length?Math.round(sum.reduce((q,r)=>q+r.a.pct,0)/sum.length):0;
+            let summary=`<table><thead><tr><th>Bil</th><th>Nama Pelajar</th><th>Diberi</th><th>Disiapkan</th><th>Disahkan</th><th>Belum</th><th>Lewat</th><th>%</th></tr></thead><tbody>${sum.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.x.name)}</td><td class="c">${r.a.total}</td><td class="c"><b>${r.a.hantar}</b></td><td class="c">${r.a.terima}</td><td class="c">${r.a.belum}</td><td class="c">${r.a.lewat}</td><td class="c"><b>${r.a.pct}%</b></td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2"><b>Purata / Jumlah tugasan</b></td><td class="c"><b>${tot}</b></td><td colspan="4"></td><td class="c"><b>${avg}%</b></td></tr></tfoot></table>
+                <p class="nt">Disiapkan = pelajar telah memuat naik bukti hantaran. Disahkan = hantaran diterima oleh guru.</p>`;
+            let body='';
+            if(mode==='ringkas'||list.length>1) body+=`<h2>Ringkasan Penyiapan Tugasan</h2>${summary}`;
+            if(mode==='bukti'){
+                for(let k=0;k<list.length;k++){
+                    let x=list[k], a=bkAnalisis(x,bulan), trs='';
+                    for(let n=0;n<a.items.length;n++){
+                        let i=a.items[n], ev='';
+                        for(let f of i.files){
+                            if(f.type==='img'||!f.type){let d=await imgGet(f.id); ev+=d?`<img src="${d}" alt="">`:'<span class="fl">[gambar tidak ditemui]</span>';}
+                            else if(f.type==='pdf') ev+=`<span class="fl">📄 ${escapeHtml(f.name||'PDF')} (fail PDF)</span>`;
+                            else ev+=`<span class="fl">🔗 ${escapeHtml(f.url||f.name||'')}</span>`;
+                        }
+                        let st=i.s==='diterima'?'DISAHKAN':i.s==='dihantar'?'DIHANTAR':'BELUM HANTAR';
+                        trs+=`<tr><td>${n+1}</td><td><b>${i.h.hari}</b><br>${i.h.tarikh}<br><small>${i.b} · ${i.m}</small></td><td>${i.h.arahan?escapeHtml(i.h.arahan):'<i>(bahan sahaja)</i>'}${(i.h.lampiran||[]).length?`<br><small>📎 ${(i.h.lampiran||[]).length} bahan</small>`:''}${i.h.due?`<br><small>Tarikh akhir: ${bkDueTxt(i.h)}</small>`:''}</td><td><b class="st-${i.s}">${st}</b>${i.lateSubmit?'<br><small>Lewat hantar</small>':i.overdue?'<br><small>Lewat</small>':''}${i.t&&i.s!=='belum'?`<br><small>${bkFmtMasa(i.t)}</small>`:''}</td><td class="ev">${ev||'—'}</td></tr>`;
+                    }
+                    body+=`<div class="stu" ${k>0||list.length>1?'style="page-break-before:always;"':''}><h2>${k+1}. ${escapeHtml(x.name)}</h2>
+                        <p class="kpi">Tugasan diberi: <b>${a.total}</b> &nbsp;|&nbsp; Disiapkan: <b>${a.hantar}</b> (${a.pct}%) &nbsp;|&nbsp; Disahkan guru: <b>${a.terima}</b> &nbsp;|&nbsp; Belum hantar: <b>${a.belum}</b> &nbsp;|&nbsp; Lewat: <b>${a.lewat}</b></p>
+                        ${a.total?`<table class="bt"><thead><tr><th>Bil</th><th>Tarikh</th><th>Tugasan</th><th>Status</th><th>Bukti Hantaran</th></tr></thead><tbody>${trs}</tbody></table>`:'<p><i>Tiada tugasan diberikan.</i></p>'}</div>`;
+                }
+            }
+            body+=`<div class="sign"><div><br><br>_______________________<br>Tandatangan Guru<br>${escapeHtml((currentUser&&currentUser.name)||'')}</div><div><br><br>_______________________<br>Disemak oleh (Pentadbir)<br>Tarikh: ____________</div></div>`;
+            let doc=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Semakan Buku - ${escapeHtml(kls)}</title><style>
+                *{box-sizing:border-box;} body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;margin:0;padding:24px;font-size:12px;}
+                .bar{position:sticky;top:0;background:#1e293b;color:#fff;padding:10px 16px;margin:-24px -24px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+                .bar button{border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;color:#fff;} .bar .p{background:#10b981;} .bar .x{background:#ef4444;}
+                .hd{text-align:center;border-bottom:3px double #334155;padding-bottom:10px;margin-bottom:16px;} .hd h1{margin:0 0 6px;font-size:18px;letter-spacing:.06em;} .hd p{margin:2px 0;}
+                h2{font-size:14px;margin:18px 0 8px;color:#312e81;} table{width:100%;border-collapse:collapse;margin-bottom:8px;} th,td{border:1px solid #94a3b8;padding:6px 8px;text-align:left;vertical-align:top;} th{background:#e0e7ff;font-size:11px;}
+                td.c{text-align:center;} tfoot td{background:#f1f5f9;} .nt{font-size:10px;color:#475569;} .kpi{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;}
+                .bt tr{page-break-inside:avoid;} .ev img{max-width:210px;max-height:210px;border:1px solid #cbd5e1;border-radius:4px;margin:0 6px 6px 0;vertical-align:top;} .fl{display:inline-block;margin:2px 8px 2px 0;font-size:11px;}
+                .st-diterima{color:#047857;} .st-dihantar{color:#b45309;} .st-belum{color:#be123c;}
+                .sign{display:flex;justify-content:space-around;margin-top:40px;text-align:center;page-break-inside:avoid;}
+                @media print{.bar{display:none;} body{padding:10px;} th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+                </style></head><body><div class="bar"><b>📋 Laporan Semakan Buku</b><span><button class="p" onclick="window.print()">🖨️ Cetak / Simpan PDF</button> <button class="x" onclick="window.close()">✕ Tutup</button></span></div>${head}${body}</body></html>`;
+            w.document.open(); w.document.write(doc); w.document.close();
+        }
+        // fungsi lama (dikekalkan supaya eksport window sedia ada tidak ralat)
+        function tambahBulan(){} function simpanTugas(){} function tambahMingguBuku(){} function toggleHariBuku(){}
+        function bukaModalEditBuku(){} function toggleStatusBuku(){} function tambahMingguDariModal(){}
+        function tambahHari(){bkTambahHari();} function simpanEditBuku(){tutupModal("modalEditBuku");renderCurrentPage();}
+        Object.assign(window,{prosesUpload,bkMulaUpload,bkPadam,bkBuka,lbNav,tutupLB,hydrateImgs,bkTambahHari,bkIsiMingguan,bkHapusHari,bkArahan,bkTambahLink,bkSet,bkTerimaSemua,bkTanda,bkTandaSemua,bkLihat,bkToggleDet,bkHariDari,bkUpdateBadge,bkBukaHantaran,bkTutupHantaran,bkFilterHantaran,bkPending,bkTempoh,bkTempohPantas,bkSemak,bkWaiting,bkTab,bkAnBulan,bkAnSort,bkBukaPelajar,bkTutupPelajar,bkBukaRO,bkCSV,bkCetakNama,bkCetakKelas,bkProfilRender});
 
         function renderToken(){
     let c=document.getElementById("tokenContent"), s=document.getElementById("selectSubject").value, cls=document.getElementById("selectClass").value;
@@ -3416,6 +4052,7 @@ let purata = completedExamsList.length > 0 ? (sumMarks / completedExamsList.leng
     </div>`;
     
     document.getElementById("studentProfileDetail").innerHTML = detailHTML;
+    try{ bkProfilRender(x); }catch(e){ console.error(e); }
     if(pbdSkillsSummary.length > 0){
         setTimeout(() => renderProfilRadarChart(pbdSkillsSummary), 300);
     }
@@ -6318,13 +6955,15 @@ let pelajarWithAvg = st.map(s => {
         renderCurrentPage = function() {
             if(currentUser && currentUser.role === 'pelajar') {
                 let p = document.querySelector(".page.active-page");
-                if(p && p.id !== 'profilPage') {
+                if(p && p.id !== 'profilPage' && p.id !== 'bukuPage') {
                     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
                     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
                     document.getElementById('profilPage').classList.add('active-page');
                     document.querySelector('.nav-item[data-page="profil"]').classList.add('active');
                 }
                 renderProfilForStudent();
+                if(document.querySelector('.page.active-page')?.id==='bukuPage') renderBuku();
+                try{bkEnsure();bkUpdateBadge(true);}catch(e){}
                 renderIntervensi();
                 setSystemControlsLocked();
                 setAdminNavVisibility();
@@ -6362,6 +7001,7 @@ let pelajarWithAvg = st.map(s => {
                 setSystemControlsLocked();
                 setAdminNavVisibility();
                 originalRenderCurrentPage();
+                try{bkEnsure();bkUpdateBadge(true);}catch(e){}
                 applyAdminSettingsUI();
                 maybeNotifyGuruAdminExpiry();
                 return;
@@ -6557,4 +7197,5 @@ ${reportHTML}
     </div>
 </body>
 </html>
+
 
