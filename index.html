@@ -14,6 +14,7 @@
     </script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.12.1/firebase-storage-compat.js"></script>
 
     <style>
         :root { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --bg: #f1f5f9; --text: #1e293b; --border: #e2e8f0; }
@@ -857,7 +858,7 @@
         <div id="modalEditMarkah" class="modal"><div class="modal-content" id="modalEditMarkahContent"></div></div>
         <div id="modalKonfigurasiItem" class="modal"><div class="modal-content" id="modalKonfigurasiItemContent" style="width:650px;"></div></div>
         <div id="imgLightbox" class="img-lb" onclick="if(event.target===this)tutupLB()">
-            <div class="img-lb-bar"><span id="lbTitle"></span><span style="display:flex;gap:8px;"><a id="lbNewTab" href="#" target="_blank" rel="noopener" style="display:none;">↗ Tab Baharu</a><a id="lbDownload" href="#" download>⬇ Muat Turun</a><button type="button" onclick="tutupLB()">✕ Tutup</button></span></div>
+            <div class="img-lb-bar"><span id="lbTitle"></span><span style="display:flex;gap:8px;"><a id="lbNewTab" href="#" target="_blank" rel="noopener" style="display:none;">↗ Tab Baharu</a><a id="lbDownload" href="#" download onclick="lbMuat(event)">⬇ Muat Turun</a><button type="button" onclick="tutupLB()">✕ Tutup</button></span></div>
             <button type="button" class="img-lb-nav prev" onclick="lbNav(-1)">‹</button>
             <img id="lbImg" alt=""><iframe id="lbPdf" style="display:none;" title="PDF"></iframe>
             <button type="button" class="img-lb-nav next" onclick="lbNav(1)">›</button>
@@ -2951,62 +2952,75 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             });
             return _imgDBP;
         }
-        // ---- Simpanan awan (Firestore, dipecah kepada bahagian <700KB) supaya fail boleh dilihat di semua peranti ----
-        const IMG_CLOUD_COL='edutrack_files', IMG_CHUNK=700000;
-        function _imgCloud(){ try{ return (typeof initFirebaseIfNeeded==='function' && initFirebaseIfNeeded()) ? firestoreDb : null; }catch(e){ return null; } }
-        async function _imgLocalPut(id,data){
+        // ---- Firebase Storage: fail sebenar (gambar/PDF) disimpan di awan supaya boleh dilihat & dimuat turun oleh semua peranti ----
+        // Firestore hanya simpan rujukan {id,type,name}. Fail lama (id 'img_...') masih dibaca dari IndexedDB peranti asal.
+        const STORAGE_FOLDER='edutrack_files';
+        const STORAGE_LIMIT_BYTES=4*1024*1024*1024;   // HAD JUMLAH STORAN: 4GB
+        const STORAGE_USAGE_DOC='storage_usage';      // dokumen Firestore pengira penggunaan (dikongsi semua peranti)
+        function _stFmt(b){return b>=1073741824?(b/1073741824).toFixed(2)+' GB':(b/1048576).toFixed(1)+' MB';}
+        function _stErr(code,msg){let e=new Error(msg);e.stCode=code;e.stMsg=msg;return e;}
+        function _stRoot(){
+            if(!initFirebaseIfNeeded()||!window.firebase||!firebase.storage) throw _stErr('NOCLOUD','Tidak dapat bersambung ke Firebase Storage. Semak sambungan internet dan cuba lagi.');
+            return firebase.storage().ref();
+        }
+        // laras kiraan penggunaan secara atomik; jika enforce=true dan melebihi had, ditolak
+        async function _stAdjust(delta,enforce){
+            let ref=firestoreDb.collection(FIRESTORE_COLLECTION).doc(STORAGE_USAGE_DOC);
             try{
-                let db=await _imgDB();
-                await new Promise((res,rej)=>{let t=db.transaction('imgs','readwrite');t.objectStore('imgs').put({id,data});t.oncomplete=res;t.onerror=()=>rej(t.error);});
-            }catch(e){console.warn('IndexedDB tidak tersedia',e);}
+                await firestoreDb.runTransaction(async tx=>{
+                    let sn=await tx.get(ref), d=sn.exists?sn.data():{}, used=Number(d.bytes)||0, files=Number(d.files)||0;
+                    if(enforce&&used+delta>STORAGE_LIMIT_BYTES) throw _stErr('LIMIT','Muat naik DITOLAK: had storan '+_stFmt(STORAGE_LIMIT_BYTES)+' telah dicapai (digunakan '+_stFmt(used)+'). Sila padam fail lama atau hubungi pentadbir.');
+                    tx.set(ref,{bytes:Math.max(0,used+delta),files:Math.max(0,files+(delta>0?1:-1)),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+                });
+            }catch(e){
+                if(e&&e.stCode) throw e;
+                console.error(e);
+                throw _stErr('USAGE','Muat naik ditolak kerana had storan tidak dapat disemak. Semak sambungan internet dan peraturan (rules) Firestore.');
+            }
         }
-        async function _imgCloudPut(id,data){
-            let fs=_imgCloud(); if(!fs) throw new Error('Firestore tidak tersedia');
-            let n=Math.ceil(data.length/IMG_CHUNK), root=fs.collection(IMG_CLOUD_COL).doc(id);
-            for(let i=0;i<n;i++) await root.collection('c').doc(String(i)).set({i,d:data.slice(i*IMG_CHUNK,(i+1)*IMG_CHUNK)});
-            await root.set({n,len:data.length,at:Date.now()});
-        }
-        async function _imgCloudGet(id){
-            let fs=_imgCloud(); if(!fs) return null;
-            let root=fs.collection(IMG_CLOUD_COL).doc(id), m=await root.get(); if(!m.exists) return null;
-            let n=m.data().n, parts=await Promise.all(Array.from({length:n},(_,i)=>root.collection('c').doc(String(i)).get()));
-            if(parts.some(x=>!x.exists)) return null;
-            return parts.map(x=>x.data().d).join('');
-        }
-        async function _imgCloudDel(id){
-            let fs=_imgCloud(); if(!fs) return;
-            let root=fs.collection(IMG_CLOUD_COL).doc(id), m=await root.get();
-            if(m.exists){ let n=m.data().n; for(let i=0;i<n;i++) await root.collection('c').doc(String(i)).delete(); }
-            await root.delete();
+        function _stBlob(dataUrl){
+            let [h,b]=dataUrl.split(','), mime=(h.match(/:(.*?);/)||[])[1]||'application/octet-stream', bin=atob(b), u=new Uint8Array(bin.length);
+            for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+            return new Blob([u],{type:mime});
         }
         async function imgPut(data){
-            let id='img_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-            _imgCache.set(id,data);
-            await _imgLocalPut(id,data);
-            try{ await _imgCloudPut(id,data); }
-            catch(e){
-                console.error('Gagal muat naik ke awan',e);
-                if(!window._imgWarned){ window._imgWarned=true; alert('Fail disimpan pada peranti ini sahaja kerana gagal dimuat naik ke awan. Pastikan sambungan internet dan peraturan (rules) Firestore membenarkan koleksi "'+IMG_CLOUD_COL+'".'); }
+            let root=_stRoot(), blob=_stBlob(data);
+            let id='st_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+            await _stAdjust(blob.size,true);   // tempah ruang dahulu; throw jika melebihi 4GB
+            try{
+                await root.child(STORAGE_FOLDER+'/'+id).put(blob,{contentType:blob.type});
+            }catch(e){
+                console.error(e);
+                try{await _stAdjust(-blob.size,false);}catch(_){}   // pulangkan ruang yang ditempah
+                throw _stErr('UPLOAD','Gagal memuat naik fail ke Firebase Storage. Semak sambungan internet dan peraturan (rules) Storage.');
             }
             return id;
         }
         async function imgGet(id){
             if(_imgCache.has(id)) return _imgCache.get(id);
+            if(String(id).startsWith('st_')){
+                try{ let u=await _stRoot().child(STORAGE_FOLDER+'/'+id).getDownloadURL(); _imgCache.set(id,u); return u; }
+                catch(e){ console.warn('Fail storan tidak ditemui/dapat dibuka',id,e); return null; }
+            }
             try{
                 let db=await _imgDB();
                 let rec=await new Promise((res,rej)=>{let q=db.transaction('imgs').objectStore('imgs').get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});
                 if(rec){_imgCache.set(id,rec.data);return rec.data;}
             }catch(e){}
-            try{
-                let d=await _imgCloudGet(id);
-                if(d){_imgCache.set(id,d); _imgLocalPut(id,d); return d;}
-            }catch(e){console.warn('Gagal ambil dari awan',e);}
             return null;
         }
         async function imgDel(id){
             _imgCache.delete(id);
+            if(String(id).startsWith('st_')){
+                try{
+                    let r=_stRoot().child(STORAGE_FOLDER+'/'+id), size=0;
+                    try{size=(await r.getMetadata()).size||0;}catch(e){return;}   // fail tiada: kiraan tidak diubah
+                    await r.delete();
+                    await _stAdjust(-size,false);                                  // pulangkan ruang
+                }catch(e){console.warn('Gagal memadam fail storan',e);}
+                return;
+            }
             try{let db=await _imgDB();db.transaction('imgs','readwrite').objectStore('imgs').delete(id);}catch(e){}
-            try{ await _imgCloudDel(id); }catch(e){console.warn('Gagal padam dari awan',e);}
         }
         function imgCompress(file,max,q){
             return new Promise((res,rej)=>{
@@ -3026,8 +3040,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         }
         function hydrateImgs(root){
             (root||document).querySelectorAll('img[data-img-id]').forEach(async el=>{
-                el.alt='⏳'; let d=await imgGet(el.dataset.imgId);
-                if(d) el.src=d; else {el.alt='⚠ gagal dimuat'; el.title='Fail tidak ditemui atau gagal dimuat dari awan';}
+                let d=await imgGet(el.dataset.imgId);
+                if(d) el.src=d; else el.alt='⚠';
             });
         }
         // ==================== SEMAKAN BUKU (Bulan > Minggu > Tarikh/Hari) ====================
@@ -3386,7 +3400,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         }
         async function prosesUpload(inp){
             let files=[...inp.files], p=_pend; if(!files.length||!p) return;
-            let h=bkWeek().hari[p.hi]; if(!h) return; let me=p.kind==='s'?bkMe():null, key=bkKey(h), ok=0, bad=0;
+            let h=bkWeek().hari[p.hi]; if(!h) return; let me=p.kind==='s'?bkMe():null, key=bkKey(h), ok=0, bad=0, stMsg='';
             for(let f of files){
                 try{
                     let isImg=f.type.startsWith('image/'), isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
@@ -3395,14 +3409,14 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                     let id=await imgPut(data), item={id,type:isImg?'img':'pdf',name:f.name.replace(/\.[^.]+$/,'').slice(0,60)};
                     if(p.kind==='t') h.lampiran.push(item); else {if(!me.bukti)me.bukti={}; (me.bukti[key]=me.bukti[key]||[]).push(item);}
                     ok++;
-                }catch(e){console.error(e);bad++;}
+                }catch(e){console.error(e);bad++; if(e&&e.stMsg){stMsg=e.stMsg; break;}}
             }
             if(ok){
                 if(p.kind==='t') h.postedAt=Date.now();
                 else {(me.bukiSt=me.bukiSt||{})[key]='dihantar'; (me.bukiTime=me.bukiTime||{})[key]=Date.now(); if(me.buku&&me.buku[key]==='hantar')me.buku[key]='tidakhantar';}
                 saveAll();
             }
-            if(bad) alert(bad+' fail tidak dimuat naik. Hanya gambar atau PDF (maksimum 8MB) dibenarkan.');
+            if(stMsg) alert(stMsg); else if(bad) alert(bad+' fail tidak dimuat naik. Hanya gambar atau PDF (maksimum 8MB) dibenarkan.');
             inp.value=''; _pend=null; renderBuku();
         }
         function bkPadam(mode,hi,n,ev){
@@ -3444,20 +3458,20 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             document.getElementById('imgLightbox').style.display='flex'; _lbShow();
         }
         async function _lbShow(){
-            let it=_lb.items[_lb.n]; if(!it) return; let isPdf=it.type==='pdf';
-            let im=document.getElementById('lbImg'), fr=document.getElementById('lbPdf'), a=document.getElementById('lbDownload'), nt=document.getElementById('lbNewTab'), tt=document.getElementById('lbTitle');
-            let lbl=(it.name||'Fail')+'  ('+(_lb.n+1)+'/'+_lb.items.length+')', my=_lb.n;
-            tt.textContent='⏳ Memuatkan... '+lbl; a.removeAttribute('href'); im.removeAttribute('src'); fr.removeAttribute('src');
-            let d=await imgGet(it.id);
-            if(my!==_lb.n||document.getElementById('imgLightbox').style.display==='none') return;
+            let it=_lb.items[_lb.n]; if(!it) return; let d=await imgGet(it.id), isPdf=it.type==='pdf';
             if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}
-            if(!d){tt.textContent='⚠ Fail tidak ditemui / gagal dimuat dari awan  ('+(_lb.n+1)+'/'+_lb.items.length+')'; return;}
-            let url=_bkBlobUrl(d); _lb.url=url;
+            let url=d||''; if(isPdf&&d&&String(d).startsWith('data:')){url=_bkBlobUrl(d);_lb.url=url;}
+            let im=document.getElementById('lbImg'), fr=document.getElementById('lbPdf'), a=document.getElementById('lbDownload'), nt=document.getElementById('lbNewTab');
             im.style.display=isPdf?'none':'block'; fr.style.display=isPdf?'block':'none';
-            if(isPdf){fr.src=url;} else {im.src=url;}
-            let ext=isPdf?'.pdf':((d.match(/^data:image\/(\w+)/)||[])[1]==='png'?'.png':'.jpg');
-            a.href=url; a.download=(it.name||'fail').replace(/[\\/:*?"<>|]/g,'-')+ext; nt.href=url; nt.style.display=isPdf?'':'none';
-            tt.textContent=lbl;
+            if(isPdf){fr.src=url;} else {im.src=url;fr.removeAttribute('src');}
+            a.href=url||'#'; a.download=(it.name||'fail').replace(/[\\/:*?"<>|]/g,'-')+(isPdf?'.pdf':'.jpg'); nt.href=url||'#'; nt.style.display=isPdf?'':'none';
+            document.getElementById('lbTitle').textContent=(it.name||'Fail')+'  ('+(_lb.n+1)+'/'+_lb.items.length+')';
+        }
+        async function lbMuat(ev){
+            let a=document.getElementById('lbDownload'), u=a.getAttribute('href')||''; if(!/^https?:/.test(u)) return;
+            ev.preventDefault();
+            try{let r=await fetch(u); if(!r.ok) throw 0; let o=URL.createObjectURL(await r.blob()), t=document.createElement('a'); t.href=o; t.download=a.download; document.body.appendChild(t); t.click(); t.remove(); setTimeout(()=>URL.revokeObjectURL(o),4000);}
+            catch(e){window.open(u,'_blank','noopener');}
         }
         function lbNav(d){let l=_lb.items.length; if(!l) return; _lb.n=(_lb.n+d+l)%l; _lbShow();}
         function tutupLB(){document.getElementById('imgLightbox').style.display='none'; document.getElementById('lbPdf').removeAttribute('src'); if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}}
@@ -3501,7 +3515,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 return `<span class="bk-file" ${c}>${t==='pdf'?'📄':'🔗'} <span>${escapeHtml(it.name||'Fail')}</span></span>`;}).join('');
         }
         // paparan rekod seorang pelajar (ringkasan + jadual bukti)
-        function bkRekodHtml(x,a){
+        function bkRekodHtml(x,a,ringkas){
             if(!a.total) return '<div class="bk-empty" style="padding:26px;">Belum ada tugasan semakan buku yang diberikan guru.</div>';
             let col=bkTierColor(a.pct), pa=a.total?a.terima/a.total*100:0, pw=a.total?(a.hantar-a.terima)/a.total*100:0;
             let tiles=`<div class="bkx-tiles"><div class="bkx-tile"><b>${a.total}</b><span>Tugasan diberi</span></div>
@@ -3518,6 +3532,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 <td>${bkBadge(i.s)}${i.lateSubmit?'<br><span class="bkx-pill bad" style="margin-top:4px;">Lewat hantar</span>':i.overdue?'<br><span class="bkx-pill bad" style="margin-top:4px;">Lewat</span>':''}</td>
                 <td style="white-space:nowrap;font-size:.76rem;">${i.t&&i.s!=='belum'?bkFmtMasa(i.t):'<small style="color:#94a3b8;">—</small>'}</td>
                 <td><div class="bk-items">${i.files.length?bkChipsRO(i.files):'<small style="color:#94a3b8;">—</small>'}</div></td></tr>`).join('');
+            if(ringkas) return tiles;
             return tiles+`<div class="table-wrapper"><table><thead><tr><th>Bil</th><th>Tarikh</th><th>Tugasan</th><th>Tarikh akhir</th><th>Status</th><th>Masa hantar</th><th>Bukti</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         }
         // ---- tab analisis (guru) ----
@@ -3559,7 +3574,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let old=document.getElementById('bkProfilBox'); if(old) old.remove();
             let a=bkAnalisis(x,''), d=document.createElement('div'); d.className='card'; d.id='bkProfilBox'; d.style.marginTop='20px';
             d.innerHTML=`<div class="card-header" style="flex-wrap:wrap;">📖 Rekod Semakan Buku <span class="badge ${a.total?(a.pct>=80?'badge-success':a.pct>=50?'badge-warning':'badge-danger'):'badge-info'}">${a.total?a.hantar+' / '+a.total+' tugasan disiapkan ('+a.pct+'%)':'Tiada tugasan'}</span>
-                ${(!_isP()&&a.total)?`<button class="btn btn-ghost btn-sm" style="margin-left:auto;" data-n="${escapeHtml(x.name)}" onclick="bkCetakNama(this.dataset.n)">🖨️ Cetak Bukti</button>`:''}</div><div class="bkr">${bkRekodHtml(x,a)}</div>`;
+                ${(!_isP()&&a.total)?`<button class="btn btn-ghost btn-sm" style="margin-left:auto;" data-n="${escapeHtml(x.name)}" onclick="bkCetakNama(this.dataset.n)">🖨️ Cetak Bukti</button>`:''}</div><div class="bkr">${bkRekodHtml(x,a,true)}</div>`;
             box.appendChild(d); hydrateImgs(d);
         }
         // ---- CSV ----
@@ -3623,7 +3638,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         function tambahBulan(){} function simpanTugas(){} function tambahMingguBuku(){} function toggleHariBuku(){}
         function bukaModalEditBuku(){} function toggleStatusBuku(){} function tambahMingguDariModal(){}
         function tambahHari(){bkTambahHari();} function simpanEditBuku(){tutupModal("modalEditBuku");renderCurrentPage();}
-        Object.assign(window,{prosesUpload,bkMulaUpload,bkPadam,bkBuka,lbNav,tutupLB,hydrateImgs,bkTambahHari,bkIsiMingguan,bkHapusHari,bkArahan,bkTambahLink,bkSet,bkTerimaSemua,bkTanda,bkTandaSemua,bkLihat,bkToggleDet,bkHariDari,bkUpdateBadge,bkBukaHantaran,bkTutupHantaran,bkFilterHantaran,bkPending,bkTempoh,bkTempohPantas,bkSemak,bkWaiting,bkTab,bkAnBulan,bkAnSort,bkBukaPelajar,bkTutupPelajar,bkBukaRO,bkCSV,bkCetakNama,bkCetakKelas,bkProfilRender});
+        Object.assign(window,{lbMuat,prosesUpload,bkMulaUpload,bkPadam,bkBuka,lbNav,tutupLB,hydrateImgs,bkTambahHari,bkIsiMingguan,bkHapusHari,bkArahan,bkTambahLink,bkSet,bkTerimaSemua,bkTanda,bkTandaSemua,bkLihat,bkToggleDet,bkHariDari,bkUpdateBadge,bkBukaHantaran,bkTutupHantaran,bkFilterHantaran,bkPending,bkTempoh,bkTempohPantas,bkSemak,bkWaiting,bkTab,bkAnBulan,bkAnSort,bkBukaPelajar,bkTutupPelajar,bkBukaRO,bkCSV,bkCetakNama,bkCetakKelas,bkProfilRender});
 
         function renderToken(){
     let c=document.getElementById("tokenContent"), s=document.getElementById("selectSubject").value, cls=document.getElementById("selectClass").value;
