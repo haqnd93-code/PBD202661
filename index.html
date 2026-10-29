@@ -2952,55 +2952,58 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             });
             return _imgDBP;
         }
-        // ---- Firebase Storage: fail sebenar (gambar/PDF) disimpan di awan supaya boleh dilihat & dimuat turun oleh semua peranti ----
-        // Firestore hanya simpan rujukan {id,type,name}. Fail lama (id 'img_...') masih dibaca dari IndexedDB peranti asal.
-        const STORAGE_FOLDER='edutrack_files';
-        const STORAGE_LIMIT_BYTES=4*1024*1024*1024;   // HAD JUMLAH STORAN: 4GB
-        const STORAGE_USAGE_DOC='storage_usage';      // dokumen Firestore pengira penggunaan (dikongsi semua peranti)
-        function _stFmt(b){return b>=1073741824?(b/1073741824).toFixed(2)+' GB':(b/1048576).toFixed(1)+' MB';}
+        // ---- FAIL DISIMPAN DALAM FIRESTORE SAHAJA (tiada Firebase Storage, tiada had kuota dalam sistem) ----
+        // Setiap fail (data URL) dipecah kepada kepingan <=700KB (had dokumen Firestore 1MB) dalam koleksi 'edutrack_files':
+        //   dokumen meta  : edutrack_files/{id}          -> {total,size,createdAt}
+        //   dokumen kepingan: edutrack_files/{id}_{n}     -> {i,d}
+        // Firestore hanya simpan rujukan {id,type,name} dalam data utama. Semua peranti boleh lihat/muat turun/upload.
+        // Fail lama: id 'st_...' (Firebase Storage, jika ada) dan 'img_...' (IndexedDB peranti asal) masih cuba dibaca.
+        const FILES_COLLECTION='edutrack_files';
+        const FILE_CHUNK_CHARS=700000;
+        const STORAGE_FOLDER='edutrack_files';   // hanya untuk fail lama 'st_'
         function _stErr(code,msg){let e=new Error(msg);e.stCode=code;e.stMsg=msg;return e;}
-        function _stRoot(){
-            if(!initFirebaseIfNeeded()||!window.firebase||!firebase.storage) throw _stErr('NOCLOUD','Tidak dapat bersambung ke Firebase Storage. Semak sambungan internet dan cuba lagi.');
-            return firebase.storage().ref();
-        }
-        // laras kiraan penggunaan secara atomik; jika enforce=true dan melebihi had, ditolak
-        async function _stAdjust(delta,enforce){
-            let ref=firestoreDb.collection(FIRESTORE_COLLECTION).doc(STORAGE_USAGE_DOC);
-            try{
-                await firestoreDb.runTransaction(async tx=>{
-                    let sn=await tx.get(ref), d=sn.exists?sn.data():{}, used=Number(d.bytes)||0, files=Number(d.files)||0;
-                    if(enforce&&used+delta>STORAGE_LIMIT_BYTES) throw _stErr('LIMIT','Muat naik DITOLAK: had storan '+_stFmt(STORAGE_LIMIT_BYTES)+' telah dicapai (digunakan '+_stFmt(used)+'). Sila padam fail lama atau hubungi pentadbir.');
-                    tx.set(ref,{bytes:Math.max(0,used+delta),files:Math.max(0,files+(delta>0?1:-1)),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-                });
-            }catch(e){
-                if(e&&e.stCode) throw e;
-                console.error(e);
-                throw _stErr('USAGE','Muat naik ditolak kerana had storan tidak dapat disemak. Semak sambungan internet dan peraturan (rules) Firestore.');
-            }
-        }
-        function _stBlob(dataUrl){
-            let [h,b]=dataUrl.split(','), mime=(h.match(/:(.*?);/)||[])[1]||'application/octet-stream', bin=atob(b), u=new Uint8Array(bin.length);
-            for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
-            return new Blob([u],{type:mime});
+        function _fCol(){
+            if(!initFirebaseIfNeeded()||!firestoreDb) throw _stErr('NOCLOUD','Tidak dapat bersambung ke Firestore. Semak sambungan internet dan cuba lagi.');
+            return firestoreDb.collection(FILES_COLLECTION);
         }
         async function imgPut(data){
-            let root=_stRoot(), blob=_stBlob(data);
-            let id='st_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-            await _stAdjust(blob.size,true);   // tempah ruang dahulu; throw jika melebihi 4GB
+            let col=_fCol(), id='fs_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+            let total=Math.ceil(data.length/FILE_CHUNK_CHARS), done=0;
             try{
-                await root.child(STORAGE_FOLDER+'/'+id).put(blob,{contentType:blob.type});
+                for(let i=0;i<total;i+=4){
+                    let batch=firestoreDb.batch(), n=0;
+                    for(let j=i;j<Math.min(total,i+4);j++){
+                        batch.set(col.doc(id+'_'+j),{i:j,d:data.slice(j*FILE_CHUNK_CHARS,(j+1)*FILE_CHUNK_CHARS)}); n++;
+                    }
+                    await batch.commit(); done+=n;
+                }
+                // meta ditulis terakhir: fail hanya dianggap sah jika semua kepingan berjaya disimpan
+                await col.doc(id).set({total:total,size:data.length,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
             }catch(e){
                 console.error(e);
-                try{await _stAdjust(-blob.size,false);}catch(_){}   // pulangkan ruang yang ditempah
-                throw _stErr('UPLOAD','Gagal memuat naik fail ke Firebase Storage. Semak sambungan internet dan peraturan (rules) Storage.');
+                try{ let b=firestoreDb.batch(); for(let j=0;j<total;j++) b.delete(col.doc(id+'_'+j)); await b.commit(); }catch(_){}
+                throw _stErr('UPLOAD','Gagal memuat naik fail ke Firestore ('+(e&&e.code||'ralat')+'). Semak sambungan internet dan peraturan (rules) Firestore untuk koleksi "edutrack_files".');
             }
             return id;
         }
         async function imgGet(id){
             if(_imgCache.has(id)) return _imgCache.get(id);
-            if(String(id).startsWith('st_')){
-                try{ let u=await _stRoot().child(STORAGE_FOLDER+'/'+id).getDownloadURL(); _imgCache.set(id,u); return u; }
-                catch(e){ console.warn('Fail storan tidak ditemui/dapat dibuka',id,e); return null; }
+            id=String(id);
+            if(id.startsWith('fs_')){
+                try{
+                    let col=_fCol(), m=await col.doc(id).get();
+                    if(!m.exists) return null;
+                    let total=m.data().total||0, snaps=await Promise.all(Array.from({length:total},(_,j)=>col.doc(id+'_'+j).get()));
+                    if(snaps.some(x=>!x.exists)) return null;
+                    let data=snaps.map(x=>x.data().d).join('');
+                    _imgCache.set(id,data); return data;
+                }catch(e){ console.warn('Gagal baca fail Firestore',id,e); return null; }
+            }
+            if(id.startsWith('st_')){
+                try{
+                    if(!window.firebase||!firebase.storage||!initFirebaseIfNeeded()) return null;
+                    let u=await firebase.storage().ref().child(STORAGE_FOLDER+'/'+id).getDownloadURL(); _imgCache.set(id,u); return u;
+                }catch(e){ return null; }
             }
             try{
                 let db=await _imgDB();
@@ -3010,14 +3013,16 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             return null;
         }
         async function imgDel(id){
-            _imgCache.delete(id);
-            if(String(id).startsWith('st_')){
+            _imgCache.delete(id); id=String(id);
+            if(id.startsWith('fs_')){
                 try{
-                    let r=_stRoot().child(STORAGE_FOLDER+'/'+id), size=0;
-                    try{size=(await r.getMetadata()).size||0;}catch(e){return;}   // fail tiada: kiraan tidak diubah
-                    await r.delete();
-                    await _stAdjust(-size,false);                                  // pulangkan ruang
-                }catch(e){console.warn('Gagal memadam fail storan',e);}
+                    let col=_fCol(), m=await col.doc(id).get(), total=m.exists?(m.data().total||0):0;
+                    let b=firestoreDb.batch(); for(let j=0;j<total;j++) b.delete(col.doc(id+'_'+j)); b.delete(col.doc(id)); await b.commit();
+                }catch(e){console.warn('Gagal memadam fail Firestore',e);}
+                return;
+            }
+            if(id.startsWith('st_')){
+                try{ if(window.firebase&&firebase.storage&&initFirebaseIfNeeded()) await firebase.storage().ref().child(STORAGE_FOLDER+'/'+id).delete(); }catch(e){}
                 return;
             }
             try{let db=await _imgDB();db.transaction('imgs','readwrite').objectStore('imgs').delete(id);}catch(e){}
