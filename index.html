@@ -2951,13 +2951,43 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             });
             return _imgDBP;
         }
-        async function imgPut(data){
-            let id='img_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-            _imgCache.set(id,data);
+        // ---- Simpanan awan (Firestore, dipecah kepada bahagian <700KB) supaya fail boleh dilihat di semua peranti ----
+        const IMG_CLOUD_COL='edutrack_files', IMG_CHUNK=700000;
+        function _imgCloud(){ try{ return (typeof initFirebaseIfNeeded==='function' && initFirebaseIfNeeded()) ? firestoreDb : null; }catch(e){ return null; } }
+        async function _imgLocalPut(id,data){
             try{
                 let db=await _imgDB();
                 await new Promise((res,rej)=>{let t=db.transaction('imgs','readwrite');t.objectStore('imgs').put({id,data});t.oncomplete=res;t.onerror=()=>rej(t.error);});
-            }catch(e){console.warn('IndexedDB tidak tersedia, gambar hanya dalam memori sesi ini',e);}
+            }catch(e){console.warn('IndexedDB tidak tersedia',e);}
+        }
+        async function _imgCloudPut(id,data){
+            let fs=_imgCloud(); if(!fs) throw new Error('Firestore tidak tersedia');
+            let n=Math.ceil(data.length/IMG_CHUNK), root=fs.collection(IMG_CLOUD_COL).doc(id);
+            for(let i=0;i<n;i++) await root.collection('c').doc(String(i)).set({i,d:data.slice(i*IMG_CHUNK,(i+1)*IMG_CHUNK)});
+            await root.set({n,len:data.length,at:Date.now()});
+        }
+        async function _imgCloudGet(id){
+            let fs=_imgCloud(); if(!fs) return null;
+            let root=fs.collection(IMG_CLOUD_COL).doc(id), m=await root.get(); if(!m.exists) return null;
+            let n=m.data().n, parts=await Promise.all(Array.from({length:n},(_,i)=>root.collection('c').doc(String(i)).get()));
+            if(parts.some(x=>!x.exists)) return null;
+            return parts.map(x=>x.data().d).join('');
+        }
+        async function _imgCloudDel(id){
+            let fs=_imgCloud(); if(!fs) return;
+            let root=fs.collection(IMG_CLOUD_COL).doc(id), m=await root.get();
+            if(m.exists){ let n=m.data().n; for(let i=0;i<n;i++) await root.collection('c').doc(String(i)).delete(); }
+            await root.delete();
+        }
+        async function imgPut(data){
+            let id='img_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+            _imgCache.set(id,data);
+            await _imgLocalPut(id,data);
+            try{ await _imgCloudPut(id,data); }
+            catch(e){
+                console.error('Gagal muat naik ke awan',e);
+                if(!window._imgWarned){ window._imgWarned=true; alert('Fail disimpan pada peranti ini sahaja kerana gagal dimuat naik ke awan. Pastikan sambungan internet dan peraturan (rules) Firestore membenarkan koleksi "'+IMG_CLOUD_COL+'".'); }
+            }
             return id;
         }
         async function imgGet(id){
@@ -2967,11 +2997,16 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 let rec=await new Promise((res,rej)=>{let q=db.transaction('imgs').objectStore('imgs').get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});
                 if(rec){_imgCache.set(id,rec.data);return rec.data;}
             }catch(e){}
+            try{
+                let d=await _imgCloudGet(id);
+                if(d){_imgCache.set(id,d); _imgLocalPut(id,d); return d;}
+            }catch(e){console.warn('Gagal ambil dari awan',e);}
             return null;
         }
         async function imgDel(id){
             _imgCache.delete(id);
             try{let db=await _imgDB();db.transaction('imgs','readwrite').objectStore('imgs').delete(id);}catch(e){}
+            try{ await _imgCloudDel(id); }catch(e){console.warn('Gagal padam dari awan',e);}
         }
         function imgCompress(file,max,q){
             return new Promise((res,rej)=>{
@@ -2991,8 +3026,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         }
         function hydrateImgs(root){
             (root||document).querySelectorAll('img[data-img-id]').forEach(async el=>{
-                let d=await imgGet(el.dataset.imgId);
-                if(d) el.src=d; else el.alt='⚠';
+                el.alt='⏳'; let d=await imgGet(el.dataset.imgId);
+                if(d) el.src=d; else {el.alt='⚠ gagal dimuat'; el.title='Fail tidak ditemui atau gagal dimuat dari awan';}
             });
         }
         // ==================== SEMAKAN BUKU (Bulan > Minggu > Tarikh/Hari) ====================
@@ -3409,14 +3444,20 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             document.getElementById('imgLightbox').style.display='flex'; _lbShow();
         }
         async function _lbShow(){
-            let it=_lb.items[_lb.n]; if(!it) return; let d=await imgGet(it.id), isPdf=it.type==='pdf';
+            let it=_lb.items[_lb.n]; if(!it) return; let isPdf=it.type==='pdf';
+            let im=document.getElementById('lbImg'), fr=document.getElementById('lbPdf'), a=document.getElementById('lbDownload'), nt=document.getElementById('lbNewTab'), tt=document.getElementById('lbTitle');
+            let lbl=(it.name||'Fail')+'  ('+(_lb.n+1)+'/'+_lb.items.length+')', my=_lb.n;
+            tt.textContent='⏳ Memuatkan... '+lbl; a.removeAttribute('href'); im.removeAttribute('src'); fr.removeAttribute('src');
+            let d=await imgGet(it.id);
+            if(my!==_lb.n||document.getElementById('imgLightbox').style.display==='none') return;
             if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}
-            let url=d||''; if(isPdf&&d){url=_bkBlobUrl(d);_lb.url=url;}
-            let im=document.getElementById('lbImg'), fr=document.getElementById('lbPdf'), a=document.getElementById('lbDownload'), nt=document.getElementById('lbNewTab');
+            if(!d){tt.textContent='⚠ Fail tidak ditemui / gagal dimuat dari awan  ('+(_lb.n+1)+'/'+_lb.items.length+')'; return;}
+            let url=_bkBlobUrl(d); _lb.url=url;
             im.style.display=isPdf?'none':'block'; fr.style.display=isPdf?'block':'none';
-            if(isPdf){fr.src=url;} else {im.src=url;fr.removeAttribute('src');}
-            a.href=url||'#'; a.download=(it.name||'fail').replace(/[\\/:*?"<>|]/g,'-')+(isPdf?'.pdf':'.jpg'); nt.href=url||'#'; nt.style.display=isPdf?'':'none';
-            document.getElementById('lbTitle').textContent=(it.name||'Fail')+'  ('+(_lb.n+1)+'/'+_lb.items.length+')';
+            if(isPdf){fr.src=url;} else {im.src=url;}
+            let ext=isPdf?'.pdf':((d.match(/^data:image\/(\w+)/)||[])[1]==='png'?'.png':'.jpg');
+            a.href=url; a.download=(it.name||'fail').replace(/[\\/:*?"<>|]/g,'-')+ext; nt.href=url; nt.style.display=isPdf?'':'none';
+            tt.textContent=lbl;
         }
         function lbNav(d){let l=_lb.items.length; if(!l) return; _lb.n=(_lb.n+d+l)%l; _lbShow();}
         function tutupLB(){document.getElementById('imgLightbox').style.display='none'; document.getElementById('lbPdf').removeAttribute('src'); if(_lb.url){URL.revokeObjectURL(_lb.url);_lb.url=null;}}
