@@ -4560,6 +4560,90 @@ function renderProfilRadarChart(pbdSkills){
 }
         function paparProfil(){let sel=document.getElementById("studentSelect");if(sel&&sel.value)pilihStudentProfil(sel.value);}
 
+
+        // ===== TAMBAHAN: PEMBERIAN TP PANTAS (kaedah asal kekal) =====
+        let pbdSel=new Set(), pbdBrush=0, pbdDrag=false, pbdMx=null, pbdSaveT=null;
+        const TP_BG=['#fee2e2','#ffedd5','#fef9c3','#dcfce7','#dbeafe','#ede9fe'], TP_FG=['#dc2626','#ea580c','#ca8a04','#16a34a','#2563eb','#7c3aed'];
+        function pbdCtx(){return {subj:document.getElementById("selectSubject").value,kelas:document.getElementById("selectClass").value,skill:document.getElementById("pbdSkillSelect").value,sp:document.getElementById("pbdSpSelect").value};}
+        function pbdToggle(enc,on){let n=decodeURIComponent(enc);on?pbdSel.add(n):pbdSel.delete(n);pbdUpdSel();}
+        function pbdUpdSel(){let e=document.getElementById("pbdSelInfo");if(e)e.textContent=pbdSel.size?pbdSel.size+" murid ditanda":"Tandakan murid (kotak di kiri nama) atau guna butang bawah";}
+        function pbdVisible(){let s=(document.getElementById("pbdSearchInput")?.value||'').toLowerCase();return getActiveStudents().filter(x=>!s||x.name.toLowerCase().includes(s)).map(x=>x.name);}
+        function pbdSelectAll(on){pbdSel=on?new Set(pbdVisible()):new Set();renderPBDTable();pbdUpdSel();}
+        function pbdSelectBelum(){let c=pbdCtx();pbdSel=new Set(pbdVisible().filter(n=>getPBD(c.subj,c.kelas,c.skill,c.sp,n).tp===0));renderPBDTable();pbdUpdSel();}
+        function pbdBulkSet(items,tp){ // items: [{skill,sp,name}]
+            let c=pbdCtx();window._pbdBulk=true;
+            try{items.forEach(i=>{let cur=getPBD(c.subj,c.kelas,i.skill,i.sp,i.name);setPBD(c.subj,c.kelas,i.skill,i.sp,i.name,tp,cur.remark||"");});}finally{window._pbdBulk=false;}
+            saveAll();
+        }
+        function pbdApplyTo(tp){
+            let c=pbdCtx(),names=[...pbdSel].filter(n=>getActiveStudents().some(s=>s.name===n));
+            if(!names.length){
+                names=pbdVisible().filter(n=>getPBD(c.subj,c.kelas,c.skill,c.sp,n).tp===0);
+                if(!names.length){alert("Semua murid sudah dinilai untuk SP ini.");return;}
+                if(!confirm("Beri TP "+tp+" kepada "+names.length+" murid yang belum dinilai?"))return;
+            }
+            pbdBulkSet(names.map(n=>({skill:c.skill,sp:c.sp,name:n})),tp);
+            pbdSel=new Set();populatePBDSPS(c.sp);renderPBDTable();
+        }
+        // ----- Matriks Kemahiran -----
+        function openPBDMatrix(){
+            let d=getCurrentDSKP(),c=pbdCtx();if(!d)return;
+            let sk=d.skills.find(s=>s.code===c.skill);if(!sk){alert("Pilih kemahiran dahulu.");return;}
+            pbdMx={sk:sk,st:getActiveStudents().map(s=>s.name)};pbdBrush=0;
+            let o=document.getElementById("pbdMxOv");if(o)o.remove();
+            o=document.createElement("div");o.id="pbdMxOv";
+            o.style.cssText="position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:12px;";
+            document.body.appendChild(o);pbdMxRender();
+            document.addEventListener("mouseup",pbdMxUp);
+        }
+        function pbdMxUp(){pbdDrag=false;}
+        function pbdMxRender(){
+            let c=pbdCtx(),{sk,st}=pbdMx,o=document.getElementById("pbdMxOv");
+            let pal=[1,2,3,4,5,6].map(t=>`<button class="tp-btn ${pbdBrush===t?'active-'+t:''}" style="${pbdBrush===t?'transform:scale(1.15);':''}" onclick="pbdMxBrush(${t})">${t}</button>`).join('')+`<button class="tp-btn" style="width:auto;padding:0 10px;${pbdBrush===-1?'background:#e2e8f0;border-color:#64748b;':''}" onclick="pbdMxBrush(-1)">🧽 Padam</button>`;
+            let head=sk.spList.map((sp,j)=>`<th style="text-align:center;min-width:58px;" title="${escapeHtml(sp.desc)}">${sp.code}<br><button class="btn btn-ghost" style="padding:1px 6px;font-size:.65rem;margin-top:2px;" title="Isi lajur ini dengan berus" onclick="pbdMxFill('c',${j})">⬇</button></th>`).join('');
+            let rows=st.map((n,i)=>`<tr><td style="position:sticky;left:0;background:#fff;font-weight:600;white-space:nowrap;z-index:1;">${i+1}. ${escapeHtml(n)}</td>${sk.spList.map((sp,j)=>pbdMxCell(c,i,j)).join('')}<td><button class="btn btn-ghost" style="padding:2px 8px;font-size:.7rem;" title="Isi baris ini dengan berus" onclick="pbdMxFill('r',${i})">➡</button></td></tr>`).join('');
+            o.innerHTML=`<div style="background:#fff;border-radius:20px;width:min(1100px,100%);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;">
+              <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;"><b>⚡ Matriks TP · ${escapeHtml(sk.name)}</b><button class="btn btn-ghost" onclick="pbdMxClose()">✖ Tutup</button></div>
+              <div style="padding:12px 20px;border-bottom:1px solid #f1f5f9;display:flex;flex-wrap:wrap;gap:8px;align-items:center;"><b style="font-size:.8rem;">Berus:</b>${pal}<label style="font-size:.75rem;margin-left:8px;"><input type="checkbox" id="pbdMxOver"> Timpa TP sedia ada (untuk ⬇ ➡ Isi semua)</label><button class="btn btn-primary" style="padding:6px 12px;font-size:.75rem;" onclick="pbdMxFill('a')">Isi semua kosong</button></div>
+              <div id="pbdMxHint" style="padding:6px 20px;font-size:.72rem;color:#64748b;">Pilih TP pada berus, kemudian klik (atau seret) pada petak murid × SP. ⬇ isi satu SP untuk semua murid · ➡ isi semua SP untuk seorang murid.</div>
+              <div style="overflow:auto;"><table id="pbdMxTable" style="min-width:600px;user-select:none;"><thead><tr><th style="position:sticky;left:0;background:#f8fafc;z-index:2;">Nama</th>${head}<th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+            let tb=document.getElementById("pbdMxTable");
+            tb.onmousedown=e=>{let td=e.target.closest(".mxc");if(td){pbdDrag=true;pbdMxPaint(td);e.preventDefault();}};
+            tb.onmouseover=e=>{let td=e.target.closest(".mxc");if(pbdDrag&&td)pbdMxPaint(td);};
+            tb.onclick=e=>{if(e.detail===0){let td=e.target.closest(".mxc");if(td)pbdMxPaint(td);}};
+            tb.ontouchend=null;
+        }
+        function pbdMxCell(c,i,j){
+            let sp=pbdMx.sk.spList[j],tp=getPBD(c.subj,c.kelas,pbdMx.sk.code,sp.code,pbdMx.st[i]).tp;
+            return `<td class="mxc" id="mx_${i}_${j}" data-i="${i}" data-j="${j}" style="text-align:center;cursor:pointer;font-weight:700;background:${tp?TP_BG[tp-1]:'#fff'};color:${tp?TP_FG[tp-1]:'#cbd5e1'};">${tp||'·'}</td>`;
+        }
+        function pbdMxBrush(b){pbdBrush=b;let h=document.getElementById("pbdMxHint");pbdMxRender();}
+        function pbdMxSaveSoon(){clearTimeout(pbdSaveT);pbdSaveT=setTimeout(saveAll,700);}
+        function pbdMxSet(i,j,tp){
+            let c=pbdCtx(),sp=pbdMx.sk.spList[j],n=pbdMx.st[i];
+            window._pbdBulk=true;try{setPBD(c.subj,c.kelas,pbdMx.sk.code,sp.code,n,tp,getPBD(c.subj,c.kelas,pbdMx.sk.code,sp.code,n).remark||"");}finally{window._pbdBulk=false;}
+            let td=document.getElementById("mx_"+i+"_"+j);if(td){td.style.background=tp?TP_BG[tp-1]:'#fff';td.style.color=tp?TP_FG[tp-1]:'#cbd5e1';td.textContent=tp||'·';}
+            pbdMxSaveSoon();
+        }
+        function pbdMxPaint(td){
+            if(!pbdBrush){let h=document.getElementById("pbdMxHint");h.style.color="#dc2626";h.textContent="⚠ Pilih TP pada 'Berus' dahulu.";return;}
+            pbdMxSet(+td.dataset.i,+td.dataset.j,pbdBrush===-1?0:pbdBrush);
+        }
+        function pbdMxFill(mode,k){
+            if(!pbdBrush||pbdBrush===-1){alert("Pilih TP (1-6) pada 'Berus' dahulu.");return;}
+            let c=pbdCtx(),over=document.getElementById("pbdMxOver").checked,N=pbdMx.st.length,M=pbdMx.sk.spList.length,cells=[];
+            if(mode==='c')for(let i=0;i<N;i++)cells.push([i,k]);
+            else if(mode==='r')for(let j=0;j<M;j++)cells.push([k,j]);
+            else{for(let i=0;i<N;i++)for(let j=0;j<M;j++)cells.push([i,j]);}
+            cells=cells.filter(([i,j])=>over||getPBD(c.subj,c.kelas,pbdMx.sk.code,pbdMx.sk.spList[j].code,pbdMx.st[i]).tp===0);
+            if(mode==='a'&&cells.length&&!confirm("Isi "+cells.length+" petak kosong dengan TP "+pbdBrush+"?"))return;
+            cells.forEach(([i,j])=>pbdMxSet(i,j,pbdBrush));
+        }
+        function pbdMxClose(){
+            clearTimeout(pbdSaveT);saveAll();document.removeEventListener("mouseup",pbdMxUp);
+            document.getElementById("pbdMxOv")?.remove();pbdMx=null;
+            let sp=document.getElementById("pbdSpSelect")?.value;populatePBDSPS(sp);renderPBDTable();
+        }
         function getCurrentDSKP(){return dskpDatabase[document.getElementById("selectSubject").value]?.[getCurrentTingkatan()];}
         function renderPBD(){
             let prevSkill=document.getElementById("pbdSkillSelect")?.value||"";
@@ -4570,7 +4654,7 @@ function renderProfilRadarChart(pbdSkills){
             let dskp=getCurrentDSKP();
             if(!dskp){c.innerHTML=`<div class="card" style="text-align:center;padding:40px;"><p>⚠️ Tiada DSKP untuk <b>${subj}</b> (${ting}).</p><p style="font-size:0.8rem;color:#64748b;margin-top:8px;">Muat naik fail JSON DSKP di halaman <b>Tetapan</b>.</p></div>`;return;}
             let st=getActiveStudents(); if(!st.length){c.innerHTML='<div class="card" style="text-align:center;padding:40px;">Tiada pelajar.</div>';return;}
-            c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button><button class="btn btn-success" onclick="cetakBorangTransitIndividu()" style="background:#0891b2;"><i class="fas fa-print"></i> 📄 Borang Transit Individu</button><button class="btn btn-success" onclick="cetakBorangTransitKelas()"><i class="fas fa-print"></i> 📋 Borang Transit Kelas</button></div></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th>#</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
+            c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;"><h2 style="font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📋 PBD · ${subj} · ${ting}</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-accent" onclick="openPBDMatrix()">⚡ Matriks Kemahiran</button><button class="btn btn-primary" onclick="eksportPBDExcel()">📥 Eksport Excel</button><button class="btn btn-success" onclick="cetakBorangTransitIndividu()" style="background:#0891b2;"><i class="fas fa-print"></i> 📄 Borang Transit Individu</button><button class="btn btn-success" onclick="cetakBorangTransitKelas()"><i class="fas fa-print"></i> 📋 Borang Transit Kelas</button></div></div><div class="card" style="margin-bottom:16px;"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;"><div><div class="section-title">Kemahiran</div><select id="pbdSkillSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Standard Pembelajaran</div><select id="pbdSpSelect" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></select></div><div><div class="section-title">Carian</div><input type="text" id="pbdSearchInput" placeholder="Cari nama..." style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e2e8f0;"></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><span id="pbdRingkasan" style="font-weight:600;"></span><button class="btn btn-primary" onclick="bukaModalPBDStudent()">+ Tambah Murid</button></div></div><div class="card" style="margin-bottom:16px;padding:14px 18px;"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;"><b style="font-size:0.8rem;">⚡ TP Pantas:</b><span id="pbdSelInfo" style="font-size:0.75rem;color:#64748b;">Tandakan murid (kotak di kiri nama) atau guna butang bawah</span><span style="flex:1"></span>${[1,2,3,4,5,6].map(t=>`<button type="button" class="tp-btn active-${t}" style="width:34px;height:34px;" title="Beri TP ${t}" onclick="pbdApplyTo(${t})">${t}</button>`).join('')}</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"><button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem;" onclick="pbdSelectAll(true)">☑ Pilih semua</button><button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem;" onclick="pbdSelectAll(false)">☐ Nyahpilih</button><button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem;" onclick="pbdSelectBelum()">Pilih yang belum dinilai</button></div><div style="font-size:0.68rem;color:#94a3b8;margin-top:6px;">Tekan nombor TP untuk beri kepada murid yang ditanda. Jika tiada yang ditanda, TP diberi kepada semua murid yang BELUM dinilai (anda akan diminta sahkan).</div></div><div class="card" style="overflow-x:auto;padding:0;"><table style="min-width:1000px;"><thead><tr><th style="white-space:nowrap;"><input type="checkbox" onchange="pbdSelectAll(this.checked)" title="Pilih semua"> #</th><th>Nama</th><th style="text-align:center;">TP</th><th>Progres</th><th>Catatan</th><th>Intervensi</th><th></th></tr></thead><tbody id="pbdTableBody"></tbody></table></div><div class="card"><div class="card-header">📊 Analisis</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:px;"><canvas id="pbdChart" height="150"></canvas><div id="pbdAnalisisContent"></div></div></div>`;
             document.getElementById("pbdSearchInput").value=prevSearch;
             populatePBDSkills(prevSkill,prevSp);
             document.getElementById("pbdSkillSelect").addEventListener("change",()=>{populatePBDSPS();renderPBDTable();});
@@ -4648,7 +4732,7 @@ function renderProfilRadarChart(pbdSkills){
     } else {
         pbdData[subj][kelas][skill][sp][name] = {tp:tp, remark:remark, tarikh:tarikh};
     }
-    saveAll();
+    if(!window._pbdBulk) saveAll();
 }
         function renderPBDTable(){
     let subj=document.getElementById("selectSubject").value;
@@ -4675,7 +4759,7 @@ function renderProfilRadarChart(pbdSkills){
         let safeName = encodeURIComponent(s.name);
         
         return `<tr>
-            <td>${i+1}</td>
+            <td style="white-space:nowrap;"><input type="checkbox" class="pbd-chk" ${pbdSel.has(s.name)?'checked':''} onchange="pbdToggle('${safeName}',this.checked)"> ${i+1}</td>
             <td style="font-weight:600;color:#6366f1;cursor:pointer;text-decoration:underline dotted;" onclick="showStudentPBDDetail(decodeURIComponent('${safeName}'))" title="Klik untuk lihat ringkasan PBD">${s.name}</td>
             <td><div style="display:flex;gap:4px;justify-content:center;">${[1,2,3,4,5,6].map(t=>`<button type="button" class="tp-btn${t===tp && tp>0 ? ' active-'+t : (tp===0 && t===3 ? ' active-3' : '')}" onclick="updateTP(event,'${safeName}',${t})">${t}</button>`).join('')}</div></td>
             <td><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${tp>0 ? colors[tp-1] : '#cbd5e1'};"></div></div><small>${tp>0 ? 'TP '+tp+'/6' : 'Belum dinilai'}</small></td>
