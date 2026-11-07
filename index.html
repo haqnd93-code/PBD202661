@@ -392,6 +392,30 @@
         .score-green { color: #059669; font-weight: 700; }
         .score-yellow { color: #d97706; font-weight: 700; }
         .score-red { color: #dc2626; font-weight: 700; }
+        /* ===== AKSES PELAJAR ===== */
+        .sa-switch-row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 18px; border-radius:14px; border:1.5px solid #e2e8f0; background:#fff; margin-bottom:16px; }
+        .sa-switch-row.on { border-color:#6ee7b7; background:#ecfdf5; }
+        .sa-switch-row.off { border-color:#fca5a5; background:#fef2f2; }
+        .sa-switch { position:relative; display:inline-block; width:78px; height:36px; flex-shrink:0; }
+        .sa-switch input { opacity:0; width:0; height:0; }
+        .sa-slider { position:absolute; inset:0; cursor:pointer; background:#ef4444; border-radius:36px; transition:.25s; box-shadow:inset 0 1px 3px rgba(0,0,0,.2); }
+        .sa-slider::before { content:""; position:absolute; height:28px; width:28px; left:4px; top:4px; background:#fff; border-radius:50%; transition:.25s; box-shadow:0 2px 5px rgba(0,0,0,.25); }
+        .sa-slider span { position:absolute; top:50%; transform:translateY(-50%); font-size:.68rem; font-weight:800; color:#fff; right:10px; transition:.25s; }
+        .sa-switch input:checked + .sa-slider { background:#10b981; }
+        .sa-switch input:checked + .sa-slider::before { transform:translateX(42px); }
+        .sa-switch input:checked + .sa-slider span { right:auto; left:11px; }
+        .sa-textarea { width:100%; min-height:110px; padding:12px 14px; border:1.5px solid #fed7aa; border-radius:12px; font-family:inherit; font-size:.88rem; resize:vertical; outline:none; background:#fff; }
+        .sa-textarea:focus { border-color:#0ea5a3; box-shadow:0 0 0 3px rgba(14,165,163,.15); }
+        .sa-textarea:disabled { background:#f1f5f9; opacity:.6; cursor:not-allowed; }
+        .sa-chip { font-size:.72rem; padding:6px 12px; border-radius:20px; border:1px solid #fdba74; background:#fff7ed; color:#9a3412; cursor:pointer; font-weight:600; }
+        .sa-chip:hover { background:#ffedd5; }
+        #studentBlockOverlay { display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg,#7f1d1d,#991b1b 55%,#b45309); align-items:center; justify-content:center; padding:20px; }
+        #studentBlockOverlay .sb-box { background:#fff; border-radius:22px; max-width:520px; width:100%; padding:34px 28px; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,.4); }
+        #studentBlockOverlay .sb-icon { font-size:3rem; margin-bottom:10px; }
+        #studentBlockOverlay h2 { font-size:1.25rem; font-weight:800; color:#7f1d1d; margin-bottom:6px; }
+        #studentBlockOverlay .sb-label { font-size:.72rem; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:.06em; margin:16px 0 6px; }
+        #studentBlockOverlay .sb-msg { background:#fff7ed; border:1.5px solid #fed7aa; border-radius:12px; padding:14px 16px; font-size:.92rem; color:#431407; white-space:pre-wrap; text-align:left; word-break:break-word; }
+
         /* ===== SETTINGS COLORFUL STYLES ===== */
         .settings-container { display: flex; flex-direction: column; gap: 20px; }
         .settings-hero {
@@ -898,6 +922,16 @@ body.dark-mode .bk-mark{background:rgba(16,185,129,.14);border-color:rgba(16,185
 </head>
 <body>
     <!-- LOGIN MODAL -->
+    <div id="studentBlockOverlay">
+        <div class="sb-box">
+            <div class="sb-icon">🚫</div>
+            <h2>Akses Pelajar Ditutup</h2>
+            <p style="font-size:.82rem;color:#64748b;">Guru telah menutup akses pelajar ke sistem buat sementara waktu.</p>
+            <div class="sb-label">Sebab / Makluman daripada guru</div>
+            <div class="sb-msg" id="studentBlockMsg"></div>
+            <button class="btn btn-primary" style="margin-top:22px;width:100%;padding:12px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Kembali ke Log Masuk</button>
+        </div>
+    </div>
     <div id="loginOverlay" class="login-overlay">
         <div class="login-modal">
             <div class="logo"><i class="fas fa-graduation-cap"></i></div>
@@ -1033,6 +1067,7 @@ let examNamesCustom = {}; // format: { "Tingkatan 5": ["UP1", "PPSA", "TOV", "SP
 // Daftar peperiksaan yang telah dijalankan (disimpan ke Firebase)
 let completedExams = {}; // format: { "Tingkatan 5": ["UP1", "PPSA"], "Tingkatan 4": ["UP1"], ... }
 let adminSystemLock = { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
+let studentAccess = { enabled: true, message: "" }; // Akses pelajar (ON = dibenarkan)
 const ADMIN_AREA_PASSWORD = "9876";
 const MASTER_LOGIN_USERNAME = "HAQND93";
 const MASTER_LOGIN_PASSWORD = "931014";
@@ -1408,7 +1443,8 @@ function lihatPemetaanExam() {
                 itemConfigGlobal: itemConfigGlobal || {},
                 completedExams: completedExams || {},
                 examNamesCustom: examNamesCustom || {},
-                adminSystemLock: adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" }
+                adminSystemLock: adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" },
+                studentAccess: studentAccess || { enabled: true, message: "" }
             };
         }
 
@@ -1428,6 +1464,8 @@ function lihatPemetaanExam() {
             examNamesCustom = payload.examNamesCustom || {};
             adminSystemLock = payload.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
             normalizeAdminLockState();
+            studentAccess = payload.studentAccess || { enabled: true, message: "" };
+            normalizeStudentAccess();
         }
 
         function safeParseJSON(rawValue, fallback) {
@@ -6349,7 +6387,7 @@ ${transitBody}
             <div class="settings-container">
                 <div class="settings-hero">
                     <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
-                    <div><h2>Pusat Tetapan Sistem</h2><p>Pilih fungsi di header: Akademik, Peperiksaan, Pelajar, DSKP atau Data.</p></div>
+                    <div><h2>Pusat Tetapan Sistem</h2><p>Pilih fungsi di header: Akademik, Peperiksaan, Pelajar, DSKP, Data atau Akses Pelajar.</p></div>
                 </div>
 
                 <div class="settings-tabs">
@@ -6358,6 +6396,7 @@ ${transitBody}
                     <button type="button" class="settings-tab-btn" data-settings-tab="pelajar" onclick="setSettingsSection('pelajar')"><i class="fas fa-user-plus"></i> Pelajar</button>
                     <button type="button" class="settings-tab-btn" data-settings-tab="dskp" onclick="setSettingsSection('dskp')"><i class="fas fa-cloud-upload-alt"></i> DSKP</button>
                     <button type="button" class="settings-tab-btn" data-settings-tab="data" onclick="setSettingsSection('data')"><i class="fas fa-database"></i> Data</button>
+                    ${(currentUser && currentUser.role === 'guru') ? `<button type="button" class="settings-tab-btn" data-settings-tab="aksespelajar" onclick="setSettingsSection('aksespelajar')"><i class="fas fa-user-lock"></i> Akses Pelajar</button>` : ''}
                 </div>
 
                 <div class="settings-section" data-settings-section="akademik">
@@ -6530,16 +6569,131 @@ ${transitBody}
                     </div>
                     `}
                 </div>
+
+                ${(currentUser && currentUser.role === 'guru') ? `
+                <div class="settings-section" data-settings-section="aksespelajar">
+                    <div class="settings-full-card" style="background:linear-gradient(135deg,#f0fdfa,#fff7ed);border:1px solid #99f6e4;">
+                        <div class="settings-card-header"><i class="fas fa-user-lock" style="color:#0f766e;"></i> 🎓 Kawalan Akses Pelajar</div>
+                        <p style="font-size:0.78rem;color:#134e4a;margin-bottom:16px;"><i class="fas fa-info-circle"></i> Tutup atau buka akses pelajar ke sistem. Jika <strong>OFF</strong>, pelajar tidak boleh log masuk dan pelajar yang sedang log masuk akan terus disekat. Akaun guru <strong>tidak terjejas</strong>.</p>
+
+                        <div class="sa-switch-row ${studentAccess.enabled ? 'on' : 'off'}" id="saSwitchRow">
+                            <div>
+                                <div style="font-weight:800;font-size:0.95rem;" id="saSwitchTitle">${studentAccess.enabled ? '✅ Pelajar DIBENARKAN mengakses sistem' : '🚫 Pelajar TIDAK DIBENARKAN mengakses sistem'}</div>
+                                <div style="font-size:0.74rem;color:#64748b;margin-top:2px;">ON = pelajar boleh akses &nbsp;|&nbsp; OFF = akses pelajar ditutup</div>
+                            </div>
+                            <label class="sa-switch" title="Klik untuk ON / OFF">
+                                <input type="checkbox" id="saEnabled" ${studentAccess.enabled ? 'checked' : ''} onchange="onStudentAccessToggle()">
+                                <span class="sa-slider"><span id="saSwitchText">${studentAccess.enabled ? 'ON' : 'OFF'}</span></span>
+                            </label>
+                        </div>
+
+                        <label style="font-size:0.78rem;font-weight:700;color:#134e4a;display:block;margin-bottom:6px;"><i class="fas fa-pen"></i> Sebab / Makluman kepada pelajar <span style="font-weight:500;color:#64748b;">(dipaparkan apabila akses ditutup)</span></label>
+                        <textarea id="saMessage" class="sa-textarea" maxlength="500" placeholder="Contoh: Sistem ditutup sementara kerana markah peperiksaan sedang dikemaskini. Akses akan dibuka semula pada hari Isnin." oninput="updateStudentAccessCounter()" ${studentAccess.enabled ? 'disabled' : ''}>${escapeHtml(studentAccess.message || '')}</textarea>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 10px;flex-wrap:wrap;gap:6px;">
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="saChips">
+                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Markah sedang dikemaskini oleh guru. Sila cuba semula kemudian.')">Markah dikemaskini</button>
+                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Peperiksaan sedang berlangsung. Akses pelajar ditutup sehingga selesai.')">Peperiksaan berlangsung</button>
+                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Sistem sedang diselenggara. Sila cuba semula kemudian.')">Penyelenggaraan</button>
+                            </div>
+                            <span id="saCounter" style="font-size:0.7rem;color:#64748b;">0 / 500</span>
+                        </div>
+
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                            <button class="btn btn-primary" style="background:#0f766e;" onclick="simpanAksesPelajar()"><i class="fas fa-save"></i> Simpan Tetapan Akses Pelajar</button>
+                            <span id="saStatusBadge" class="badge ${studentAccess.enabled ? 'badge-success' : 'badge-danger'}">${studentAccess.enabled ? 'Status semasa: DIBUKA untuk pelajar' : 'Status semasa: DITUTUP untuk pelajar'}</span>
+                        </div>
+                    </div>
+                </div>` : ''}
             </div>`;
 
             setTimeout(function() {
+                updateStudentAccessCounter();
                 setupBulkPreview();
                 toggleRegisterMode(currentRegisterMode || "single");
-                if(!["akademik","peperiksaan","pelajar","dskp","data"].includes(currentSettingsSection)){
+                if(!["akademik","peperiksaan","pelajar","dskp","data","aksespelajar"].includes(currentSettingsSection) || (currentSettingsSection === "aksespelajar" && !(currentUser && currentUser.role === "guru"))){
                     currentSettingsSection = "akademik";
                 }
                 setSettingsSection(currentSettingsSection);
             }, 50);
+        }
+
+        // ==================== AKSES PELAJAR (ON/OFF + SEBAB) ====================
+        const STUDENT_BLOCK_DEFAULT_MSG = "Akses pelajar ditutup buat sementara waktu oleh guru.";
+
+        function normalizeStudentAccess() {
+            if (!studentAccess || typeof studentAccess !== "object") studentAccess = { enabled: true, message: "" };
+            studentAccess.enabled = studentAccess.enabled !== false; // lalai: dibenarkan
+            studentAccess.message = typeof studentAccess.message === "string" ? studentAccess.message : "";
+        }
+
+        function isStudentBlocked() {
+            normalizeStudentAccess();
+            return !studentAccess.enabled;
+        }
+
+        function getStudentBlockMessage() {
+            normalizeStudentAccess();
+            return (studentAccess.message || "").trim() || STUDENT_BLOCK_DEFAULT_MSG;
+        }
+
+        function onStudentAccessToggle() {
+            let on = document.getElementById("saEnabled").checked;
+            let row = document.getElementById("saSwitchRow");
+            let title = document.getElementById("saSwitchTitle");
+            let txt = document.getElementById("saSwitchText");
+            let ta = document.getElementById("saMessage");
+            if (row) row.className = "sa-switch-row " + (on ? "on" : "off");
+            if (title) title.innerText = on ? "✅ Pelajar DIBENARKAN mengakses sistem" : "🚫 Pelajar TIDAK DIBENARKAN mengakses sistem";
+            if (txt) txt.innerText = on ? "ON" : "OFF";
+            if (ta) { ta.disabled = on; if (!on) ta.focus(); }
+            document.querySelectorAll("#saChips .sa-chip").forEach(b => { b.disabled = on; b.style.opacity = on ? "0.5" : "1"; });
+        }
+
+        function updateStudentAccessCounter() {
+            let ta = document.getElementById("saMessage");
+            let c = document.getElementById("saCounter");
+            if (ta && c) c.innerText = ta.value.length + " / 500";
+            document.querySelectorAll("#saChips .sa-chip").forEach(b => {
+                let on = !!document.getElementById("saEnabled")?.checked;
+                b.disabled = on; b.style.opacity = on ? "0.5" : "1";
+            });
+        }
+
+        function isiMesejAkses(text) {
+            let ta = document.getElementById("saMessage");
+            if (!ta || ta.disabled) return;
+            ta.value = text;
+            updateStudentAccessCounter();
+        }
+
+        function simpanAksesPelajar() {
+            if (!(currentUser && currentUser.role === "guru")) return;
+            let on = !!document.getElementById("saEnabled").checked;
+            let msg = (document.getElementById("saMessage").value || "").trim();
+            if (!on && !msg) {
+                if (!confirm("Anda belum menulis sebab.\n\nPelajar akan melihat mesej lalai:\n\"" + STUDENT_BLOCK_DEFAULT_MSG + "\"\n\nTeruskan simpan?")) return;
+            }
+            studentAccess.enabled = on;
+            studentAccess.message = msg;
+            saveAll();
+            let badge = document.getElementById("saStatusBadge");
+            if (badge) {
+                badge.className = "badge " + (on ? "badge-success" : "badge-danger");
+                badge.innerText = on ? "Status semasa: DIBUKA untuk pelajar" : "Status semasa: DITUTUP untuk pelajar";
+            }
+            alert(on ? "✅ Akses pelajar DIBUKA. Pelajar boleh log masuk." : "🚫 Akses pelajar DITUTUP. Pelajar tidak boleh log masuk dan akan melihat sebab yang anda tulis.");
+        }
+
+        // Paparkan / sembunyikan skrin sekat untuk pelajar yang sedang log masuk
+        function enforceStudentAccess() {
+            let ov = document.getElementById("studentBlockOverlay");
+            if (!ov) return;
+            if (currentUser && currentUser.role === "pelajar" && isStudentBlocked()) {
+                document.getElementById("studentBlockMsg").innerText = getStudentBlockMessage();
+                ov.style.display = "flex";
+            } else {
+                ov.style.display = "none";
+            }
         }
 
         function refreshSettingsSelects(){
@@ -7308,6 +7462,12 @@ let pelajarWithAvg = st.map(s => {
                     return;
                 }
                 
+                if (isStudentBlocked()) {
+                    errorDiv.style.whiteSpace = 'pre-line';
+                    errorDiv.innerText = '🚫 Akses pelajar sedang ditutup oleh guru.\nSebab: ' + getStudentBlockMessage();
+                    return;
+                }
+
                 let found = false;
                 for(let key in allData) {
                     if(allData[key].students.find(s => s.name.toLowerCase() === studentName.toLowerCase())) {
@@ -7338,6 +7498,7 @@ let pelajarWithAvg = st.map(s => {
                     setAdminNavVisibility();
                     setSystemControlsLocked();
                     maybeNotifyGuruAdminExpiry();
+                    enforceStudentAccess();
                 } else {
                     errorDiv.innerText = '❌ Nama pelajar tidak ditemui dalam sistem!';
                 }
@@ -7426,6 +7587,7 @@ let pelajarWithAvg = st.map(s => {
             setAdminNavVisibility();
             setSystemControlsLocked();
             maybeNotifyGuruAdminExpiry();
+            enforceStudentAccess();
             if(saved) renderCurrentPage();
         }
 
@@ -7471,6 +7633,8 @@ let pelajarWithAvg = st.map(s => {
         let originalRenderCurrentPage = renderCurrentPage;
         renderCurrentPage = function() {
             if(currentUser && currentUser.role === 'pelajar') {
+                enforceStudentAccess();
+                if (isStudentBlocked()) return;
                 let p = document.querySelector(".page.active-page");
                 if(p && p.id !== 'profilPage' && p.id !== 'bukuPage') {
                     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -7636,7 +7800,8 @@ ${reportHTML}
                 pbdData: pbdData,
                 dskpDatabase: dskpDatabase,
                 itemConfigGlobal: itemConfigGlobal,
-                adminSystemLock: adminSystemLock
+                adminSystemLock: adminSystemLock,
+                studentAccess: studentAccess
             };
             
             let dataStr = JSON.stringify(backup, null, 2);
@@ -7674,6 +7839,8 @@ ${reportHTML}
                     dskpDatabase = backup.dskpDatabase || {};
                     itemConfigGlobal = backup.itemConfigGlobal || {};
                     adminSystemLock = backup.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
+                    studentAccess = backup.studentAccess || { enabled: true, message: "" };
+                    normalizeStudentAccess();
                     
                     saveAll();
                     refreshSelectors();
@@ -7714,5 +7881,3 @@ ${reportHTML}
     </div>
 </body>
 </html>
-
-
