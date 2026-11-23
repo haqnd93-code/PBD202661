@@ -319,6 +319,7 @@
             /* Cetak Analisis Item */
             #printAnalysisReport, #printAnalysisReport * { visibility: visible; }
             #printAnalysisReport { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            #printAnalysisReport, #printAnalysisReport * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             /* Cetak Ranking Soalan */
             #modalRankingSoalan, #modalRankingSoalan * { visibility: visible; }
             #modalRankingSoalan { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 10px; background: white; display: block !important; }
@@ -392,30 +393,6 @@
         .score-green { color: #059669; font-weight: 700; }
         .score-yellow { color: #d97706; font-weight: 700; }
         .score-red { color: #dc2626; font-weight: 700; }
-        /* ===== AKSES PELAJAR ===== */
-        .sa-switch-row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:16px 18px; border-radius:14px; border:1.5px solid #e2e8f0; background:#fff; margin-bottom:16px; }
-        .sa-switch-row.on { border-color:#6ee7b7; background:#ecfdf5; }
-        .sa-switch-row.off { border-color:#fca5a5; background:#fef2f2; }
-        .sa-switch { position:relative; display:inline-block; width:78px; height:36px; flex-shrink:0; }
-        .sa-switch input { opacity:0; width:0; height:0; }
-        .sa-slider { position:absolute; inset:0; cursor:pointer; background:#ef4444; border-radius:36px; transition:.25s; box-shadow:inset 0 1px 3px rgba(0,0,0,.2); }
-        .sa-slider::before { content:""; position:absolute; height:28px; width:28px; left:4px; top:4px; background:#fff; border-radius:50%; transition:.25s; box-shadow:0 2px 5px rgba(0,0,0,.25); }
-        .sa-slider span { position:absolute; top:50%; transform:translateY(-50%); font-size:.68rem; font-weight:800; color:#fff; right:10px; transition:.25s; }
-        .sa-switch input:checked + .sa-slider { background:#10b981; }
-        .sa-switch input:checked + .sa-slider::before { transform:translateX(42px); }
-        .sa-switch input:checked + .sa-slider span { right:auto; left:11px; }
-        .sa-textarea { width:100%; min-height:110px; padding:12px 14px; border:1.5px solid #fed7aa; border-radius:12px; font-family:inherit; font-size:.88rem; resize:vertical; outline:none; background:#fff; }
-        .sa-textarea:focus { border-color:#0ea5a3; box-shadow:0 0 0 3px rgba(14,165,163,.15); }
-        .sa-textarea:disabled { background:#f1f5f9; opacity:.6; cursor:not-allowed; }
-        .sa-chip { font-size:.72rem; padding:6px 12px; border-radius:20px; border:1px solid #fdba74; background:#fff7ed; color:#9a3412; cursor:pointer; font-weight:600; }
-        .sa-chip:hover { background:#ffedd5; }
-        #studentBlockOverlay { display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg,#7f1d1d,#991b1b 55%,#b45309); align-items:center; justify-content:center; padding:20px; }
-        #studentBlockOverlay .sb-box { background:#fff; border-radius:22px; max-width:520px; width:100%; padding:34px 28px; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,.4); }
-        #studentBlockOverlay .sb-icon { font-size:3rem; margin-bottom:10px; }
-        #studentBlockOverlay h2 { font-size:1.25rem; font-weight:800; color:#7f1d1d; margin-bottom:6px; }
-        #studentBlockOverlay .sb-label { font-size:.72rem; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:.06em; margin:16px 0 6px; }
-        #studentBlockOverlay .sb-msg { background:#fff7ed; border:1.5px solid #fed7aa; border-radius:12px; padding:14px 16px; font-size:.92rem; color:#431407; white-space:pre-wrap; text-align:left; word-break:break-word; }
-
         /* ===== SETTINGS COLORFUL STYLES ===== */
         .settings-container { display: flex; flex-direction: column; gap: 20px; }
         .settings-hero {
@@ -540,110 +517,224 @@
             .settings-grid { grid-template-columns: 1fr; }
             .settings-student-form { grid-template-columns: 1fr; }
         }
-        /* ===== LOGIN SYSTEM STYLES ===== */
+        /* ===== LOGIN SYSTEM STYLES (SPLIT LAYOUT) ===== */
         .login-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
+            inset: 0;
+            background: radial-gradient(circle at 20% 10%, #12224a 0%, #070b1a 70%);
             z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 16px;
+            overflow-y: auto;
         }
         .login-modal {
+            display: flex;
+            width: 880px;
+            max-width: 100%;
+            min-height: 470px;
             background: #fff;
-            border-radius: 28px;
-            padding: 32px;
-            width: 380px;
-            max-width: 90%;
-            text-align: center;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.3);
+            border-radius: 26px;
+            overflow: hidden;
+            text-align: left;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            border: 1.5px solid rgba(255,255,255,0.6);
         }
-        .login-modal .logo {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 18px;
+        /* ---- Panel kiri ---- */
+        .login-left {
+            position: relative;
+            flex: 0 0 42%;
+            background: linear-gradient(180deg, #6a5fc1 0%, #8b6fc0 38%, #d98a73 70%, #f2a65a 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 34px 150px;
+            overflow: hidden;
+        }
+        .login-left h1 {
+            font-size: 2.5rem;
+            line-height: 1.12;
+            font-weight: 800;
+            margin-bottom: 14px;
+            letter-spacing: -0.5px;
+        }
+        .login-left .sub {
+            font-size: 1rem;
+            line-height: 1.45;
+            color: rgba(255,255,255,0.85);
+        }
+        .login-left .line {
+            width: 46px;
+            height: 2px;
+            background: rgba(255,255,255,0.55);
+            margin-top: 18px;
+            border-radius: 2px;
+        }
+        .login-left .brand {
+            position: absolute;
+            top: 22px;
+            left: 34px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .login-left .brand i {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
-            margin: 0 auto 16px;
-            color: #fff;
+            font-size: 0.95rem;
         }
-        .login-modal h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-        .login-modal p {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-bottom: 24px;
-        }
-        .login-input-group {
-            margin-bottom: 16px;
-            text-align: left;
-        }
-        .login-input-group label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #1e293b;
+        .login-left svg.scene {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 170px;
             display: block;
+        }
+        /* ---- Panel kanan ---- */
+        .login-right {
+            flex: 1;
+            background: #fafcff;
+            padding: 38px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .login-right h2 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #0f172a;
             margin-bottom: 6px;
         }
-        .login-input-group input {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 12px;
-            border: 1.5px solid #e2e8f0;
-            font-size: 0.9rem;
-        }
-        .login-input-group input:focus {
-            border-color: #6366f1;
-            outline: none;
+        .login-right .desc {
+            font-size: 0.92rem;
+            color: #475569;
+            margin-bottom: 20px;
         }
         .login-options {
             display: flex;
-            gap: 12px;
-            margin: 20px 0;
+            gap: 10px;
+            margin: 0 0 18px;
         }
         .login-option {
             flex: 1;
-            padding: 10px;
+            padding: 9px;
             border-radius: 12px;
-            border: 1.5px solid #e2e8f0;
-            background: #f8fafc;
+            border: 1.5px solid #cfe0f1;
+            background: #fff;
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
+            text-align: center;
+            color: #334155;
+            transition: all .2s;
         }
         .login-option.active {
-            background: #6366f1;
-            border-color: #6366f1;
+            background: linear-gradient(180deg, #1e8bff, #0b63e5);
+            border-color: #0b63e5;
             color: #fff;
         }
         .login-option.student.active {
             background: #10b981;
             border-color: #10b981;
         }
-        .btn-login {
+        .login-input-group {
+            position: relative;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .login-input-group > i.ico {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #334155;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .login-input-group input {
             width: 100%;
-            padding: 12px;
-            background: #6366f1;
-            color: #fff;
+            padding: 14px 44px 14px 44px;
+            border-radius: 14px;
+            border: 1.5px solid #cfe0f1;
+            background: #fff;
+            font-size: 0.92rem;
+            color: #0f172a;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .login-input-group input:focus {
+            border-color: #1e8bff;
+            box-shadow: 0 0 0 3px rgba(30,139,255,0.15);
+            outline: none;
+        }
+        .login-input-group .toggle-eye {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
             border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.9rem;
+            color: #334155;
+            cursor: pointer;
+            font-size: 0.95rem;
+            padding: 4px;
+        }
+        .login-extra {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 4px 0 18px;
+            font-size: 0.82rem;
+        }
+        .login-extra label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e293b;
             cursor: pointer;
         }
-        .btn-login:hover { background: #4f46e5; }
+        .login-extra input[type=checkbox] {
+            width: 16px;
+            height: 16px;
+            accent-color: #0b63e5;
+        }
+        .login-extra a {
+            color: #0b4fa8;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .login-extra a:hover { text-decoration: underline; }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(180deg, #1e8bff, #0b63e5);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(11,99,229,0.35);
+            transition: transform .15s, box-shadow .15s;
+        }
+        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(11,99,229,0.45); }
+        @media (max-width: 700px) {
+            .login-modal { flex-direction: column; min-height: 0; }
+            .login-left { flex: none; padding: 70px 26px 110px; }
+            .login-left h1 { font-size: 2rem; }
+            .login-left svg.scene { height: 120px; }
+            .login-right { padding: 28px 24px; }
+        }
         .login-error {
             color: #ef4444;
             font-size: 0.75rem;
@@ -922,47 +1013,68 @@ body.dark-mode .bk-mark{background:rgba(16,185,129,.14);border-color:rgba(16,185
 </head>
 <body>
     <!-- LOGIN MODAL -->
-    <div id="studentBlockOverlay">
-        <div class="sb-box">
-            <div class="sb-icon">🚫</div>
-            <h2>Akses Pelajar Ditutup</h2>
-            <p style="font-size:.82rem;color:#64748b;">Guru telah menutup akses pelajar ke sistem buat sementara waktu.</p>
-            <div class="sb-label">Sebab / Makluman daripada guru</div>
-            <div class="sb-msg" id="studentBlockMsg"></div>
-            <button class="btn btn-primary" style="margin-top:22px;width:100%;padding:12px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Kembali ke Log Masuk</button>
-        </div>
-    </div>
     <div id="loginOverlay" class="login-overlay">
         <div class="login-modal">
-            <div class="logo"><i class="fas fa-graduation-cap"></i></div>
-            <h2>EduTrack</h2>
-            <p>Sistem Pengurusan Akademik</p>
-            
-            <div class="login-options">
-                <div class="login-option active" data-role="guru" onclick="setLoginRole('guru')">👨‍🏫 Guru</div>
-                <div class="login-option" data-role="pelajar" onclick="setLoginRole('pelajar')">👩‍🎓 Pelajar</div>
+            <!-- KIRI -->
+            <div class="login-left">
+                <div class="brand"><i class="fas fa-graduation-cap"></i> EduTrack</div>
+                <h1>Welcome<br>Back!</h1>
+                <div class="sub">Log masuk untuk akses<br>dashboard anda.</div>
+                <div class="line"></div>
+                <svg class="scene" viewBox="0 0 400 170" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="mt1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a6bb8"/><stop offset="1" stop-color="#5b4a9c"/></linearGradient>
+                        <linearGradient id="mt2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a559f"/><stop offset="1" stop-color="#3f3478"/></linearGradient>
+                        <linearGradient id="mt3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3c86"/><stop offset="1" stop-color="#2b2457"/></linearGradient>
+                    </defs>
+                    <path d="M0 95 L55 62 L105 92 L170 40 L240 88 L300 58 L400 100 L400 170 L0 170Z" fill="url(#mt1)" opacity=".85"/>
+                    <path d="M0 120 L70 82 L130 112 L210 70 L290 118 L350 90 L400 118 L400 170 L0 170Z" fill="url(#mt2)" opacity=".92"/>
+                    <path d="M0 145 L60 118 L120 140 L200 108 L280 142 L340 124 L400 146 L400 170 L0 170Z" fill="url(#mt3)"/>
+                    <g fill="#1e1a44">
+                        <path d="M10 170 L18 135 L26 170Z"/><path d="M28 170 L38 122 L48 170Z"/><path d="M52 170 L60 138 L68 170Z"/>
+                        <path d="M330 170 L338 132 L346 170Z"/><path d="M348 170 L358 120 L368 170Z"/><path d="M372 170 L380 136 L388 170Z"/>
+                        <path d="M90 170 L97 144 L104 170Z"/><path d="M150 170 L157 146 L164 170Z"/><path d="M250 170 L257 145 L264 170Z"/><path d="M300 170 L307 148 L314 170Z"/>
+                    </g>
+                </svg>
             </div>
-            
-            <div id="loginFormGuru">
-                <div class="login-input-group">
-                    <label>Nama Pengguna</label>
-                    <input type="text" id="loginUsername" placeholder="Masukkan username">
+
+            <!-- KANAN -->
+            <div class="login-right">
+                <h2>Sign In</h2>
+                <div class="desc">Masukkan butiran akaun anda</div>
+
+                <div class="login-options">
+                    <div class="login-option active" data-role="guru" onclick="setLoginRole('guru')">👨‍🏫 Guru</div>
+                    <div class="login-option" data-role="pelajar" onclick="setLoginRole('pelajar')">👩‍🎓 Pelajar</div>
                 </div>
-                <div class="login-input-group">
-                    <label>Kata Laluan</label>
-                    <input type="password" id="loginPassword" placeholder="Masukkan password">
+
+                <div id="loginFormGuru">
+                    <div class="login-input-group">
+                        <i class="far fa-envelope ico"></i>
+                        <input type="text" id="loginUsername" placeholder="Nama Pengguna" autocomplete="username">
+                    </div>
+                    <div class="login-input-group">
+                        <i class="fas fa-lock ico"></i>
+                        <input type="password" id="loginPassword" placeholder="Kata Laluan" autocomplete="current-password">
+                        <button type="button" class="toggle-eye" onclick="togglePasswordVisibility(this)" aria-label="Papar kata laluan"><i class="far fa-eye"></i></button>
+                    </div>
                 </div>
+
+                <div id="loginFormPelajar" style="display:none;">
+                    <div class="login-input-group">
+                        <i class="far fa-user ico"></i>
+                        <input type="text" id="studentName" placeholder="Nama Penuh Pelajar">
+                    </div>
+                </div>
+
+                <div class="login-extra">
+                    <label><input type="checkbox" id="rememberMe"> Ingat saya</label>
+                    <a onclick="alert('Sila hubungi Admin untuk set semula kata laluan.')">Lupa kata laluan?</a>
+                </div>
+
+                <button class="btn-login" onclick="prosesLogin()">Log Masuk</button>
+                <div id="loginError" class="login-error"></div>
             </div>
-            
-            <div id="loginFormPelajar" style="display:none;">
-                <div class="login-input-group">
-                    <label>Nama Pelajar</label>
-                    <input type="text" id="studentName" placeholder="Masukkan nama penuh">
-                </div>
-            </div>
-            
-            <button class="btn-login" onclick="prosesLogin()">🔓 Log Masuk</button>
-            <div id="loginError" class="login-error"></div>
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="tutupSidebarMobile()"></div>
@@ -1067,7 +1179,6 @@ let examNamesCustom = {}; // format: { "Tingkatan 5": ["UP1", "PPSA", "TOV", "SP
 // Daftar peperiksaan yang telah dijalankan (disimpan ke Firebase)
 let completedExams = {}; // format: { "Tingkatan 5": ["UP1", "PPSA"], "Tingkatan 4": ["UP1"], ... }
 let adminSystemLock = { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
-let studentAccess = { enabled: true, message: "" }; // Akses pelajar (ON = dibenarkan)
 const ADMIN_AREA_PASSWORD = "9876";
 const MASTER_LOGIN_USERNAME = "HAQND93";
 const MASTER_LOGIN_PASSWORD = "931014";
@@ -1443,8 +1554,7 @@ function lihatPemetaanExam() {
                 itemConfigGlobal: itemConfigGlobal || {},
                 completedExams: completedExams || {},
                 examNamesCustom: examNamesCustom || {},
-                adminSystemLock: adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" },
-                studentAccess: studentAccess || { enabled: true, message: "" }
+                adminSystemLock: adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" }
             };
         }
 
@@ -1464,8 +1574,6 @@ function lihatPemetaanExam() {
             examNamesCustom = payload.examNamesCustom || {};
             adminSystemLock = payload.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
             normalizeAdminLockState();
-            studentAccess = payload.studentAccess || { enabled: true, message: "" };
-            normalizeStudentAccess();
         }
 
         function safeParseJSON(rawValue, fallback) {
@@ -4951,6 +5059,53 @@ function renderProfilRadarChart(pbdSkills){
             document.getElementById("printAnalysisReport").innerHTML = pilihHtml;
             document.getElementById("modalCetakAnalisis").style.display = "flex";
         }
+// ===== PILIHAN WARNA HEADER ANALISIS ITEM (ikut subjek) =====
+var WARNA_ANALISIS = [
+    {n:"Biru",h:221,s:75},{n:"Hijau",h:152,s:65},{n:"Merah",h:0,s:70},{n:"Oren",h:24,s:85},
+    {n:"Ungu",h:270,s:60},{n:"Merah Jambu",h:330,s:70},{n:"Teal",h:178,s:70},
+    {n:"Emas",h:42,s:90},{n:"Coklat",h:20,s:45},{n:"Kelabu",h:215,s:15}
+];
+function _anBacaWarna(){
+    try { return JSON.parse(localStorage.getItem("eduTrackWarnaAnalisis")||"{}") || {}; } catch(e){ return {}; }
+}
+function getWarnaAnalisisIdx(subjek){
+    let simpan = _anBacaWarna();
+    if(simpan[subjek] !== undefined && WARNA_ANALISIS[simpan[subjek]]) return simpan[subjek];
+    // Lalai: warna berbeza mengikut nama subjek
+    let h = 0; for(let i=0;i<subjek.length;i++){ h = (h*31 + subjek.charCodeAt(i)) >>> 0; }
+    return h % WARNA_ANALISIS.length;
+}
+function _anHsl(h,s,l){ return "hsl("+h+","+s+"%,"+l+"%)"; }
+function aplikasiWarnaAnalisis(subjek){
+    let el = document.getElementById("printAnalysisReport"); if(!el) return;
+    let w = WARNA_ANALISIS[getWarnaAnalisisIdx(subjek)];
+    let dark = (w.n==="Emas") ? 30 : 32;
+    el.style.setProperty("--an-d", _anHsl(w.h,w.s,dark));
+    el.style.setProperty("--an-dd", _anHsl(w.h,w.s,dark-9));
+    el.style.setProperty("--an-m", _anHsl(w.h,w.s,dark+10));
+    el.style.setProperty("--an-mb", _anHsl(w.h,w.s,dark+4));
+    el.style.setProperty("--an-l", _anHsl(w.h,Math.min(100,w.s+15),92));
+    el.style.setProperty("--an-lb", _anHsl(w.h,Math.min(100,w.s+10),86));
+    el.style.setProperty("--an-lbb", _anHsl(w.h,w.s,78));
+    el.style.setProperty("--an-xl", _anHsl(w.h,100,96));
+    let pk = document.getElementById("anWarnaPicker");
+    if(pk) pk.innerHTML = binaPickerWarnaAnalisis(subjek);
+}
+function binaPickerWarnaAnalisis(subjek){
+    let aktif = getWarnaAnalisisIdx(subjek), out = "";
+    for(let i=0;i<WARNA_ANALISIS.length;i++){
+        let w = WARNA_ANALISIS[i];
+        out += '<button type="button" title="'+w.n+'" onclick="pilihWarnaAnalisis('+i+')" style="width:26px;height:26px;border-radius:50%;cursor:pointer;background:'+_anHsl(w.h,w.s,w.n==="Emas"?40:42)+';border:'+(i===aktif?'3px solid #0f172a':'2px solid #fff')+';box-shadow:0 0 0 1px #cbd5e1;"></button>';
+    }
+    return out;
+}
+function pilihWarnaAnalisis(idx){
+    let subjek = document.getElementById("selectSubject").value;
+    let simpan = _anBacaWarna(); simpan[subjek] = idx;
+    try { localStorage.setItem("eduTrackWarnaAnalisis", JSON.stringify(simpan)); } catch(e){}
+    aplikasiWarnaAnalisis(subjek);
+}
+
 function jalanCetakAnalisis(examPilihan){
     let subjek = document.getElementById("selectSubject").value;
     let pelajar = getActiveStudents();
@@ -5000,23 +5155,23 @@ function jalanCetakAnalisis(examPilihan){
     // ===== BINA HTML HEADER JADUAL =====
     function mkHeader(){
         let h = '<tr>';
-        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Bil</th>';
-        h += '<th rowspan="2" style="padding:8px 8px;background:#1e40af;border:1px solid #1e3a8a;text-align:left;color:white;min-width:160px;font-size:0.78rem;">Nama Pelajar</th>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Bil</th>';
+        h += '<th rowspan="2" style="padding:8px 8px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:left;color:white;min-width:160px;font-size:0.78rem;">Nama Pelajar</th>';
         for(let ki=0;ki<cfg.kertas.length;ki++){
             let k=cfg.kertas[ki];
-            h += '<th colspan="'+(k.soalan.length+1)+'" style="padding:8px 5px;background:#2563eb;border:1px solid #1d4ed8;text-align:center;color:white;font-weight:600;font-size:0.82rem;">'+k.nama+'</th>';
+            h += '<th colspan="'+(k.soalan.length+1)+'" style="padding:8px 5px;background:var(--an-m,#2563eb);border:1px solid var(--an-mb,#1d4ed8);text-align:center;color:white;font-weight:600;font-size:0.82rem;">'+k.nama+'</th>';
         }
-        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Purata (%)</th>';
-        h += '<th rowspan="2" style="padding:8px 6px;background:#1e40af;border:1px solid #1e3a8a;text-align:center;color:white;font-size:0.78rem;">Gred</th>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Purata (%)</th>';
+        h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;font-size:0.78rem;">Gred</th>';
         h += '</tr><tr>';
         for(let ki=0;ki<cfg.kertas.length;ki++){
             let k=cfg.kertas[ki];
             for(let si=0;si<k.soalan.length;si++){
                 let s=k.soalan[si];
-                h += '<th style="padding:6px 4px;background:#dbeafe;border:1px solid #bfdbfe;font-size:0.75rem;text-align:center;color:#1e40af;">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
+                h += '<th style="padding:6px 4px;background:var(--an-l,#dbeafe);border:1px solid var(--an-lb,#bfdbfe);font-size:0.75rem;text-align:center;color:var(--an-d,#1e40af);">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
             }
             let tp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
-            h += '<th style="padding:6px 4px;background:#bfdbfe;border:1px solid #93c5fd;font-size:0.78rem;text-align:center;color:#1e3a8a;font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
+            h += '<th style="padding:6px 4px;background:var(--an-lb,#bfdbfe);border:1px solid var(--an-lbb,#93c5fd);font-size:0.78rem;text-align:center;color:var(--an-dd,#1e3a8a);font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
         }
         h += '</tr>';
         return h;
@@ -5047,7 +5202,7 @@ function jalanCetakAnalisis(examPilihan){
                 let kp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
                 let pkp=kp>0?Math.round((km/kp)*100):0;
                 let wk=pkp>=80?'#059669':(pkp>=50?'#d97706':'#dc2626');
-                rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:#eff6ff;font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
+                rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:var(--an-xl,#eff6ff);font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
             }
             let pw=p.overallPercent>=80?'#059669':(p.overallPercent>=50?'#d97706':'#dc2626');
             rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;font-weight:700;color:'+pw+';font-size:0.78rem;">'+p.overallPercent+'%</td>';
@@ -5074,6 +5229,12 @@ function jalanCetakAnalisis(examPilihan){
     html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">✕ Tutup</button>';
     html += '</div>';
 
+    // Pilihan warna header (tidak cetak)
+    html += '<div class="no-print" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    html += '<span style="font-weight:700;font-size:0.72rem;color:#475569;"><i class="fas fa-palette"></i> Warna Header ('+subjek+'):</span>';
+    html += '<span id="anWarnaPicker" style="display:inline-flex;gap:6px;flex-wrap:wrap;">'+binaPickerWarnaAnalisis(subjek)+'</span>';
+    html += '</div>';
+
     // Panel highlight nama (tidak cetak) - SEMUA NAMA DALAM SATU PANEL
     html += '<div class="no-print" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-bottom:10px;">';
     html += '<span style="font-weight:700;font-size:0.72rem;color:#475569;"><i class="fas fa-highlighter"></i> Highlight Pelajar:</span>';
@@ -5095,8 +5256,8 @@ function jalanCetakAnalisis(examPilihan){
     html += '</div>';
 
     // Header laporan
-    html += '<div style="border-bottom:2px solid #2563eb;margin-bottom:10px;padding-bottom:6px;">';
-    html += '<h2 style="color:#1e3a8a;font-size:1.15rem;margin:0;font-weight:700;">LAPORAN ANALISIS ITEM — '+subjek+'</h2>';
+    html += '<div style="border-bottom:2px solid var(--an-m,#2563eb);margin-bottom:10px;padding-bottom:6px;">';
+    html += '<h2 style="color:var(--an-dd,#1e3a8a);font-size:1.15rem;margin:0;font-weight:700;">LAPORAN ANALISIS ITEM — '+subjek+'</h2>';
     html += '<p style="color:#64748b;font-size:0.8rem;margin:3px 0 0;">'+kelas+' · '+ting+' · '+examPilihan+' · '+new Date().toLocaleDateString('ms-MY')+' · '+pelajarData.length+' pelajar</p>';
     html += '</div>';
 
@@ -5117,6 +5278,7 @@ function jalanCetakAnalisis(examPilihan){
 
     document.getElementById("printAnalysisReport").innerHTML = html;
     document.getElementById("modalCetakAnalisis").style.display = "flex";
+    aplikasiWarnaAnalisis(subjek);
 
     // Auto highlight pelajar lemah
     setTimeout(function(){ hlLemah(tableId); }, 80);
@@ -6387,7 +6549,7 @@ ${transitBody}
             <div class="settings-container">
                 <div class="settings-hero">
                     <div class="settings-hero-icon"><i class="fas fa-sliders-h"></i></div>
-                    <div><h2>Pusat Tetapan Sistem</h2><p>Pilih fungsi di header: Akademik, Peperiksaan, Pelajar, DSKP, Data atau Akses Pelajar.</p></div>
+                    <div><h2>Pusat Tetapan Sistem</h2><p>Pilih fungsi di header: Akademik, Peperiksaan, Pelajar, DSKP atau Data.</p></div>
                 </div>
 
                 <div class="settings-tabs">
@@ -6396,7 +6558,6 @@ ${transitBody}
                     <button type="button" class="settings-tab-btn" data-settings-tab="pelajar" onclick="setSettingsSection('pelajar')"><i class="fas fa-user-plus"></i> Pelajar</button>
                     <button type="button" class="settings-tab-btn" data-settings-tab="dskp" onclick="setSettingsSection('dskp')"><i class="fas fa-cloud-upload-alt"></i> DSKP</button>
                     <button type="button" class="settings-tab-btn" data-settings-tab="data" onclick="setSettingsSection('data')"><i class="fas fa-database"></i> Data</button>
-                    ${(currentUser && currentUser.role === 'guru') ? `<button type="button" class="settings-tab-btn" data-settings-tab="aksespelajar" onclick="setSettingsSection('aksespelajar')"><i class="fas fa-user-lock"></i> Akses Pelajar</button>` : ''}
                 </div>
 
                 <div class="settings-section" data-settings-section="akademik">
@@ -6569,131 +6730,16 @@ ${transitBody}
                     </div>
                     `}
                 </div>
-
-                ${(currentUser && currentUser.role === 'guru') ? `
-                <div class="settings-section" data-settings-section="aksespelajar">
-                    <div class="settings-full-card" style="background:linear-gradient(135deg,#f0fdfa,#fff7ed);border:1px solid #99f6e4;">
-                        <div class="settings-card-header"><i class="fas fa-user-lock" style="color:#0f766e;"></i> 🎓 Kawalan Akses Pelajar</div>
-                        <p style="font-size:0.78rem;color:#134e4a;margin-bottom:16px;"><i class="fas fa-info-circle"></i> Tutup atau buka akses pelajar ke sistem. Jika <strong>OFF</strong>, pelajar tidak boleh log masuk dan pelajar yang sedang log masuk akan terus disekat. Akaun guru <strong>tidak terjejas</strong>.</p>
-
-                        <div class="sa-switch-row ${studentAccess.enabled ? 'on' : 'off'}" id="saSwitchRow">
-                            <div>
-                                <div style="font-weight:800;font-size:0.95rem;" id="saSwitchTitle">${studentAccess.enabled ? '✅ Pelajar DIBENARKAN mengakses sistem' : '🚫 Pelajar TIDAK DIBENARKAN mengakses sistem'}</div>
-                                <div style="font-size:0.74rem;color:#64748b;margin-top:2px;">ON = pelajar boleh akses &nbsp;|&nbsp; OFF = akses pelajar ditutup</div>
-                            </div>
-                            <label class="sa-switch" title="Klik untuk ON / OFF">
-                                <input type="checkbox" id="saEnabled" ${studentAccess.enabled ? 'checked' : ''} onchange="onStudentAccessToggle()">
-                                <span class="sa-slider"><span id="saSwitchText">${studentAccess.enabled ? 'ON' : 'OFF'}</span></span>
-                            </label>
-                        </div>
-
-                        <label style="font-size:0.78rem;font-weight:700;color:#134e4a;display:block;margin-bottom:6px;"><i class="fas fa-pen"></i> Sebab / Makluman kepada pelajar <span style="font-weight:500;color:#64748b;">(dipaparkan apabila akses ditutup)</span></label>
-                        <textarea id="saMessage" class="sa-textarea" maxlength="500" placeholder="Contoh: Sistem ditutup sementara kerana markah peperiksaan sedang dikemaskini. Akses akan dibuka semula pada hari Isnin." oninput="updateStudentAccessCounter()" ${studentAccess.enabled ? 'disabled' : ''}>${escapeHtml(studentAccess.message || '')}</textarea>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 10px;flex-wrap:wrap;gap:6px;">
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="saChips">
-                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Markah sedang dikemaskini oleh guru. Sila cuba semula kemudian.')">Markah dikemaskini</button>
-                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Peperiksaan sedang berlangsung. Akses pelajar ditutup sehingga selesai.')">Peperiksaan berlangsung</button>
-                                <button type="button" class="sa-chip" onclick="isiMesejAkses('Sistem sedang diselenggara. Sila cuba semula kemudian.')">Penyelenggaraan</button>
-                            </div>
-                            <span id="saCounter" style="font-size:0.7rem;color:#64748b;">0 / 500</span>
-                        </div>
-
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                            <button class="btn btn-primary" style="background:#0f766e;" onclick="simpanAksesPelajar()"><i class="fas fa-save"></i> Simpan Tetapan Akses Pelajar</button>
-                            <span id="saStatusBadge" class="badge ${studentAccess.enabled ? 'badge-success' : 'badge-danger'}">${studentAccess.enabled ? 'Status semasa: DIBUKA untuk pelajar' : 'Status semasa: DITUTUP untuk pelajar'}</span>
-                        </div>
-                    </div>
-                </div>` : ''}
             </div>`;
 
             setTimeout(function() {
-                updateStudentAccessCounter();
                 setupBulkPreview();
                 toggleRegisterMode(currentRegisterMode || "single");
-                if(!["akademik","peperiksaan","pelajar","dskp","data","aksespelajar"].includes(currentSettingsSection) || (currentSettingsSection === "aksespelajar" && !(currentUser && currentUser.role === "guru"))){
+                if(!["akademik","peperiksaan","pelajar","dskp","data"].includes(currentSettingsSection)){
                     currentSettingsSection = "akademik";
                 }
                 setSettingsSection(currentSettingsSection);
             }, 50);
-        }
-
-        // ==================== AKSES PELAJAR (ON/OFF + SEBAB) ====================
-        const STUDENT_BLOCK_DEFAULT_MSG = "Akses pelajar ditutup buat sementara waktu oleh guru.";
-
-        function normalizeStudentAccess() {
-            if (!studentAccess || typeof studentAccess !== "object") studentAccess = { enabled: true, message: "" };
-            studentAccess.enabled = studentAccess.enabled !== false; // lalai: dibenarkan
-            studentAccess.message = typeof studentAccess.message === "string" ? studentAccess.message : "";
-        }
-
-        function isStudentBlocked() {
-            normalizeStudentAccess();
-            return !studentAccess.enabled;
-        }
-
-        function getStudentBlockMessage() {
-            normalizeStudentAccess();
-            return (studentAccess.message || "").trim() || STUDENT_BLOCK_DEFAULT_MSG;
-        }
-
-        function onStudentAccessToggle() {
-            let on = document.getElementById("saEnabled").checked;
-            let row = document.getElementById("saSwitchRow");
-            let title = document.getElementById("saSwitchTitle");
-            let txt = document.getElementById("saSwitchText");
-            let ta = document.getElementById("saMessage");
-            if (row) row.className = "sa-switch-row " + (on ? "on" : "off");
-            if (title) title.innerText = on ? "✅ Pelajar DIBENARKAN mengakses sistem" : "🚫 Pelajar TIDAK DIBENARKAN mengakses sistem";
-            if (txt) txt.innerText = on ? "ON" : "OFF";
-            if (ta) { ta.disabled = on; if (!on) ta.focus(); }
-            document.querySelectorAll("#saChips .sa-chip").forEach(b => { b.disabled = on; b.style.opacity = on ? "0.5" : "1"; });
-        }
-
-        function updateStudentAccessCounter() {
-            let ta = document.getElementById("saMessage");
-            let c = document.getElementById("saCounter");
-            if (ta && c) c.innerText = ta.value.length + " / 500";
-            document.querySelectorAll("#saChips .sa-chip").forEach(b => {
-                let on = !!document.getElementById("saEnabled")?.checked;
-                b.disabled = on; b.style.opacity = on ? "0.5" : "1";
-            });
-        }
-
-        function isiMesejAkses(text) {
-            let ta = document.getElementById("saMessage");
-            if (!ta || ta.disabled) return;
-            ta.value = text;
-            updateStudentAccessCounter();
-        }
-
-        function simpanAksesPelajar() {
-            if (!(currentUser && currentUser.role === "guru")) return;
-            let on = !!document.getElementById("saEnabled").checked;
-            let msg = (document.getElementById("saMessage").value || "").trim();
-            if (!on && !msg) {
-                if (!confirm("Anda belum menulis sebab.\n\nPelajar akan melihat mesej lalai:\n\"" + STUDENT_BLOCK_DEFAULT_MSG + "\"\n\nTeruskan simpan?")) return;
-            }
-            studentAccess.enabled = on;
-            studentAccess.message = msg;
-            saveAll();
-            let badge = document.getElementById("saStatusBadge");
-            if (badge) {
-                badge.className = "badge " + (on ? "badge-success" : "badge-danger");
-                badge.innerText = on ? "Status semasa: DIBUKA untuk pelajar" : "Status semasa: DITUTUP untuk pelajar";
-            }
-            alert(on ? "✅ Akses pelajar DIBUKA. Pelajar boleh log masuk." : "🚫 Akses pelajar DITUTUP. Pelajar tidak boleh log masuk dan akan melihat sebab yang anda tulis.");
-        }
-
-        // Paparkan / sembunyikan skrin sekat untuk pelajar yang sedang log masuk
-        function enforceStudentAccess() {
-            let ov = document.getElementById("studentBlockOverlay");
-            if (!ov) return;
-            if (currentUser && currentUser.role === "pelajar" && isStudentBlocked()) {
-                document.getElementById("studentBlockMsg").innerText = getStudentBlockMessage();
-                ov.style.display = "flex";
-            } else {
-                ov.style.display = "none";
-            }
         }
 
         function refreshSettingsSelects(){
@@ -7101,8 +7147,9 @@ function salinSenaraiPelajar() {
                     else if(json.levels){
                         Object.keys(json.levels).forEach(tingKey => {
                             let levelData = json.levels[tingKey];
-                            let match = tingKey.match(/tingkatan[_\s]*(\d+)/i);
-                            let tingNum = match ? parseInt(match[1]) : (levelData.level || 5);
+                            let match = String(tingKey).match(/tingkatan[_\s]*(\d+)/i);
+                            // Sokong: key objek "tingkatan_4", atau levels[] array dengan medan tingkatan/level/form (cth. Perniagaan)
+                            let tingNum = match ? parseInt(match[1]) : (parseInt(levelData.tingkatan || levelData.level || levelData.form) || 5);
                             let tingFormatted = "Tingkatan " + tingNum;
 
                             let skills = normalizeDSKPLevel(levelData);
@@ -7400,6 +7447,23 @@ let pelajarWithAvg = st.map(s => {
         window.pilihStudentProfil=pilihStudentProfil;
         window.bukaCetakAnalisisItem=bukaCetakAnalisisItem;
                 // ==================== LOGIN SYSTEM ====================
+        function togglePasswordVisibility(btn) {
+            let inp = document.getElementById('loginPassword');
+            let ico = btn.querySelector('i');
+            if (inp.type === 'password') { inp.type = 'text'; ico.className = 'far fa-eye-slash'; }
+            else { inp.type = 'password'; ico.className = 'far fa-eye'; }
+        }
+        try {
+            let savedUser = localStorage.getItem('edutrack_remember_user');
+            if (savedUser) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    let u = document.getElementById('loginUsername');
+                    let r = document.getElementById('rememberMe');
+                    if (u) u.value = savedUser;
+                    if (r) r.checked = true;
+                });
+            }
+        } catch(e) {}
         let currentUser = null;
         let currentStudentView = null;
         let currentLoginRole = 'guru';
@@ -7433,6 +7497,7 @@ let pelajarWithAvg = st.map(s => {
                 let username = document.getElementById('loginUsername').value;
                 let password = document.getElementById('loginPassword').value;
 
+                try { let rm = document.getElementById('rememberMe'); if (rm && rm.checked) localStorage.setItem('edutrack_remember_user', username); else localStorage.removeItem('edutrack_remember_user'); } catch(e) {}
                 if(username === MASTER_LOGIN_USERNAME && password === MASTER_LOGIN_PASSWORD) {
                     currentUser = { role: 'guru', name: 'MASTER KEY', isMaster: true };
                     adminSessionUnlocked = true;
@@ -7462,12 +7527,6 @@ let pelajarWithAvg = st.map(s => {
                     return;
                 }
                 
-                if (isStudentBlocked()) {
-                    errorDiv.style.whiteSpace = 'pre-line';
-                    errorDiv.innerText = '🚫 Akses pelajar sedang ditutup oleh guru.\nSebab: ' + getStudentBlockMessage();
-                    return;
-                }
-
                 let found = false;
                 for(let key in allData) {
                     if(allData[key].students.find(s => s.name.toLowerCase() === studentName.toLowerCase())) {
@@ -7498,7 +7557,6 @@ let pelajarWithAvg = st.map(s => {
                     setAdminNavVisibility();
                     setSystemControlsLocked();
                     maybeNotifyGuruAdminExpiry();
-                    enforceStudentAccess();
                 } else {
                     errorDiv.innerText = '❌ Nama pelajar tidak ditemui dalam sistem!';
                 }
@@ -7587,7 +7645,6 @@ let pelajarWithAvg = st.map(s => {
             setAdminNavVisibility();
             setSystemControlsLocked();
             maybeNotifyGuruAdminExpiry();
-            enforceStudentAccess();
             if(saved) renderCurrentPage();
         }
 
@@ -7633,8 +7690,6 @@ let pelajarWithAvg = st.map(s => {
         let originalRenderCurrentPage = renderCurrentPage;
         renderCurrentPage = function() {
             if(currentUser && currentUser.role === 'pelajar') {
-                enforceStudentAccess();
-                if (isStudentBlocked()) return;
                 let p = document.querySelector(".page.active-page");
                 if(p && p.id !== 'profilPage' && p.id !== 'bukuPage') {
                     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -7800,8 +7855,7 @@ ${reportHTML}
                 pbdData: pbdData,
                 dskpDatabase: dskpDatabase,
                 itemConfigGlobal: itemConfigGlobal,
-                adminSystemLock: adminSystemLock,
-                studentAccess: studentAccess
+                adminSystemLock: adminSystemLock
             };
             
             let dataStr = JSON.stringify(backup, null, 2);
@@ -7839,8 +7893,6 @@ ${reportHTML}
                     dskpDatabase = backup.dskpDatabase || {};
                     itemConfigGlobal = backup.itemConfigGlobal || {};
                     adminSystemLock = backup.adminSystemLock || { mode: "manual", enabled: false, untilDate: "", startAt: "", endAt: "" };
-                    studentAccess = backup.studentAccess || { enabled: true, message: "" };
-                    normalizeStudentAccess();
                     
                     saveAll();
                     refreshSelectors();
@@ -7881,3 +7933,5 @@ ${reportHTML}
     </div>
 </body>
 </html>
+
+
