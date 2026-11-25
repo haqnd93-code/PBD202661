@@ -2348,6 +2348,37 @@ function lihatPemetaanExam() {
             let exam = examName || currentBMEditExam || getCurrentExamNames()[0] || "default";
             return buildItemConfigKey(s, cls, y, exam);
         }
+        // ===== SOALAN PILIHAN =====
+        // soalan: {no, markahPenuh, pilihan:true?}   kertas: {nama, soalan[], bilPilih?}
+        // Soalan wajib sentiasa dikira. Daripada soalan pilihan, hanya `bilPilih` markah TERBAIK dikira.
+        function kertasPilihanInfo(k){
+            let wajib=[], pilih=[];
+            k.soalan.forEach((q,i)=>{ (q.pilihan?pilih:wajib).push(i); });
+            let n=pilih.length;
+            if(pilih.length){
+                let b=parseInt(k.bilPilih);
+                n=Number.isFinite(b)?Math.max(1,Math.min(pilih.length,b)):1;
+            }
+            return {wajib,pilih,n};
+        }
+        function kertasFull(k){
+            let inf=kertasPilihanInfo(k);
+            let tot=inf.wajib.reduce((a,i)=>a+k.soalan[i].markahPenuh,0);
+            let fp=inf.pilih.map(i=>k.soalan[i].markahPenuh).sort((a,b)=>b-a);
+            for(let j=0;j<inf.n;j++) tot+=fp[j]||0;
+            return tot;
+        }
+        // Pulangkan {mark, counted[]} - counted[si]=true jika soalan ke-si dikira dalam jumlah pelajar
+        function kertasKira(k, items){
+            let inf=kertasPilihanInfo(k);
+            let counted=k.soalan.map(()=>false);
+            inf.wajib.forEach(i=>counted[i]=true);
+            let m=i=>toNumber((items&&items[i]&&items[i].mark),0);
+            inf.pilih.slice().sort((a,b)=>(m(b)-m(a))||(a-b)).slice(0,inf.n).forEach(i=>counted[i]=true);
+            let mark=0;
+            k.soalan.forEach((q,i)=>{ if(counted[i]) mark+=m(i); });
+            return {mark,counted};
+        }
         function toNumber(value, fallback = 0) {
             let num = Number(value);
             return Number.isFinite(num) ? num : fallback;
@@ -2682,6 +2713,64 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         </div>
     </div>`;
 }
+        // ----- UI Konfigurasi Item (dikongsi) -----
+        function cfgSoalanRowHTML(ki, no, markah, pilihan){
+            return `<div class="cfg-soalan-row" style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;${pilihan?'background:#fffbeb;border-radius:8px;padding:2px 6px;':''}">
+              <span class="cfg-no" style="font-size:0.8rem;min-width:40px;">${no}</span>
+              <input class="cfg-markah" value="${markah}" type="number" min="1" max="100" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;">
+              <span style="font-size:0.7rem;color:#94a3b8;">markah</span>
+              <label style="font-size:0.72rem;color:#b45309;font-weight:600;display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="checkbox" class="cfg-pilih" ${pilihan?'checked':''} onchange="cfgKemasPilihan(this)"> Pilihan</label>
+              <button class="btn btn-danger btn-sm" onclick="cfgPadamSoalan(this)">✖</button>
+            </div>`;
+        }
+        function cfgKertasHTML(ki, kertas){
+            let rows=kertas.soalan.map((q,si)=>cfgSoalanRowHTML(ki,q.no,q.markahPenuh,!!q.pilihan)).join('');
+            let ada=kertas.soalan.some(q=>q.pilihan);
+            let bil=Number.isFinite(parseInt(kertas.bilPilih))?parseInt(kertas.bilPilih):1;
+            return `<div class="cfg-kertas-block" style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <input class="cfg-nama" value="${kertas.nama}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;">
+                <button class="btn btn-danger btn-sm" onclick="this.closest('.cfg-kertas-block').remove()">🗑️</button>
+              </div>
+              <div class="cfg-soalan-list" id="soalanList_${ki}" style="margin-bottom:8px;">${rows}</div>
+              <div class="cfg-pilih-box" style="display:${ada?'block':'none'};background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:0.76rem;color:#92400e;">
+                📌 Murid jawab <input class="cfg-bilpilih" type="number" min="1" value="${bil}" style="width:56px;padding:4px;border-radius:6px;border:1.5px solid #fcd34d;text-align:center;font-weight:700;" onchange="cfgKemasPilihan(this)"> daripada <b class="cfg-pilih-cnt">0</b> soalan pilihan.
+                <div style="font-size:0.7rem;margin-top:3px;">Markah penuh kertas ini: <b class="cfg-jumlah-penuh">0</b> (soalan wajib + N soalan pilihan). Markah terbaik sahaja dikira.</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="cfgTambahSoalan(this)">+ Tambah Soalan</button>
+            </div>`;
+        }
+        function cfgKemasPilihan(el){
+            let blk=el.closest('.cfg-kertas-block'); if(!blk)return;
+            let rows=Array.from(blk.querySelectorAll('.cfg-soalan-row'));
+            rows.forEach((r,j)=>{
+                r.querySelector('.cfg-no').textContent='S'+(j+1);
+                let pl=r.querySelector('.cfg-pilih').checked;
+                r.style.background=pl?'#fffbeb':''; r.style.borderRadius=pl?'8px':''; r.style.padding=pl?'2px 6px':'';
+            });
+            let wajib=[],pilih=[];
+            rows.forEach(r=>{let v=parseInt(r.querySelector('.cfg-markah').value)||0; (r.querySelector('.cfg-pilih').checked?pilih:wajib).push(v);});
+            let box=blk.querySelector('.cfg-pilih-box');
+            box.style.display=pilih.length?'block':'none';
+            let inp=box.querySelector('.cfg-bilpilih');
+            let n=Math.max(1,Math.min(pilih.length||1,parseInt(inp.value)||1));
+            inp.value=n; inp.max=pilih.length||1;
+            blk.querySelector('.cfg-pilih-cnt').textContent=pilih.length;
+            let fp=pilih.slice().sort((a,b)=>b-a), tot=wajib.reduce((a,b)=>a+b,0);
+            for(let j=0;j<n&&pilih.length;j++) tot+=fp[j]||0;
+            blk.querySelector('.cfg-jumlah-penuh').textContent=tot;
+        }
+        function cfgTambahSoalan(btn){
+            let blk=btn.closest('.cfg-kertas-block'); let list=blk.querySelector('.cfg-soalan-list');
+            let si=list.children.length;
+            list.insertAdjacentHTML('beforeend', cfgSoalanRowHTML(0,'S'+(si+1),10,false));
+            cfgKemasPilihan(list);
+        }
+        function cfgPadamSoalan(btn){
+            let blk=btn.closest('.cfg-kertas-block'); btn.closest('.cfg-soalan-row').remove();
+            if(blk) cfgKemasPilihan(blk.querySelector('.cfg-soalan-list'));
+        }
+        function cfgKemasSemua(){ document.querySelectorAll('#modalKonfigurasiItemContent .cfg-soalan-list').forEach(l=>{ if(l.parentElement.querySelector('.cfg-soalan-row')) cfgKemasPilihan(l.querySelector('.cfg-soalan-row')); }); }
         function bukaKonfigurasiItem(){
             let examNames = getCurrentExamNames();
             let defaultExam = currentBMEditExam || examNames[0];
@@ -2710,16 +2799,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                     <span style="font-size:0.72rem;color:#7c3aed;"><i class="fas fa-info-circle"></i> Setiap peperiksaan boleh ada soalan &amp; markah berbeza</span>
                 </div>
                 <div id="cfgKertasContainer">`;
-                cfg.kertas.forEach((kertas, ki) => {
-                    html+=`<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;">
-                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                        <input value="${kertas.nama}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;">
-                        <button class="btn btn-danger btn-sm" onclick="padamKertasCfg(${ki})">🗑️</button>
-                      </div>
-                      <div id="soalanList_${ki}" style="margin-bottom:8px;">${kertas.soalan.map((soal,si)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><span style="font-size:0.8rem;min-width:40px;">${soal.no}</span><input value="${soal.markahPenuh}" id="cfgMarkah_${ki}_${si}" type="number" min="1" max="100" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;"><span style="font-size:0.7rem;color:#94a3b8;">markah</span><button class="btn btn-danger btn-sm" onclick="padamSoalanCfg(${ki},${si})">✖</button></div>`).join('')}</div>
-                      <button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>
-                    </div>`;
-                });
+                cfg.kertas.forEach((kertas, ki) => { html += cfgKertasHTML(ki, kertas); });
                 html+=`</div>
                 <button class="btn btn-ghost" onclick="tambahKertasCfg()" style="margin-bottom:16px;">+ Tambah Kertas</button>
                 <div class="flex justify-end gap-3"><button class="btn btn-ghost" onclick="tutupModal('modalKonfigurasiItem')">Batal</button><button class="btn btn-primary" onclick="simpanKonfigurasiItem()">💾 Simpan Konfigurasi</button></div>`;
@@ -2729,6 +2809,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             window._cfgCurrentExam = defaultExam;
             document.getElementById("modalKonfigurasiItemContent").innerHTML = buildKonfigHTML(defaultExam);
             document.getElementById("modalKonfigurasiItem").style.display="flex";
+            cfgKemasSemua();
         }
         // ==================== MODAL URUS PEPERIKSAAN (dari Prestasi/KonfigItem) ====================
         function bukaModalUrusExam() {
@@ -2904,40 +2985,41 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let container = document.getElementById("cfgKertasContainer");
             if (!container) return;
             let html = '';
-            cfg.kertas.forEach((kertas, ki) => {
-                html+=`<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <input value="${kertas.nama}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;">
-                    <button class="btn btn-danger btn-sm" onclick="padamKertasCfg(${ki})">🗑️</button>
-                  </div>
-                  <div id="soalanList_${ki}" style="margin-bottom:8px;">${kertas.soalan.map((soal,si)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;"><span style="font-size:0.8rem;min-width:40px;">${soal.no}</span><input value="${soal.markahPenuh}" id="cfgMarkah_${ki}_${si}" type="number" min="1" max="100" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;"><span style="font-size:0.7rem;color:#94a3b8;">markah</span><button class="btn btn-danger btn-sm" onclick="padamSoalanCfg(${ki},${si})">✖</button></div>`).join('')}</div>
-                  <button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>
-                </div>`;
-            });
+            cfg.kertas.forEach((kertas, ki) => { html += cfgKertasHTML(ki, kertas); });
             container.innerHTML = html;
+            cfgKemasSemua();
         }
-        function tambahSoalanCfg(ki){let list=document.getElementById("soalanList_"+ki);let si=list.children.length;let d=document.createElement("div");d.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:4px;";d.innerHTML=`<span style="font-size:0.8rem;min-width:40px;">S${si+1}</span><input id="cfgMarkah_${ki}_${si}" type="number" min="1" max="100" value="10" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;"><span style="font-size:0.7rem;color:#94a3b8;">markah</span><button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>`;list.appendChild(d);}
-        function padamSoalanCfg(ki,si){document.getElementById("soalanList_"+ki).children[si]?.remove();}
-        function tambahKertasCfg(){let modal=document.getElementById("modalKonfigurasiItemContent");let ki=modal.querySelectorAll('[id^="cfgNamaKertas_"]').length;let d=document.createElement("div");d.style.cssText="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;";d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><input value="Kertas ${ki+1}" id="cfgNamaKertas_${ki}" style="font-weight:700;font-size:0.9rem;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;flex:1;margin-right:8px;"><button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">🗑️</button></div><div id="soalanList_${ki}"></div><button class="btn btn-ghost btn-sm" onclick="tambahSoalanCfg(${ki})">+ Tambah Soalan</button>`;modal.insertBefore(d,modal.querySelector('button[onclick*="tambahKertasCfg"]'));}
-        function padamKertasCfg(ki){let el=document.getElementById("cfgNamaKertas_"+ki);if(el)el.parentElement.parentElement.remove();}
+        function tambahSoalanCfg(ki){ /* dikekalkan untuk keserasian */ }
+        function padamSoalanCfg(ki,si){ /* dikekalkan untuk keserasian */ }
+        function tambahKertasCfg(){
+            let c=document.getElementById("cfgKertasContainer"); if(!c)return;
+            let ki=c.querySelectorAll('.cfg-kertas-block').length;
+            c.insertAdjacentHTML('beforeend', cfgKertasHTML(ki,{nama:"Kertas "+(ki+1),soalan:[]}));
+        }
+        function padamKertasCfg(ki){ let el=document.getElementById("cfgNamaKertas_"+ki); if(el) el.closest('.cfg-kertas-block').remove(); }
         function simpanKonfigurasiItem(){
             let { s, cls, y } = _getConfigContext();
             let examName = window._cfgCurrentExam || document.getElementById("cfgExamSelect")?.value || getCurrentExamNames()[0];
             let configKey = buildItemConfigKey(s, cls, y, examName);
             let modal=document.getElementById("modalKonfigurasiItemContent");
-            let kertasEls=modal.querySelectorAll('[id^="cfgNamaKertas_"]');
             let kertas=[];
-            kertasEls.forEach((el,i)=>{
-                let nama=el.value.trim()||"Kertas "+(i+1);
-                let soalanEls=document.getElementById("soalanList_"+i)?.children||[];
+            modal.querySelectorAll('.cfg-kertas-block').forEach((blk,i)=>{
+                let nama=blk.querySelector('.cfg-nama').value.trim()||"Kertas "+(i+1);
                 let soalan=[];
-                Array.from(soalanEls).forEach((d,j)=>{
-                    let inp=d.querySelector("input");
-                    let markah=parseInt(inp?.value)||10;
-                    soalan.push({no:"S"+(j+1),markahPenuh:markah});
+                blk.querySelectorAll('.cfg-soalan-row').forEach((r,j)=>{
+                    let markah=parseInt(r.querySelector('.cfg-markah').value)||10;
+                    let q={no:"S"+(j+1),markahPenuh:markah};
+                    if(r.querySelector('.cfg-pilih').checked) q.pilihan=true;
+                    soalan.push(q);
                 });
                 if(soalan.length===0) soalan.push({no:"S1",markahPenuh:10});
-                kertas.push({nama,soalan});
+                let k={nama,soalan};
+                let np=soalan.filter(q=>q.pilihan).length;
+                if(np>0){
+                    let b=parseInt(blk.querySelector('.cfg-bilpilih')?.value)||1;
+                    k.bilPilih=Math.max(1,Math.min(np,b));
+                }
+                kertas.push(k);
             });
             if(kertas.length===0) kertas=[{nama:"Kertas 1",soalan:[{no:"S1",markahPenuh:10}]}];
             itemConfigGlobal[configKey]={kertas};
@@ -2961,8 +3043,8 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
         html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">`;
         cfg.kertas.forEach((kertas,ki)=>{
             let items=itemData[kertas.nama]||[];
-            let kMark=items.reduce((a,b)=>a+(b.mark||0),0);
-            let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+            let kMark=kertasKira(kertas,items).mark;
+            let kFull=kertasFull(kertas);
             allMarkah+=kMark; allFull+=kFull;
             html+=`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;">
               <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;">${kertas.nama}</div>
@@ -3009,8 +3091,10 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                     items[si].mark=Math.max(0,val);
                     kMark+=items[si].mark;
                 });
-                allMarkah+=kMark;
-                allFull+=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+                let _kr=kertasKira(kertas,items), _kf=kertasFull(kertas), _el=document.getElementById("anKT_"+ki);
+                if(_el) _el.textContent=(_kf>0?Math.round(_kr.mark/_kf*100):0)+'% ('+_kr.mark+'/'+_kf+')';
+                allMarkah+=_kr.mark;
+                allFull+=_kf;
             });
             // Fungsi cadangan auto telah dimatikan atas permintaan pengguna
             let suggestEl=document.getElementById("analisisSuggestPct");
@@ -3024,7 +3108,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             let cfg=getItemConfig(currentBMEditExam);
             let allMarkah=0,allFull=0;
             cfg.kertas.forEach((kertas,ki)=>{
-                let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+                let kFull=kertasFull(kertas);
                 let val=toNumber(document.getElementById("bmComp_"+ki)?.value,0);
                 allMarkah+=val; allFull+=kFull;
                 let pct=kFull>0?Math.round(val/kFull*100):0;
@@ -3049,11 +3133,11 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
 
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=examData[kertas.nama]||[];
-                let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+                let kFull=kertasFull(kertas);
                 let inputEl=document.getElementById("bmComp_"+ki);
                 let target=toNumber(inputEl?.value,NaN);
                 let orig=toNumber(inputEl?.dataset?.orig,NaN);
-                let currentSum=items.reduce((a,b)=>a+toNumber(b.mark,0),0);
+                let currentSum=kertasKira(kertas,items).mark;
                 if(Number.isNaN(target)) target=currentSum;
                 target=Math.max(0,Math.min(target,kFull));
 
@@ -3064,11 +3148,12 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 let unchanged = !Number.isNaN(orig) && Math.abs(target-orig) < 0.005;
 
                 if(!unchanged){
-                    let baki=target;
+                    let baki=target; let _pn=0, _pinfo=kertasPilihanInfo(kertas);
                     kertas.soalan.forEach((soal,si)=>{
                         if(!items[si]||typeof items[si]!=="object") items[si]={mark:0,fullMark:soal.markahPenuh};
                         items[si].fullMark=soal.markahPenuh;
-                        let isi=Math.min(baki,soal.markahPenuh);
+                        let isi=0;
+                        if(!soal.pilihan || _pn<_pinfo.n){ isi=Math.min(baki,soal.markahPenuh); if(soal.pilihan)_pn++; }
                         items[si].mark=Math.max(0,isi);
                         baki-=isi;
                     });
@@ -3619,21 +3704,22 @@ window._scnAutoLoop=_scnAutoLoop;window._scnAutoStop=_scnAutoStop;window._scnRel
             
             cfg.kertas.forEach((kertas,ki)=>{
                 let items=itemData[kertas.nama]||[];
-                let kMark=items.reduce((a,b)=>a+(b.mark||0),0);
-                let kFull=kertas.soalan.reduce((a,b)=>a+b.markahPenuh,0);
+                let kMark=kertasKira(kertas,items).mark;
+                let kFull=kertasFull(kertas);
                 allMarkah+=kMark; allFull+=kFull;
                 
                 html+=`<div style="margin-bottom:14px;border:1px solid #e2e8f0;border-radius:12px;padding:12px;">
                   <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
                     <strong>${kertas.nama}</strong> <button class="btn btn-accent" onclick="bukaScanMarkah(${ki})" style="padding:3px 10px;font-size:.7rem;margin-left:6px;"><i class="fas fa-camera"></i> Imbas</button>
-                    <span style="color:#6366f1;font-weight:700;">${kFull>0?Math.round(kMark/kFull*100):0}% (${kMark}/${kFull})</span>
+                    <span id="anKT_${ki}" style="color:#6366f1;font-weight:700;">${kFull>0?Math.round(kMark/kFull*100):0}% (${kMark}/${kFull})</span>
                   </div>
+                  ${kertas.soalan.some(q=>q.pilihan)?`<div style="font-size:0.68rem;color:#b45309;background:#fffbeb;border-radius:8px;padding:4px 8px;margin-bottom:6px;">📌 Soalan pilihan: ${kertasPilihanInfo(kertas).n} markah terbaik sahaja dikira dalam jumlah.</div>`:''}
                   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;">`;
                 
                 kertas.soalan.forEach((soal,si)=>{
                     let item=items[si]||{mark:0};
                     html+=`<div style="text-align:center;">
-                      <div style="font-size:0.08rem;color:#94a3b8;">${soal.no}</div>
+                      <div style="font-size:0.65rem;color:${soal.pilihan?'#d97706':'#94a3b8'};font-weight:600;">${soal.no}${soal.pilihan?' (pilihan)':''}</div>
                       <input type="number" id="im_${ki}_${si}" value="${item.mark}" min="0" max="${soal.markahPenuh}" step="0.01" style="width:100%;padding:6px;border-radius:6px;border:1.5px solid #e2e8f0;text-align:center;font-weight:600;font-size:0.8rem;" onchange="hitungCepat()">
                       <div style="font-size:0.55rem;color:#cbd5e1;">/${soal.markahPenuh}</div>
                     </div>`;
@@ -5620,19 +5706,19 @@ function jalanCetakAnalisis(examPilihan){
     let pelajarData = [];
     for(let i = 0; i < pelajar.length; i++){
         let p = pelajar[i];
-        let semuaMarkah = [], kertasMarkah = [];
+        let semuaMarkah = [], kertasMarkah = [], semuaCounted = [];
         let totalMarkah = 0, totalPenuh = 0;
         for(let ki = 0; ki < cfg.kertas.length; ki++){
             let k = cfg.kertas[ki];
             let itemData = getStudentItemData(p, examPilihan);
             let kertasData = itemData[k.nama] || [];
-            let kt = 0, kp = 0;
+            let kr = kertasKira(k, kertasData);
             for(let si = 0; si < k.soalan.length; si++){
-                let s = k.soalan[si];
-                let markah = (kertasData[si] || {mark:0}).mark || 0;
-                semuaMarkah.push(markah);
-                kt += markah; kp += s.markahPenuh; totalMarkah += markah;
+                semuaMarkah.push((kertasData[si] || {mark:0}).mark || 0);
+                semuaCounted.push(kr.counted[si]);
             }
+            let kt = kr.mark, kp = kertasFull(k);
+            totalMarkah += kt;
             totalPenuh += kp;
             kertasMarkah.push(kt);
         }
@@ -5640,6 +5726,7 @@ function jalanCetakAnalisis(examPilihan){
         pelajarData.push({
             name: p.name,
             semuaMarkah: semuaMarkah,
+            semuaCounted: semuaCounted,
             kertasMarkah: kertasMarkah,
             overallPercent: pct,
             gredInfo: getGredByTingkatan(pct, ting),
@@ -5663,9 +5750,9 @@ function jalanCetakAnalisis(examPilihan){
             let k=cfg.kertas[ki];
             for(let si=0;si<k.soalan.length;si++){
                 let s=k.soalan[si];
-                h += '<th data-g="'+ki+'" style="padding:6px 4px;background:var(--an-l,#dbeafe);border:1px solid var(--an-lb,#bfdbfe);font-size:0.75rem;text-align:center;color:var(--an-d,#1e40af);">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
+                h += '<th data-g="'+ki+'" style="padding:6px 4px;background:var(--an-l,#dbeafe);border:1px solid var(--an-lb,#bfdbfe);font-size:0.75rem;text-align:center;color:var(--an-d,#1e40af);">'+s.no+(s.pilihan?'*':'')+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
             }
-            let tp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
+            let tp=kertasFull(k);
             h += '<th data-g="'+ki+'" style="padding:6px 4px;background:var(--an-lb,#bfdbfe);border:1px solid var(--an-lbb,#93c5fd);font-size:0.78rem;text-align:center;color:var(--an-dd,#1e3a8a);font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
         }
         h += '</tr>';
@@ -5690,11 +5777,15 @@ function jalanCetakAnalisis(examPilihan){
                     let s=k.soalan[si];
                     let pt=s.markahPenuh>0?(m/s.markahPenuh)*100:0;
                     let clr=pt>=80?'#059669':(pt>=50?'#ca8a04':'#dc2626');
-                    rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:'+clr+';font-weight:600;font-size:0.78rem;">'+m+'</td>';
+                    if(s.pilihan && !p.semuaCounted[mIdx]){
+                        rows += '<td data-g="'+ki+'" title="Soalan pilihan - tidak dikira" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:#cbd5e1;background:#f1f5f9;font-size:0.72rem;">'+(m>0?'<s>'+m+'</s>':'–')+'</td>';
+                    } else {
+                        rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:'+clr+';font-weight:600;font-size:0.78rem;">'+m+'</td>';
+                    }
                     mIdx++;
                 }
                 let km=p.kertasMarkah[ki];
-                let kp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
+                let kp=kertasFull(k);
                 let pkp=kp>0?Math.round((km/kp)*100):0;
                 let wk=pkp>=80?'#059669':(pkp>=50?'#ca8a04':'#dc2626');
                 rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:var(--an-xl,#eff6ff);font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
@@ -5782,6 +5873,14 @@ function jalanCetakAnalisis(examPilihan){
     html += '<thead>'+mkHeader()+'</thead>';
     html += '<tbody>'+mkRows()+'</tbody>';
     html += '</table></div>';
+    let _notaPilih = cfg.kertas.filter(k=>k.soalan.some(q=>q.pilihan)).map(k=>{
+        let inf=kertasPilihanInfo(k);
+        return '<b>'+k.nama+'</b>: jawab '+inf.n+' daripada '+inf.pilih.length+' soalan pilihan ('+inf.pilih.map(i=>k.soalan[i].no).join(', ')+')';
+    });
+    if(_notaPilih.length){
+        html += '<div style="margin-top:6px;font-size:0.7rem;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:6px 10px;">* Soalan pilihan &mdash; markah terbaik sahaja dikira dalam jumlah. Soalan pilihan yang tidak dikira dipaparkan kelabu. '+_notaPilih.join(' &nbsp;|&nbsp; ')+'</div>';
+    }
+
 
     // CSS highlight
     html += '<style>';
@@ -6137,7 +6236,7 @@ function renderRankingAnalisisSoalan(examPilihan) {
             soalanDefs.push({kertas: k.nama, soalan: k.soalan[si]});
         }
     }
-    let maksimumJumlahKeseluruhan = soalanDefs.reduce((sum, d) => sum + (d.soalan.markahPenuh || 0), 0);
+    let maksimumJumlahKeseluruhan = cfg.kertas.reduce((sum, k) => sum + kertasFull(k), 0);
     
     // Kumpul data markah SEMUA pelajar (digunakan untuk senarai penapis & gred)
     let semuaMarkahPelajarSemua = [];
@@ -6148,9 +6247,12 @@ function renderRankingAnalisisSoalan(examPilihan) {
             let k = cfg.kertas[ki];
             let itemData = getStudentItemData(p, examPilihan);
             let kertasData = itemData[k.nama] || [];
+            let kr = kertasKira(k, kertasData);
             for(let si = 0; si < k.soalan.length; si++) {
                 let item = kertasData[si] || {mark: 0};
                 let markah = item.mark || 0;
+                // soalan pilihan yang tidak dijawab / tidak dikira -> null (dikecualikan daripada statistik)
+                if(k.soalan[si].pilihan && !(kr.counted[si] && markah > 0)) markah = null;
                 semuaMarkah.push(markah);
             }
         }
@@ -6159,7 +6261,7 @@ function renderRankingAnalisisSoalan(examPilihan) {
     
     // Kira jumlah & gred setiap pelajar (untuk senarai & penapis gred)
     let infoGredPelajar = pelajarSemua.map((p, i) => {
-        let jumlah = semuaMarkahPelajarSemua[i].reduce((a, b) => a + b, 0);
+        let jumlah = semuaMarkahPelajarSemua[i].reduce((a, b) => a + (b || 0), 0);
         let peratus = maksimumJumlahKeseluruhan > 0 ? Math.round((jumlah / maksimumJumlahKeseluruhan) * 100) : 0;
         let gredInfo = getGredByTingkatan(peratus, ting) || {gred: "-", warna: "#94a3b8"};
         return {nama: p.name, peratus: peratus, gred: gredInfo.gred, warna: gredInfo.warna};
@@ -6196,10 +6298,13 @@ function renderRankingAnalisisSoalan(examPilihan) {
             let dapatSeparuh = 0;
             let dapatKurang = 0;
             let jumlahMarkah = 0;
-            let maksimumMarkah = s.markahPenuh * pelajar.length;
+            let bilJawab = 0;
+            let maksimumMarkah = 0;
             
             for(let i = 0; i < pelajar.length; i++) {
-                let markah = semuaMarkahPelajar[i][soalanIdx] || 0;
+                let markah = semuaMarkahPelajar[i][soalanIdx];
+                if(markah === null || markah === undefined) continue;
+                bilJawab++; maksimumMarkah += s.markahPenuh;
                 let peratus = (markah / s.markahPenuh) * 100;
                 jumlahMarkah += markah;
                 
@@ -6212,11 +6317,14 @@ function renderRankingAnalisisSoalan(examPilihan) {
                 }
             }
             
+            if(s.pilihan && bilJawab === 0){ soalanIdx++; continue; }
             let peratusKeseluruhan = maksimumMarkah > 0 ? Math.round((jumlahMarkah / maksimumMarkah) * 100) : 0;
             
             soalanAnalisis.push({
                 kertas: k.nama,
-                noSoalan: s.no,
+                noSoalan: s.no + (s.pilihan ? '*' : ''),
+                pilihan: !!s.pilihan,
+                bilJawab: bilJawab,
                 markahPenuh: s.markahPenuh,
                 dapatPenuh: dapatPenuh,
                 dapatSeparuh: dapatSeparuh,
