@@ -3094,6 +3094,267 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             renderCurrentPage();
         }
 
+// ==================== IMBAS MARKAH KAMERA (Analisis Item) ====================
+// Mod F = "Borang Pemeriksa": satu lajur "Markah Diperoleh" (A, B1..B6, C1, JUMLAH) seperti kertas peperiksaan.
+let _scn={stream:null,frame:{x:68,y:31,w:26,h:34,r:0},mode:'F',per:10,ki:0,cells:[],worker:null,frozen:false,jumlah:true,group:true};
+(function(){try{let p=JSON.parse(localStorage.getItem('scnPrefs')||'null');if(p){Object.assign(_scn.frame,p.frame||{});['mode','per','jumlah','group'].forEach(k=>{if(p[k]!=null)_scn[k]=p[k];});}}catch(e){}})();
+function _scnSave(){try{localStorage.setItem('scnPrefs',JSON.stringify({frame:_scn.frame,mode:_scn.mode,per:_scn.per,jumlah:_scn.jumlah,group:_scn.group}));}catch(e){}}
+function _scnLoadOCR(){
+    return new Promise((res,rej)=>{
+        if(window.Tesseract) return res();
+        let s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        s.onload=res; s.onerror=()=>rej(new Error('Tidak dapat memuat enjin OCR. Semak internet.'));
+        document.head.appendChild(s);
+    });
+}
+// Kumpul soalan 1 markah yang berturutan (cth. Bahagian A: 15 soalan x 1 markah) menjadi satu baris pada borang pemeriksa
+function _scnGroups(k){
+    let g=[];
+    k.soalan.forEach((s,si)=>{
+        let m=+s.markahPenuh||0, small=_scn.group&&m<=1, last=g[g.length-1];
+        if(small&&last&&last.small){last.sis.push(si);last.max+=m;last.end=s.no;}
+        else g.push({sis:[si],max:m,small,start:s.no,end:s.no});
+    });
+    return g.map(x=>({sis:x.sis,max:x.max,label:x.sis.length>1?(x.start+'–'+x.end):x.start}));
+}
+function _scnLayout(cfg){
+    let k=cfg.kertas[_scn.ki], n=k.soalan.length, m=_scn.mode, pos=[], R=1, C=n;
+    let mk=(si,row,col)=>pos.push({ki:_scn.ki,sis:[si],row,col,label:k.soalan[si].no,max:+k.soalan[si].markahPenuh||0});
+    if(m=='F'){
+        let g=_scnGroups(k);
+        g.forEach((x,i)=>pos.push({ki:_scn.ki,sis:x.sis,row:i,col:0,label:x.label,max:x.max}));
+        R=g.length+(_scn.jumlah?1:0); C=1;
+        if(_scn.jumlah) pos.push({ki:_scn.ki,sis:[],row:g.length,col:0,label:'JUMLAH',max:0,skip:true});
+    }
+    else if(m=='H'){R=1;C=n;k.soalan.forEach((s,si)=>mk(si,0,si));}
+    else if(m=='V'){R=n;C=1;k.soalan.forEach((s,si)=>mk(si,si,0));}
+    else{let p=Math.max(1,_scn.per|0);C=p;R=Math.max(1,Math.ceil(n/p));k.soalan.forEach((s,si)=>mk(si,Math.floor(si/p),si%p));}
+    return {pos,R,C};
+}
+function _scnAutoMode(){
+    let m=document.getElementById('scnMode'); if(m)m.value=_scn.mode;
+    let w=document.getElementById('scnPerWrap'); if(w)w.style.display=_scn.mode=='W'?'inline-flex':'none';
+    let f=document.getElementById('scnFWrap'); if(f)f.style.display=_scn.mode=='F'?'inline-flex':'none';
+}
+function _scnFitStage(w,h){
+    let st=document.getElementById('scnStage'); if(!st)return;
+    st.style.aspectRatio=w+'/'+h; st.style.width='min(100%, calc(62vh * '+(w/h)+'))';
+}
+function _scnSyncSliders(){ ['x','y','w','h','r'].forEach(k=>{let e=document.getElementById('scnSl_'+k); if(e)e.value=_scn.frame[k];}); }
+function _scnReset(){
+    _scn.frame=_scn.mode=='F'?{x:68,y:31,w:26,h:34,r:0}:{x:8,y:10,w:84,h:60,r:0};
+    _scnSyncSliders(); _scnDrawGrid(); _scnSave();
+}
+function bukaScanMarkah(ki){
+    let cfg=getItemConfig(currentBMEditExam); _scn.ki=Math.max(0,Math.min(ki|0,cfg.kertas.length-1)); _scn.cells=[];
+    let ov=document.getElementById('scanOverlay');
+    if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='scanOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.92);z-index:3000;overflow-y:auto;padding:12px;display:flex;justify-content:center;';
+    ov.innerHTML=`<div style="background:#fff;border-radius:20px;padding:16px;width:760px;max-width:100%;height:max-content;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong>📷 Imbas Markah · ${currentBMEditExam}</strong>
+        <button class="btn btn-ghost" onclick="tutupScanMarkah()" style="padding:6px 12px;">✕</button></div>
+      <p style="font-size:.72rem;color:#64748b;margin-bottom:8px;">Mod <b>Borang Pemeriksa</b>: letakkan bingkai hijau <b>hanya di atas lajur "Markah Diperoleh"</b>, dari atas baris Bahagian A hingga bawah baris JUMLAH. Seret bingkai untuk alih, seret bulatan hijau di penjuru untuk saiz, guna <i>Pusing</i> jika kertas senget. Hanya <b style="color:#dc2626">tulisan pen merah</b> dibaca (garisan &amp; nombor cetak diabaikan).</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center;">
+        <select id="scnKertas" onchange="_scn.ki=+this.value;_scn.cells=[];document.getElementById('scnResult').innerHTML='';_scnAutoMode();_scnDrawGrid()" style="padding:6px;border-radius:8px;border:1.5px solid #6366f1;font-size:.75rem;font-weight:700;">${cfg.kertas.map((k,i)=>`<option value="${i}" ${i==_scn.ki?'selected':''}>${k.nama} (${k.soalan.length} soalan)</option>`).join('')}</select>
+        <select id="scnMode" onchange="_scn.mode=this.value;_scnAutoMode();_scnReset()" style="padding:6px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:.75rem;">
+          <option value="F">Borang pemeriksa (satu lajur markah)</option>
+          <option value="H">Soalan mendatar (satu baris)</option>
+          <option value="V">Soalan menegak (satu lajur)</option>
+          <option value="W">Berbaris (bahagi ikut baris)</option></select>
+        <span id="scnPerWrap" style="display:none;align-items:center;gap:4px;font-size:.72rem;">Soalan setiap baris <input type="number" min="1" max="40" value="${_scn.per}" oninput="_scn.per=+this.value||1;_scnDrawGrid();_scnSave()" style="width:54px;padding:5px;border:1.5px solid #e2e8f0;border-radius:8px;"></span>
+        <span id="scnFWrap" style="display:inline-flex;gap:10px;align-items:center;font-size:.72rem;flex-wrap:wrap;">
+          <label style="display:inline-flex;gap:3px;align-items:center;"><input type="checkbox" ${_scn.jumlah?'checked':''} onchange="_scn.jumlah=this.checked;_scnDrawGrid();_scnSave()"> Ada baris JUMLAH</label>
+          <label style="display:inline-flex;gap:3px;align-items:center;"><input type="checkbox" ${_scn.group?'checked':''} onchange="_scn.group=this.checked;_scnDrawGrid();_scnSave()"> Gabung soalan 1 markah (cth. Bahagian A)</label></span>
+        <button class="btn btn-primary" id="scnBtnCam" onclick="_scnStartCam()" style="padding:6px 12px;font-size:.75rem;">📷 Buka Kamera</button>
+        <label class="btn btn-ghost" style="padding:6px 12px;font-size:.75rem;cursor:pointer;">🖼️ Pilih Gambar
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="_scnFromFile(this.files[0]);this.value=''"></label>
+        <button class="btn btn-accent" id="scnBtnSnap" onclick="_scnSnap()" style="padding:6px 12px;font-size:.75rem;display:none;">📸 Tangkap</button>
+        <button class="btn btn-ghost" onclick="_scnReset()" style="padding:6px 10px;font-size:.72rem;">↺ Set semula bingkai</button>
+      </div>
+      <div id="scnStage" style="position:relative;background:#0f172a;border-radius:12px;overflow:hidden;margin:0 auto;touch-action:none;">
+        <video id="scnVideo" playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill;"></video>
+        <canvas id="scnCanvas" style="position:absolute;inset:0;width:100%;height:100%;display:none;"></canvas>
+        <div id="scnFrame" style="position:absolute;display:grid;border:2px solid #22c55e;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0;font-size:.65rem;color:#64748b;">
+        ${[['x','Kiri',0,100,1],['y','Atas',0,100,1],['w','Lebar',5,100,1],['h','Tinggi',5,100,1],['r','Pusing °',-15,15,.5]].map(([k,l,mn,mx,st])=>`<label>${l}<input id="scnSl_${k}" type="range" min="${mn}" max="${mx}" step="${st}" value="${_scn.frame[k]||0}" oninput="_scn.frame.${k}=+this.value;_scnDrawGrid();_scnSave()" style="width:100%"></label>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;"><button class="btn btn-success" id="scnBtnRead" onclick="_scnRead()" style="flex:1;" disabled>🔍 Baca Markah</button></div>
+      <div id="scnStatus" style="font-size:.72rem;color:#6366f1;margin:8px 0;"></div>
+      <div id="scnResult"></div>
+    </div>`;
+    document.body.appendChild(ov);
+    _scn.frozen=false; _scnFitStage(4,3); _scnAutoMode(); _scnDrawGrid(); _scnBindDrag();
+}
+function tutupScanMarkah(){
+    if(_scn.stream){_scn.stream.getTracks().forEach(t=>t.stop());_scn.stream=null;}
+    document.getElementById('scanOverlay')?.remove();
+}
+function _scnBindDrag(){
+    let st=document.getElementById('scnStage'); if(!st)return; let mode=null,sx=0,sy=0,f0=null;
+    st.onpointerdown=e=>{
+        let fr=document.getElementById('scnFrame'); if(!fr||!fr.contains(e.target))return;
+        mode=(e.target.dataset&&e.target.dataset.h)?'size':'move'; sx=e.clientX; sy=e.clientY; f0={..._scn.frame};
+        try{st.setPointerCapture(e.pointerId);}catch(_){} e.preventDefault();
+    };
+    st.onpointermove=e=>{
+        if(!mode)return; let b=st.getBoundingClientRect(), dx=(e.clientX-sx)/b.width*100, dy=(e.clientY-sy)/b.height*100, f=_scn.frame, r1=v=>Math.round(v*10)/10;
+        if(mode=='move'){f.x=r1(Math.max(0,Math.min(100-f0.w,f0.x+dx)));f.y=r1(Math.max(0,Math.min(100-f0.h,f0.y+dy)));}
+        else{f.w=r1(Math.max(5,Math.min(100-f0.x,f0.w+dx)));f.h=r1(Math.max(5,Math.min(100-f0.y,f0.h+dy)));}
+        _scnSyncSliders(); _scnDrawGrid();
+    };
+    st.onpointerup=st.onpointercancel=()=>{ if(mode){mode=null;_scnSave();} };
+}
+function _scnDrawGrid(){
+    let cfg=getItemConfig(currentBMEditExam), fr=document.getElementById('scnFrame'); if(!fr)return;
+    let L=_scnLayout(cfg), f=_scn.frame;
+    fr.style.left=f.x+'%';fr.style.top=f.y+'%';fr.style.width=Math.min(f.w,100-f.x)+'%';fr.style.height=Math.min(f.h,100-f.y)+'%';
+    fr.style.transform='rotate('+(f.r||0)+'deg)'; fr.style.cursor='move'; fr.style.touchAction='none'; fr.style.background='rgba(34,197,94,.05)';
+    fr.style.gridTemplateColumns='repeat('+L.C+',1fr)'; fr.style.gridTemplateRows='repeat('+L.R+',1fr)';
+    let h='';
+    L.pos.forEach(p=>{
+        h+=`<div style="grid-row:${p.row+1};grid-column:${p.col+1};border:1px solid rgba(34,197,94,.85);${p.skip?'background:rgba(100,116,139,.45);':''}font-size:9px;font-weight:700;color:#fff;text-shadow:0 0 3px #000;line-height:1;padding:1px 2px;overflow:hidden;pointer-events:none;">${p.label}</div>`;
+    });
+    h+='<div data-h="1" style="position:absolute;right:-11px;bottom:-11px;width:22px;height:22px;border-radius:50%;background:#22c55e;border:2px solid #fff;cursor:nwse-resize;touch-action:none;z-index:2;"></div>';
+    fr.innerHTML=h;
+}
+async function _scnStartCam(){
+    let st=document.getElementById('scnStatus');
+    try{
+        _scn.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});
+        try{let tr=_scn.stream.getVideoTracks()[0], caps=tr.getCapabilities?tr.getCapabilities():{}; if(caps.focusMode&&caps.focusMode.includes('continuous'))await tr.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(_){}
+        let v=document.getElementById('scnVideo'); v.srcObject=_scn.stream; await v.play();
+        v.style.display='block'; document.getElementById('scnCanvas').style.display='none';
+        _scnFitStage(v.videoWidth||4,v.videoHeight||3);
+        document.getElementById('scnBtnSnap').style.display='inline-flex'; _scn.frozen=false;
+        document.getElementById('scnBtnRead').disabled=true; st.textContent='Kamera aktif. Selaraskan lajur "Markah Diperoleh" dengan bingkai, kemudian tekan Tangkap.';
+    }catch(e){ st.textContent='Kamera tidak boleh dibuka ('+e.message+'). Gunakan "Pilih Gambar" sebagai ganti.'; }
+}
+function _scnSnap(){
+    let v=document.getElementById('scnVideo'), c=document.getElementById('scnCanvas');
+    c.width=v.videoWidth; c.height=v.videoHeight; c.getContext('2d').drawImage(v,0,0);
+    _scn.stream?.getTracks().forEach(t=>t.stop()); _scn.stream=null;
+    v.style.display='none'; c.style.display='block'; _scn.frozen=true;
+    document.getElementById('scnBtnSnap').style.display='none'; document.getElementById('scnBtnRead').disabled=false;
+    document.getElementById('scnStatus').textContent='Gambar ditangkap. Laraskan bingkai jika perlu, kemudian tekan Baca Markah.';
+}
+function _scnFromFile(file){
+    if(!file)return; let img=new Image();
+    img.onload=()=>{
+        let c=document.getElementById('scnCanvas'), sc=Math.min(1,2400/Math.max(img.naturalWidth,img.naturalHeight));
+        c.width=Math.round(img.naturalWidth*sc); c.height=Math.round(img.naturalHeight*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        _scn.stream?.getTracks().forEach(t=>t.stop()); _scn.stream=null;
+        document.getElementById('scnVideo').style.display='none'; c.style.display='block';
+        _scnFitStage(c.width,c.height);
+        document.getElementById('scnBtnSnap').style.display='none'; document.getElementById('scnBtnRead').disabled=false; _scn.frozen=true;
+        document.getElementById('scnStatus').textContent='Gambar dimuatkan. Laraskan bingkai, kemudian tekan Baca Markah.';
+        URL.revokeObjectURL(img.src);
+    };
+    img.src=URL.createObjectURL(file);
+}
+// Potong satu petak (dengan putaran bingkai). Asingkan dakwat merah (garisan hitam & nombor cetak hilang), ambang Otsu, tambah ruang putih.
+function _scnCellImage(src,fr,col,row,cw,ch,theta){
+    let ix=cw*.08, iy=ch*.10, ox=fr.x+col*cw+ix, oy=fr.y+row*ch+iy, sw=cw-2*ix, sh=ch-2*iy;
+    let H=100, W=Math.max(40,Math.round(sw/sh*H)), c=document.createElement('canvas'); c.width=W+80; c.height=H+80;
+    let g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height);
+    g.save(); g.beginPath(); g.rect(40,40,W,H); g.clip();
+    g.translate(40,40); g.scale(W/sw,H/sh); g.translate(-ox,-oy);
+    let cx=fr.x+fr.w/2, cy=fr.y+fr.h/2; g.translate(cx,cy); g.rotate(-theta); g.translate(-cx,-cy);
+    g.drawImage(src,0,0); g.restore();
+    let d=g.getImageData(0,0,c.width,c.height), p=d.data, n=p.length/4, gray=new Uint8Array(n), red=new Int16Array(n), rc=0;
+    for(let i=0;i<n;i++){let r=p[i*4],gg=p[i*4+1],b=p[i*4+2]; red[i]=r-Math.max(gg,b); if(red[i]>40)rc++;}
+    let useRed=rc/n>0.004;
+    for(let i=0;i<n;i++){ gray[i]=useRed?255-Math.min(255,Math.max(0,red[i]*2.2)):Math.min(p[i*4],p[i*4+1],p[i*4+2]); }
+    let hist=new Array(256).fill(0); for(let i=0;i<n;i++)hist[gray[i]]++;
+    let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];
+    let sB=0,wB=0,mx=0,th=128;
+    for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;let wF=n-wB;if(!wF)break;sB+=t*hist[t];let mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)**2;if(v>mx){mx=v;th=t;}}
+    let dark=0;
+    for(let i=0;i<n;i++){let v=gray[i]>th?255:0;if(!v)dark++;p[i*4]=p[i*4+1]=p[i*4+2]=v;p[i*4+3]=255;}
+    g.putImageData(d,0,0);
+    return {canvas:c,blank:dark/n<0.004,ink:dark/n,red:useRed};
+}
+async function _scnOcr(canvas){
+    for(const psm of ['7','8','10']){
+        await _scn.worker.setParameters({tessedit_pageseg_mode:psm});
+        let r=await _scn.worker.recognize(canvas);
+        let v=(r.data.text||'').replace(/[^0-9.]/g,'').replace(/^\.+/,'').replace(/\.+$/,'');
+        if(v!=='') return {val:v,conf:r.data.confidence||0};
+    }
+    return {val:'',conf:0};
+}
+// Jika nilai melebihi markah penuh (cth. "82" = 8 dipangkah, ditulis 2), ambil digit terakhir yang sah
+function _scnFix(val,max){
+    let n=parseFloat(val); if(val===''||(!isNaN(n)&&n<=max)) return {val,fixed:false};
+    let dg=val.replace(/\./g,'');
+    for(let k=dg.length-1;k>=1;k--){ let s=+dg.slice(-k); if(s<=max) return {val:String(s),fixed:true}; }
+    return {val,fixed:false};
+}
+async function _scnRead(){
+    let st=document.getElementById('scnStatus'), btn=document.getElementById('scnBtnRead'), res=document.getElementById('scnResult');
+    btn.disabled=true; res.innerHTML='';
+    try{
+        st.textContent='Memuat enjin OCR (kali pertama agak lama)...'; await _scnLoadOCR();
+        if(!_scn.worker){
+            _scn.worker=await Tesseract.createWorker('eng');
+            await _scn.worker.setParameters({tessedit_char_whitelist:'0123456789.'});
+        }
+        let cfg=getItemConfig(currentBMEditExam), src=document.getElementById('scnCanvas'), f=_scn.frame, th=(f.r||0)*Math.PI/180;
+        let L=_scnLayout(cfg);
+        let fr={x:f.x/100*src.width,y:f.y/100*src.height,w:Math.min(f.w,100-f.x)/100*src.width,h:Math.min(f.h,100-f.y)/100*src.height};
+        let cw=fr.w/L.C, ch=fr.h/L.R, out=[], reads=L.pos.filter(p=>!p.skip), done=0;
+        for(let p of reads){
+            let im=_scnCellImage(src,fr,p.col,p.row,cw,ch,th), o={val:'',conf:0}, fx={val:'',fixed:false};
+            if(!im.blank){ o=await _scnOcr(im.canvas); fx=_scnFix(o.val,p.max); }
+            out.push({ki:p.ki,sis:p.sis,label:p.label,max:p.max,val:fx.val,raw:o.val,fixed:fx.fixed,conf:o.conf,blank:im.blank,ink:im.ink,thumb:im.canvas.toDataURL('image/png')});
+            st.textContent='Membaca petak '+(++done)+'/'+reads.length+'...';
+        }
+        _scn.cells=out; _scnShowResult(); st.textContent='Siap. Semak petak berwarna oren/merah (tulisan tangan sukar dibaca mesin) sebelum memasukkan.';
+    }catch(e){ st.textContent='Ralat: '+e.message; }
+    btn.disabled=false;
+}
+function _scnTotal(){
+    let t=0,m=0; _scn.cells.forEach(c=>{let v=parseFloat(document.getElementById('scnv_'+c.ki+'_'+c.sis[0])?.value); if(!isNaN(v))t+=v; m+=c.max;});
+    let e=document.getElementById('scnTotal'); if(e)e.textContent='Jumlah dibaca: '+(Math.round(t*100)/100)+' / '+m+' (semak dengan JUMLAH pada kertas)';
+}
+function _scnShowResult(){
+    let h='<div style="margin-top:8px;font-weight:700;font-size:.8rem;">'+getItemConfig(currentBMEditExam).kertas[_scn.ki].nama+'</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;">';
+    _scn.cells.forEach(c=>{
+        let n=parseFloat(c.val), bad=c.val!==''&&(isNaN(n)||n>c.max), low=c.val!==''&&c.conf<70, heavy=c.ink>0.11;
+        let col=bad?'#ef4444':(low||c.val===''||c.fixed||heavy)?'#f59e0b':'#22c55e';
+        let note=c.fixed?'OCR: '+c.raw+' → digit akhir':(heavy&&c.val!==''?'banyak conteng, semak':(c.val===''?(c.blank?'kosong':'tak dapat dibaca'):''));
+        h+=`<div style="border:2px solid ${col};border-radius:8px;padding:3px;text-align:center;">
+          <div style="font-size:.62rem;color:#64748b;">${c.label} (/${c.max})</div>
+          <img src="${c.thumb}" style="width:100%;height:44px;object-fit:contain;background:#fff;">
+          <input id="scnv_${c.ki}_${c.sis[0]}" type="number" step="0.01" min="0" max="${c.max}" value="${c.val}" placeholder="-" oninput="_scnTotal()" style="width:100%;padding:3px;border:1px solid #e2e8f0;border-radius:6px;text-align:center;font-weight:700;">
+          <div style="font-size:.55rem;color:#b45309;min-height:10px;">${note}</div></div>`;
+    });
+    h+='</div><div id="scnTotal" style="font-size:.75rem;font-weight:700;color:#334155;margin-top:8px;"></div>';
+    h+=`<button class="btn btn-primary" onclick="_scnApply()" style="width:100%;margin-top:12px;">✅ Masukkan ke Analisis Item</button>`;
+    document.getElementById('scnResult').innerHTML=h; _scnTotal();
+}
+function _scnApply(){
+    let n=0, grouped=false, cfg=getItemConfig(currentBMEditExam);
+    _scn.cells.forEach(c=>{
+        let v=document.getElementById('scnv_'+c.ki+'_'+c.sis[0])?.value; if(v===''||v==null)return;
+        let num=toNumber(v,NaN); if(Number.isNaN(num))return; let rem=num;
+        if(c.sis.length>1)grouped=true;
+        c.sis.forEach(si=>{
+            let t=document.getElementById('im_'+c.ki+'_'+si); if(!t)return;
+            let m=+cfg.kertas[c.ki].soalan[si].markahPenuh||0, put=Math.max(0,Math.min(rem,m)); t.value=put; rem-=put;
+        });
+        n++;
+    });
+    hitungCepat(); tutupScanMarkah();
+    alert(n+' markah dimasukkan.'+(grouped?' Markah bagi baris yang digabung (cth. Bahagian A) diagihkan ikut urutan soalan.':'')+' Semak kemudian tekan "Simpan Analisis".');
+}
+window._scnAutoMode=_scnAutoMode;window.bukaScanMarkah=bukaScanMarkah;window.tutupScanMarkah=tutupScanMarkah;
+window._scnStartCam=_scnStartCam;window._scnSnap=_scnSnap;window._scnFromFile=_scnFromFile;window._scnRead=_scnRead;window._scnApply=_scnApply;window._scnDrawGrid=_scnDrawGrid;window._scn=_scn;
+window._scnSave=_scnSave;window._scnReset=_scnReset;window._scnTotal=_scnTotal;
+
                function bukaAnalisisItemDariBM(){
             // Simpan student & exam index supaya tidak hilang semasa peralihan modal
             let savedStudent = currentBMEditStudent;
@@ -3129,7 +3390,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
             tutupModal("modalEditMarkah");
             
             let html=`<h3 class="card-header">🔬 Analisis Item · ${exam} · ${x.name}</h3>
-            <p style="font-size:0.55rem;color:#64748b;margin-bottom:12px;">Isi markah diperoleh untuk setiap soalan.</p>`;
+            <p style="font-size:0.55rem;color:#64748b;margin-bottom:8px;">Isi markah diperoleh untuk setiap soalan, atau tekan Imbas pada kertas untuk guna kamera.</p>`;
             let allMarkah=0,allFull=0;
             
             cfg.kertas.forEach((kertas,ki)=>{
@@ -3140,7 +3401,7 @@ let p = completedExamsList.length > 0 ? (sum / completedExamsList.length).toFixe
                 
                 html+=`<div style="margin-bottom:14px;border:1px solid #e2e8f0;border-radius:12px;padding:12px;">
                   <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                    <strong>${kertas.nama}</strong>
+                    <strong>${kertas.nama}</strong> <button class="btn btn-accent" onclick="bukaScanMarkah(${ki})" style="padding:3px 10px;font-size:.7rem;margin-left:6px;"><i class="fas fa-camera"></i> Imbas</button>
                     <span style="color:#6366f1;font-weight:700;">${kFull>0?Math.round(kMark/kFull*100):0}% (${kMark}/${kFull})</span>
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;">`;
