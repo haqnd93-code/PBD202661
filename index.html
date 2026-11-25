@@ -5204,18 +5204,17 @@ function jalanCetakAnalisis(examPilihan){
                     let m=p.semuaMarkah[mIdx]||0;
                     let s=k.soalan[si];
                     let pt=s.markahPenuh>0?(m/s.markahPenuh)*100:0;
-                    let clr=pt>=80?'#059669':(pt>=50?'#b45309':'#dc2626');
-                    let hbg=pt>=80?'#dcfce7':(pt>=50?'#fef9c3':'#fee2e2');   // peta haba
-                    rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:'+hbg+';color:'+clr+';font-weight:600;font-size:0.78rem;">'+m+'</td>';
+                    let clr=pt>=80?'#059669':(pt>=50?'#ca8a04':'#dc2626');
+                    rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:'+clr+';font-weight:600;font-size:0.78rem;">'+m+'</td>';
                     mIdx++;
                 }
                 let km=p.kertasMarkah[ki];
                 let kp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
                 let pkp=kp>0?Math.round((km/kp)*100):0;
-                let wk=pkp>=80?'#059669':(pkp>=50?'#d97706':'#dc2626');
+                let wk=pkp>=80?'#059669':(pkp>=50?'#ca8a04':'#dc2626');
                 rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:var(--an-xl,#eff6ff);font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
             }
-            let pw=p.overallPercent>=80?'#059669':(p.overallPercent>=50?'#d97706':'#dc2626');
+            let pw=p.overallPercent>=80?'#059669':(p.overallPercent>=50?'#ca8a04':'#dc2626');
             rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;font-weight:700;color:'+pw+';font-size:0.78rem;">'+p.overallPercent+'%</td>';
             let gbg=p.gredInfo.warna+'22';
             rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;"><span style="display:inline-block;padding:3px 10px;border-radius:10px;background:'+gbg+';color:'+p.gredInfo.warna+';font-weight:700;font-size:0.78rem;">'+p.gredInfo.gred+'</span></td>';
