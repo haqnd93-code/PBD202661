@@ -216,6 +216,8 @@
                         .view-mode-switch { position: fixed; bottom: 18px; right: 18px; z-index: 500; background: #1e293b; border-radius: 30px; padding: 5px; display: flex; gap: 3px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
                         .view-mode-switch button { border: none; background: transparent; color: #94a3b8; padding: 8px 14px; border-radius: 24px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
                         .view-mode-switch button.active { background: #6366f1; color: #fff; }
+                        /* Papar suis Auto/Desktop/Phone di atas skrin log masuk (overlay z-index 10000) */
+                        body:has(#loginOverlay:not([style*="none"])) .view-mode-switch { z-index: 10001; }
         #pbdChart { max-height: 400px !important; max-width: 600px !important; }
         #pbdAnalisisContent { font-size: 0.7rem !important; line-height: 1.2 !important; }
         #pbdAnalisisContent div { padding: 2px 0 !important; font-size: 0.7rem !important; }
@@ -381,7 +383,15 @@
         }
         #modalPilihanCetak .pc-btn-batal:hover { background: #f1f5f9; }
         .print-analysis-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; }
-        .print-report-container { background: #fff; border-radius: 16px; padding: 20px; width: 95%; max-width: 1200px; max-height: 90vh; overflow-y: auto; }
+        .print-report-container { background: #fff; border-radius: 16px; padding: 20px; width: 98%; max-width: 1800px; max-height: 92vh; overflow-y: auto; }
+        .an-wrap.an-wrap-full { position:fixed; inset:0; z-index:100000; background:#fff; overflow:auto !important; padding:10px 14px; max-height:none; }
+        .an-wrap:fullscreen { background:#fff; overflow:auto !important; padding:10px 14px; max-height:none; }
+        .an-fs-exit { display:none; }
+        .an-fs-tabs { display:none; }
+        .an-wrap-full.an-has-tabs { --an-tabh: 46px; }
+        .an-wrap-full .an-fs-tabs { display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; position:sticky; top:0; left:0; z-index:10; background:#fff; padding:6px 0; height:46px; align-items:center; width:calc(100vw - 28px); }
+        .an-wrap-full .an-fs-tabs .an-tab { white-space:nowrap; border-radius:10px; padding:8px 14px; }
+        .an-wrap-full .an-fs-exit { display:block; position:fixed; bottom:16px; right:22px; z-index:100001; opacity:.92; background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.25); }
         .print-header { text-align: center; padding: 10px 0; border-bottom: 2px solid #1e293b; margin-bottom: 15px; }
         .print-header h2 { font-size: 1rem; font-weight: 800; margin: 0; }
         .print-header p { font-size: 0.7rem; color: #64748b; margin: 5px 0 0 0; }
@@ -5155,11 +5165,11 @@ function jalanCetakAnalisis(examPilihan){
     // ===== BINA HTML HEADER JADUAL =====
     function mkHeader(){
         let h = '<tr>';
-        h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Bil</th>';
-        h += '<th rowspan="2" style="padding:8px 8px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:left;color:white;min-width:160px;font-size:0.78rem;">Nama Pelajar</th>';
+        h += '<th rowspan="2" class="an-s1" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Bil</th>';
+        h += '<th rowspan="2" class="an-s2" style="padding:8px 8px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:left;color:white;min-width:160px;font-size:0.78rem;">Nama Pelajar</th>';
         for(let ki=0;ki<cfg.kertas.length;ki++){
             let k=cfg.kertas[ki];
-            h += '<th colspan="'+(k.soalan.length+1)+'" style="padding:8px 5px;background:var(--an-m,#2563eb);border:1px solid var(--an-mb,#1d4ed8);text-align:center;color:white;font-weight:600;font-size:0.82rem;">'+k.nama+'</th>';
+            h += '<th colspan="'+(k.soalan.length+1)+'" data-g="'+ki+'" style="padding:8px 5px;background:var(--an-m,#2563eb);border:1px solid var(--an-mb,#1d4ed8);text-align:center;color:white;font-weight:600;font-size:0.82rem;">'+k.nama+'</th>';
         }
         h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;white-space:nowrap;font-size:0.78rem;">Purata (%)</th>';
         h += '<th rowspan="2" style="padding:8px 6px;background:var(--an-d,#1e40af);border:1px solid var(--an-dd,#1e3a8a);text-align:center;color:white;font-size:0.78rem;">Gred</th>';
@@ -5168,10 +5178,10 @@ function jalanCetakAnalisis(examPilihan){
             let k=cfg.kertas[ki];
             for(let si=0;si<k.soalan.length;si++){
                 let s=k.soalan[si];
-                h += '<th style="padding:6px 4px;background:var(--an-l,#dbeafe);border:1px solid var(--an-lb,#bfdbfe);font-size:0.75rem;text-align:center;color:var(--an-d,#1e40af);">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
+                h += '<th data-g="'+ki+'" style="padding:6px 4px;background:var(--an-l,#dbeafe);border:1px solid var(--an-lb,#bfdbfe);font-size:0.75rem;text-align:center;color:var(--an-d,#1e40af);">'+s.no+'<br><span style="font-size:0.65rem;font-weight:400;">/'+s.markahPenuh+'</span></th>';
             }
             let tp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
-            h += '<th style="padding:6px 4px;background:var(--an-lb,#bfdbfe);border:1px solid var(--an-lbb,#93c5fd);font-size:0.78rem;text-align:center;color:var(--an-dd,#1e3a8a);font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
+            h += '<th data-g="'+ki+'" style="padding:6px 4px;background:var(--an-lb,#bfdbfe);border:1px solid var(--an-lbb,#93c5fd);font-size:0.78rem;text-align:center;color:var(--an-dd,#1e3a8a);font-weight:700;">Jumlah<br><span style="font-size:0.67rem;font-weight:400;">/'+tp+'</span></th>';
         }
         h += '</tr>';
         return h;
@@ -5185,8 +5195,8 @@ function jalanCetakAnalisis(examPilihan){
             let bg=(i%2===0)?'#ffffff':'#f8fafc';
             let hl=p.isLemah?'border-left:3px solid #dc2626;':'';
             rows += '<tr style="background:'+bg+';'+hl+'" data-idx="'+i+'" data-lemah="'+p.isLemah+'">';
-            rows += '<td style="padding:6px 5px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:0.75rem;">'+(i+1)+'</td>';
-            rows += '<td style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:600;color:#1e293b;font-size:0.78rem;">'+p.name+'</td>';
+            rows += '<td class="an-s1" style="padding:6px 5px;border:1px solid #e2e8f0;text-align:center;color:#64748b;font-size:0.75rem;">'+(i+1)+'</td>';
+            rows += '<td class="an-s2" style="padding:6px 8px;border:1px solid #e2e8f0;font-weight:600;color:#1e293b;font-size:0.78rem;">'+p.name+'</td>';
             let mIdx=0;
             for(let ki=0;ki<cfg.kertas.length;ki++){
                 let k=cfg.kertas[ki];
@@ -5194,15 +5204,16 @@ function jalanCetakAnalisis(examPilihan){
                     let m=p.semuaMarkah[mIdx]||0;
                     let s=k.soalan[si];
                     let pt=s.markahPenuh>0?(m/s.markahPenuh)*100:0;
-                    let clr=pt>=80?'#059669':(pt>=50?'#d97706':'#dc2626');
-                    rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;color:'+clr+';font-weight:500;font-size:0.78rem;">'+m+'</td>';
+                    let clr=pt>=80?'#059669':(pt>=50?'#b45309':'#dc2626');
+                    let hbg=pt>=80?'#dcfce7':(pt>=50?'#fef9c3':'#fee2e2');   // peta haba
+                    rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:'+hbg+';color:'+clr+';font-weight:600;font-size:0.78rem;">'+m+'</td>';
                     mIdx++;
                 }
                 let km=p.kertasMarkah[ki];
                 let kp=k.soalan.reduce((a,s)=>a+s.markahPenuh,0);
                 let pkp=kp>0?Math.round((km/kp)*100):0;
                 let wk=pkp>=80?'#059669':(pkp>=50?'#d97706':'#dc2626');
-                rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:var(--an-xl,#eff6ff);font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
+                rows += '<td data-g="'+ki+'" style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;background:var(--an-xl,#eff6ff);font-weight:600;color:'+wk+';font-size:0.78rem;">'+km+'<span style="font-size:0.67rem;color:#94a3b8;">/'+kp+'</span></td>';
             }
             let pw=p.overallPercent>=80?'#059669':(p.overallPercent>=50?'#d97706':'#dc2626');
             rows += '<td style="padding:6px 4px;text-align:center;border:1px solid #e2e8f0;font-weight:700;color:'+pw+';font-size:0.78rem;">'+p.overallPercent+'%</td>';
@@ -5220,15 +5231,19 @@ function jalanCetakAnalisis(examPilihan){
     html += '<div class="no-print" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center;">';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
     html += '<button class="btn btn-primary" onclick="tunjukPilihanCetak()"><i class="fas fa-print"></i> Cetak</button>';
+    html += '<button class="btn btn-accent" id="btnFsAnalisis" onclick="toggleFullscreenAnalisis()"><i class="fas fa-expand"></i> Skrin Penuh Jadual</button>';
     html += '<button class="btn btn-ghost" onclick="bukaCetakAnalisisItem()">← Tukar Peperiksaan</button>';
+    html += '<button class="btn btn-ghost" id="btnPanelAn" onclick="anTogglePanel()"><i class="fas fa-sliders-h"></i> Warna &amp; Highlight ▾</button>';
     html += '</div>';
     html += '<div style="display:flex;gap:8px;">';
     html += '<button class="btn" onclick="hlLemah(\''+tableId+'\')" style="background:#dc2626;color:white;font-size:0.78rem;"><i class="fas fa-exclamation-triangle"></i> Highlight &lt;50%</button>';
     html += '<button class="btn" onclick="hlReset(\''+tableId+'\')" style="background:#f59e0b;color:white;font-size:0.78rem;"><i class="fas fa-undo-alt"></i> Reset</button>';
     html += '</div>';
-    html += '<button class="btn btn-ghost" onclick="document.getElementById(\'modalCetakAnalisis\').style.display=\'none\'">✕ Tutup</button>';
+    html += '<button class="btn btn-ghost" onclick="tutupModalAnalisis()">✕ Tutup</button>';
     html += '</div>';
 
+    // Panel warna + highlight (boleh dilipat, tersembunyi secara lalai)
+    html += '<div id="anPanelTetapan" style="display:none;">';
     // Pilihan warna header (tidak cetak)
     html += '<div class="no-print" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
     html += '<span style="font-weight:700;font-size:0.72rem;color:#475569;"><i class="fas fa-palette"></i> Warna Header ('+subjek+'):</span>';
@@ -5255,21 +5270,58 @@ function jalanCetakAnalisis(examPilihan){
     html += '</div>';
     html += '</div>';
 
+    html += '</div>';   // tutup anPanelTetapan
+
     // Header laporan
     html += '<div style="border-bottom:2px solid var(--an-m,#2563eb);margin-bottom:10px;padding-bottom:6px;">';
     html += '<h2 style="color:var(--an-dd,#1e3a8a);font-size:1.15rem;margin:0;font-weight:700;">LAPORAN ANALISIS ITEM — '+subjek+'</h2>';
     html += '<p style="color:#64748b;font-size:0.8rem;margin:3px 0 0;">'+kelas+' · '+ting+' · '+examPilihan+' · '+new Date().toLocaleDateString('ms-MY')+' · '+pelajarData.length+' pelajar</p>';
     html += '</div>';
 
+    // TAB IKUT KERTAS (tidak cetak)
+    let banyakKertas = cfg.kertas.length > 1;
+    let tabBtns = '';
+    if(banyakKertas){
+        for(let ki=0;ki<cfg.kertas.length;ki++){
+            let kk=cfg.kertas[ki];
+            tabBtns += '<button type="button" class="an-tab'+(ki===0?' on':'')+'" data-tid="'+tableId+'" data-tab="'+ki+'" onclick="anPilihTab(\''+tableId+'\',\''+ki+'\')">'+kk.nama+' <small>('+kk.soalan.length+' soalan)</small></button>';
+        }
+        tabBtns += '<button type="button" class="an-tab" data-tid="'+tableId+'" data-tab="semua" onclick="anPilihTab(\''+tableId+'\',\'semua\')">Semua Kertas</button>';
+        html += '<div class="no-print an-tabs" id="tabs_'+tableId+'">'+tabBtns+'</div>';
+    }
+
     // JADUAL TUNGGAL — semua pelajar
-    html += '<div style="overflow-x:auto;">';
-    html += '<table id="'+tableId+'" style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+    html += '<div class="an-wrap'+(banyakKertas?' an-has-tabs':'')+'" id="wrap_'+tableId+'" style="overflow-x:auto;">';
+    if(banyakKertas) html += '<div class="an-fs-tabs no-print">'+tabBtns+'</div>';   // hanya kelihatan dalam skrin penuh
+    html += '<button type="button" class="an-fs-exit no-print" onclick="toggleFullscreenAnalisis()">✕ Keluar Skrin Penuh</button>';
+    html += '<table id="'+tableId+'" data-tab="'+(banyakKertas?'0':'semua')+'" data-nk="'+cfg.kertas.length+'" style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
     html += '<thead>'+mkHeader()+'</thead>';
     html += '<tbody>'+mkRows()+'</tbody>';
     html += '</table></div>';
 
     // CSS highlight
     html += '<style>';
+    // ===== MOD PADAT: semua lajur muat satu skrin / satu halaman =====
+    html += '#'+tableId+'.an-padat th, #'+tableId+'.an-padat td { padding:3px 2px !important; font-size:0.7rem !important; }';
+    html += '#'+tableId+'.an-padat thead tr:first-child th:nth-child(2), #'+tableId+'.an-padat tbody td:nth-child(2) { min-width:120px !important; max-width:150px; text-align:left !important; padding:3px 5px !important; font-size:0.68rem !important; line-height:1.15; }';
+    html += '#'+tableId+'.an-padat td, #'+tableId+'.an-padat th { min-width:18px; }';
+    html += '@media print { .an-wrap { overflow:visible !important; max-height:none !important; } }';
+    // tab: sembunyikan lajur kertas lain
+    for(let ki=0;ki<cfg.kertas.length;ki++){
+        html += '#'+tableId+'[data-tab="'+ki+'"] [data-g]:not([data-g="'+ki+'"]) { display:none; }';
+    }
+    // lajur Bil & Nama dikunci (sticky) + pengepala dikunci
+    html += '#'+tableId+' th.an-s1, #'+tableId+' td.an-s1 { position:sticky; left:0; z-index:2; width:36px !important; min-width:36px !important; max-width:36px !important; box-sizing:border-box !important; }';
+    html += '#'+tableId+' th.an-s2, #'+tableId+' td.an-s2 { position:sticky; left:36px; z-index:2; box-shadow:2px 0 3px rgba(0,0,0,.10); }';
+    html += '#'+tableId+' td.an-s1, #'+tableId+' td.an-s2 { background:inherit; }';
+    html += '#'+tableId+' thead tr:first-child th { position:sticky; top:var(--an-tabh,0px); z-index:3; }';
+    html += '#'+tableId+' thead tr:nth-child(2) th { position:sticky; top:calc(var(--an-h1,34px) + var(--an-tabh,0px)); z-index:3; }';
+    html += '#'+tableId+' thead th.an-s1, #'+tableId+' thead th.an-s2 { z-index:6; }';
+    html += '.an-wrap { max-height:62vh; }';
+    html += '.an-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }';
+    html += '.an-tab { border:1px solid var(--an-lbb,#cbd5e1); background:#fff; color:var(--an-d,#1e40af); padding:7px 14px; border-radius:10px 10px 0 0; font-weight:700; font-size:0.78rem; cursor:pointer; }';
+    html += '.an-tab small { font-weight:500; opacity:.75; }';
+    html += '.an-tab.on { background:var(--an-d,#1e40af); color:#fff; border-color:var(--an-dd,#1e3a8a); }';
     html += '#'+tableId+' tr.hl-lemah { background:#fee2e2 !important; border-left:3px solid #dc2626 !important; }';
     html += '#'+tableId+' tr.hl-lemah td { background:#fee2e2 !important; }';
     html += '#'+tableId+' tr.hl-pilih { background:#fef9c3 !important; border-left:3px solid #eab308 !important; }';
@@ -5279,9 +5331,91 @@ function jalanCetakAnalisis(examPilihan){
     document.getElementById("printAnalysisReport").innerHTML = html;
     document.getElementById("modalCetakAnalisis").style.display = "flex";
     aplikasiWarnaAnalisis(subjek);
+    setTimeout(function(){ fitAnalisisTable(tableId); }, 30);
+    if(window._anFitHandler) window.removeEventListener('resize', window._anFitHandler);
+    window._anFitHandler = function(){ fitAnalisisTable(tableId); };
+    window.addEventListener('resize', window._anFitHandler);
 
     // Auto highlight pelajar lemah
     setTimeout(function(){ hlLemah(tableId); }, 80);
+}
+
+// ===== LIPAT / BUKA PANEL WARNA & HIGHLIGHT =====
+function anTogglePanel(){
+    let pn = document.getElementById('anPanelTetapan');
+    let b = document.getElementById('btnPanelAn');
+    if(!pn) return;
+    let buka = pn.style.display === 'none';
+    pn.style.display = buka ? 'block' : 'none';
+    if(b) b.innerHTML = '<i class="fas fa-sliders-h"></i> Warna &amp; Highlight ' + (buka ? '▴' : '▾');
+    setTimeout(_anRefit, 60);
+}
+
+// ===== TAB IKUT KERTAS =====
+function anPilihTab(tid, tab){
+    let tbl = document.getElementById(tid);
+    if(!tbl) return;
+    tbl.setAttribute('data-tab', tab);
+    document.querySelectorAll('.an-tab[data-tid="'+tid+'"]').forEach(function(b){
+        b.classList.toggle('on', b.getAttribute('data-tab') === String(tab));
+    });
+    let w = document.getElementById('wrap_'+tid);
+    if(w){ w.scrollLeft = 0; }
+    fitAnalisisTable(tid);
+}
+
+// ===== SKRIN PENUH — JADUAL SAHAJA =====
+function _anWrap(){ return document.querySelector('#printAnalysisReport .an-wrap'); }
+function _anRefit(){
+    let t = document.querySelector('#printAnalysisReport table[id^="analisisTable_"]');
+    if(t) fitAnalisisTable(t.id);
+}
+function _anSyncBtn(){
+    let w = _anWrap(), b = document.getElementById('btnFsAnalisis');
+    if(b && w) b.innerHTML = w.classList.contains('an-wrap-full') ? '<i class="fas fa-compress"></i> Keluar Skrin Penuh' : '<i class="fas fa-expand"></i> Skrin Penuh Jadual';
+}
+function toggleFullscreenAnalisis(){
+    let w = _anWrap();
+    if(!w) return;
+    if(w.classList.contains('an-wrap-full')){
+        w.classList.remove('an-wrap-full');
+        if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+    } else {
+        w.classList.add('an-wrap-full');
+        if(w.requestFullscreen) w.requestFullscreen().catch(function(){});   // jika disekat, tetap penuh dalam halaman
+    }
+    _anSyncBtn();
+    setTimeout(_anRefit, 120);
+}
+function tutupModalAnalisis(){
+    let w = _anWrap();
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+    if(w) w.classList.remove('an-wrap-full');
+    document.getElementById('modalCetakAnalisis').style.display = 'none';
+}
+document.addEventListener('fullscreenchange', function(){
+    let w = _anWrap();
+    if(w && !document.fullscreenElement) w.classList.remove('an-wrap-full');   // tekan Esc
+    _anSyncBtn();
+    setTimeout(_anRefit, 120);
+});
+
+// ===== AUTO-SKALA JADUAL SUPAYA MUAT LEBAR PAPARAN (tiada seret ke tepi) =====
+function fitAnalisisTable(tid){
+    let tbl = document.getElementById(tid);
+    let wrap = document.getElementById('wrap_'+tid);
+    if(!tbl || !wrap) return;
+    tbl.style.zoom = 1; tbl.style.width = '100%'; tbl.classList.remove('an-padat');
+    let cs = getComputedStyle(wrap);
+    let full = wrap.clientWidth - parseFloat(cs.paddingLeft||0) - parseFloat(cs.paddingRight||0);
+    if(full > 0 && tbl.scrollWidth > full + 1){          // tak muat -> mod padat
+        tbl.classList.add('an-padat'); tbl.style.width = 'auto';
+        let need = tbl.scrollWidth;
+        if(need > full + 1) tbl.style.zoom = Math.max(0.45, (full-20)/need).toFixed(3);   // 20px: ruang bar skrol menegak
+        else tbl.style.width = '100%';
+    }
+    let r1 = tbl.querySelector('thead tr:first-child');            // tinggi baris pengepala 1 untuk sticky baris 2
+    if(r1) tbl.style.setProperty('--an-h1', r1.offsetHeight + 'px');
 }
 
 // ===== FUNGSI HIGHLIGHT =====
@@ -7785,6 +7919,12 @@ let pelajarWithAvg = st.map(s => {
             let cloned = reportDiv.cloneNode(true);
             cloned.querySelectorAll('.no-print').forEach(function(el){ el.remove(); });
             let reportHTML = cloned.innerHTML;
+            // Bawa warna header yang dipilih ke tetingkap cetak (pembolehubah --an-* ada pada elemen laporan)
+            let varCss = '';
+            ['--an-d','--an-dd','--an-m','--an-mb','--an-l','--an-lb','--an-lbb','--an-xl'].forEach(function(n){
+                let v = reportDiv.style.getPropertyValue(n);
+                if (v) varCss += n + ':' + v + ';';
+            });
 
             let printHTML = `<!DOCTYPE html>
 <html lang="ms">
@@ -7792,12 +7932,13 @@ let pelajarWithAvg = st.map(s => {
 <meta charset="UTF-8">
 <title>Laporan Analisis Item</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root { ${varCss} }
 body { font-family: Arial, sans-serif; background: #fff; font-size: 0.82rem; color: #1e293b; padding: 10px; }
 @media print {
     @page { size: A4 ${orientasi}; margin: ${margin}; }
     .analisis-no-print { display: none !important; }
-    body { padding: 0; font-size: 0.82rem; }
+    body { padding: 0; font-size: 0.82rem; width: auto !important; margin: 0 !important; }
     table { page-break-inside: auto; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
@@ -7813,6 +7954,8 @@ body { font-family: Arial, sans-serif; background: #fff; font-size: 0.82rem; col
 }
 table { width: 100%; border-collapse: collapse; }
 td, th { font-size: 0.78rem; }
+th, td { position: static !important; box-shadow: none !important; }
+.an-wrap { max-height: none !important; overflow: visible !important; }
 tr.hl-lemah { background: #fee2e2 !important; border-left: 3px solid #dc2626 !important; }
 tr.hl-lemah td { background: #fee2e2 !important; }
 tr.hl-pilih { background: #fef9c3 !important; border-left: 3px solid #eab308 !important; }
@@ -7828,6 +7971,68 @@ tr.hl-pilih td { background: #fef9c3 !important; }
     </div>
 </div>
 ${reportHTML}
+<script>
+(function(){
+    var land = ${orientasi === 'landscape'};
+    var mm   = parseFloat('${margin}');
+    var pageW = (land ? 297 : 210) - 2*mm;
+    var availPx = pageW * 96 / 25.4;
+    document.body.style.width = (availPx + 20) + 'px';   // lebar kandungan = lebar boleh cetak A4
+    document.body.style.margin = '0 auto';
+    function fit(){
+        document.querySelectorAll('table').forEach(function(t){
+            t.style.zoom = 1; t.style.width = '100%'; t.classList.remove('an-padat');
+            if(t.scrollWidth > availPx + 1){
+                t.classList.add('an-padat'); t.style.width = 'auto';
+                var need = t.scrollWidth;
+                if(need > availPx + 1) t.style.zoom = ((availPx-2)/need).toFixed(3);
+                else t.style.width = '100%';
+            }
+        });
+        document.querySelectorAll('.an-wrap').forEach(function(w){ w.style.overflow='visible'; });
+    }
+    // Butang cetak SEMUA kertas — satu kertas satu halaman
+    var split = false, origWrap = null, holder = null;
+    function togglePisah(){
+        var wrap = document.querySelector('.an-wrap'); if(!wrap && !origWrap) return;
+        var btn = document.getElementById('btnPisah');
+        if(!split){
+            origWrap = wrap;
+            var nk = parseInt(wrap.querySelector('table').getAttribute('data-nk') || '1');
+            holder = document.createElement('div');
+            for(var k=0;k<nk;k++){
+                var c = origWrap.cloneNode(true);
+                c.querySelector('table').setAttribute('data-tab', String(k));
+                var d = document.createElement('div');
+                if(k < nk-1) d.style.pageBreakAfter = 'always';
+                d.style.marginBottom = '14px';
+                d.appendChild(c); holder.appendChild(d);
+            }
+            origWrap.parentNode.insertBefore(holder, origWrap);
+            origWrap.style.display = 'none';
+            split = true; btn.textContent = '↩ Satu Kertas Sahaja';
+        } else {
+            holder.parentNode.removeChild(holder);
+            origWrap.style.display = '';
+            split = false; btn.textContent = '📑 Semua Kertas (halaman berasingan)';
+        }
+        fit();
+    }
+    window.addEventListener('load', function(){
+        var t0 = document.querySelector('table');
+        if(t0 && parseInt(t0.getAttribute('data-nk')||'1') > 1){
+            var bar = document.querySelector('.analisis-no-print div');
+            var b = document.createElement('button');
+            b.id = 'btnPisah'; b.textContent = '📑 Semua Kertas (halaman berasingan)';
+            b.style.background = '#6366f1'; b.style.color = '#fff';
+            b.onclick = togglePisah;
+            bar.insertBefore(b, bar.firstChild);
+        }
+        fit();
+    });
+    window.addEventListener('beforeprint', fit);
+})();
+<\/script>
 </body>
 </html>`;
 
