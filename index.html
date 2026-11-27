@@ -3328,19 +3328,17 @@ function _scnGroups(k){
     });
     return g.map(x=>({sis:x.sis,max:x.max,label:x.sis.length>1?(x.start+'–'+x.end):x.start}));
 }
+function _scnAllRows(){
+    // satu baris pada kertas jawapan = satu soalan (atau satu kumpulan soalan 1 markah) bagi setiap Bahagian/Kertas, ikut urutan A, B, C...
+    let cfg=getItemConfig(currentBMEditExam), rows=[];
+    cfg.kertas.forEach((kt,ki)=>{ _scnGroups(kt).forEach(g=>rows.push({ki,sis:g.sis,max:g.max,label:g.label,kn:kt.nama})); });
+    return rows;
+}
 function _scnLayout(cfg){
-    let k=cfg.kertas[_scn.ki], n=k.soalan.length, m=_scn.mode, pos=[], R=1, C=n;
-    let mk=(si,row,col)=>pos.push({ki:_scn.ki,sis:[si],row,col,label:k.soalan[si].no,max:+k.soalan[si].markahPenuh||0});
-    if(m=='F'){
-        let g=_scnGroups(k);
-        g.forEach((x,i)=>pos.push({ki:_scn.ki,sis:x.sis,row:i,col:0,label:x.label,max:x.max}));
-        R=g.length+(_scn.jumlah?1:0); C=1;
-        if(_scn.jumlah) pos.push({ki:_scn.ki,sis:[],row:g.length,col:0,label:'JUMLAH',max:0,skip:true});
-    }
-    else if(m=='H'){R=1;C=n;k.soalan.forEach((s,si)=>mk(si,0,si));}
-    else if(m=='V'){R=n;C=1;k.soalan.forEach((s,si)=>mk(si,si,0));}
-    else{let p=Math.max(1,_scn.per|0);C=p;R=Math.max(1,Math.ceil(n/p));k.soalan.forEach((s,si)=>mk(si,Math.floor(si/p),si%p));}
-    return {pos,R,C};
+    let rows=_scnAllRows(), pos=[];
+    rows.forEach((r,i)=>pos.push({ki:r.ki,sis:r.sis,row:i,col:0,label:r.kn+' '+r.label,max:r.max}));
+    if(_scn.jumlah)pos.push({ki:0,sis:[],row:rows.length,col:0,label:'JUMLAH',max:0,skip:true});
+    return {pos,R:rows.length+(_scn.jumlah?1:0),C:1};
 }
 // ==================== IMBAS MARKAH (Analisis Item) - versi ringkas ====================
 // Guru ambil gambar kertas -> sistem baca semua markah merah -> terus dimasukkan ke ruang markah.
@@ -3351,7 +3349,7 @@ const _SCN_MODEL={gemini:'gemini-flash-latest',claude:'claude-sonnet-5-5'};
 function _scnSave(){try{localStorage.setItem('scnPrefs2',JSON.stringify({jumlah:_scn.jumlah,group:_scn.group,review:_scn.review}));}catch(e){}}
 function _scnAI(){try{return JSON.parse(localStorage.getItem('scnAI')||'{}')||{};}catch(e){return {};}}
 function _scnSt(t){let e=document.getElementById('scnStatus');if(e)e.innerHTML=t;}
-function _scnRows(){return _scnGroups(getItemConfig(currentBMEditExam).kertas[_scn.ki]);}
+function _scnRows(){return _scnAllRows();}
 
 // ---------- AI ----------
 async function _scnCallAI(ai,text,b64){
@@ -3380,9 +3378,9 @@ function _scnJpegB64(maxDim){
 }
 async function _scnAIRead(){
     let ai=_scnAI(), rows=_scnRows(), cfg=getItemConfig(currentBMEditExam), tot=rows.reduce((a,r)=>a+r.max,0);
-    let list=rows.map((r,i)=>(i+1)+'. '+(r.sis.length>1?'Bahagian '+r.label:'Soalan '+r.label)+' (markah penuh '+r.max+')').join('\n');
+    let list=rows.map((r,i)=>(i+1)+'. '+r.kn+' - '+(r.sis.length>1?'soalan '+r.label:'soalan '+r.label)+' (markah penuh '+r.max+')').join('\n');
     let prompt='This is a photo of the marking box on a Malaysian school exam paper, titled "Untuk Kegunaan Pemeriksa". Columns: Bahagian, Soalan, Markah Penuh (printed), Markah Diperoleh (marks obtained). The teacher wrote the marks obtained by hand, usually in RED pen, in the "Markah Diperoleh" column.\n\n'+
-    'Rows of the table, top to bottom (after the header):\n'+list+'\n'+(_scn.jumlah?(rows.length+1)+'. JUMLAH (total, markah penuh '+tot+') - do not include it in "rows"\n':'')+
+    'The table has one row per question, grouped by section (Bahagian A, B, C). Rows top to bottom (after the header), in this exact order:\n'+list+'\n'+(_scn.jumlah?(rows.length+1)+'. JUMLAH (total, markah penuh '+tot+') - do not include it in "rows"\n':'')+
     '\nFor each numbered row, read the handwritten mark in the "Markah Diperoleh" column.\n'+
     'Rules:\n- If a mark was crossed out or overwritten and a corrected mark written next to it or over it, return ONLY the final corrected mark.\n- Marks may be decimals (e.g. 2.5); use a dot.\n- Empty cell: null.\n- A mark cannot exceed the printed "Markah Penuh" of its row. If your reading would exceed it, look again carefully; if still unsure set "uncertain": true.\n- Ignore the printed numbers (Markah Penuh) and any signatures or other writing.\n- The total may be handwritten inside the JUMLAH row or outside the table just below it; return it as "jumlah" (number or null).\n'+
     '\nReturn ONLY JSON, no other text: {"rows":[{"no":1,"value":10,"uncertain":false}],"jumlah":44}';
@@ -3390,7 +3388,7 @@ async function _scnAIRead(){
     let cells=rows.map((r,i)=>{
         let f=(j.rows||[]).find(x=>+x.no===i+1), raw=f&&f.value!=null&&f.value!==''?parseFloat(f.value):NaN, v=isNaN(raw)?'':String(raw), conf=f&&f.uncertain?50:100;
         if(v!==''&&raw>r.max)conf=Math.min(conf,40);
-        return {ki:_scn.ki,sis:r.sis,label:r.label,max:r.max,val:v,raw:v,conf,blank:v===''};
+        return {ki:r.ki,sis:r.sis,label:r.kn+' '+r.label,max:r.max,val:v,raw:v,conf,blank:v===''};
     });
     let jum=(j.jumlah!=null&&!isNaN(parseFloat(j.jumlah)))?parseFloat(j.jumlah):null;
     return {cells,jum};
@@ -3514,7 +3512,7 @@ function bukaScanMarkah(ki){
     ov.innerHTML='<div style="background:#fff;border-radius:16px;padding:14px;width:620px;max-width:100%;height:max-content;">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><strong>📷 Imbas Markah · '+currentBMEditExam+' · '+cfg.kertas[_scn.ki].nama+'</strong><button class="btn btn-ghost" onclick="tutupScanMarkah()" style="padding:6px 12px;">✕</button></div>'+
     '<div id="scnBanner" style="font-size:.75rem;margin-bottom:8px;"></div>'+
-    '<div style="text-align:center;padding:10px 0;"><p style="font-size:.8rem;color:#475569;margin-bottom:10px;">Ambil gambar jadual <b>"Untuk Kegunaan Pemeriksa"</b> (dari baris A hingga JUMLAH kelihatan). Sistem akan membaca semua markah merah dan memasukkannya terus.</p>'+
+    '<div style="text-align:center;padding:10px 0;"><p style="font-size:.8rem;color:#475569;margin-bottom:10px;">Ambil gambar jadual <b>"Untuk Kegunaan Pemeriksa"</b> (dari baris A hingga JUMLAH kelihatan). Sistem membaca <b>semua bahagian sekali gus</b> ('+cfg.kertas.map(k=>k.nama+' '+k.soalan.length+' soalan').join(', ')+') dan memasukkan setiap markah ke tempatnya.</p>'+
     '<label class="btn btn-primary" style="padding:16px 28px;font-size:1.05rem;border-radius:999px;cursor:pointer;display:inline-block;margin:4px;">📷 Ambil Gambar<input type="file" accept="image/*" capture="environment" style="display:none" onchange="_scnPicked(this)"></label>'+
     '<label class="btn btn-ghost" style="padding:14px 22px;border-radius:999px;cursor:pointer;display:inline-block;margin:4px;">🖼️ Pilih dari Galeri<input type="file" accept="image/*" style="display:none" onchange="_scnPicked(this)"></label></div>'+
     '<div id="scnPreview" style="text-align:center;"></div><div id="scnStatus" style="font-size:.8rem;color:#4f46e5;margin:8px 0;"></div><div id="scnResult"></div>'+
